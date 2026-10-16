@@ -2,15 +2,24 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
 use winnow::{ModalResult, Parser};
-use winnow::token::{literal, take_until};
+use winnow::token::{literal, take_till};
 
 pub fn parse_version(input: &mut &str) -> ModalResult<String> {
-    literal("{VERSION=").parse_next(input)?;
-    let version = take_until(0.., '}').parse_next(input)?;
+    multispace0(input)?;
+    literal('{').parse_next(input)?;
+    multispace0(input)?;
+    literal("VERSION").parse_next(input)?;
+    multispace0(input)?;
+    literal('=').parse_next(input)?;
+    multispace0(input)?;
+    let version = take_till(0.., '}').parse_next(input)?;
+    multispace0(input)?;
     literal("}").parse_next(input)?;
-
-    Ok(version.to_owned())
+    multispace0(input)?;
+    
+    Ok(version.trim().to_owned())
 }
 
 #[cfg(test)]
@@ -22,6 +31,20 @@ mod tests {
     #[test]
     fn parses_version_block() {
         let mut input = "{VERSION=2.14}";
+        let expected = "2.14";
+
+        let version = parse_version.parse_next(&mut input).unwrap();
+
+        assert_eq!(version, expected);
+    }
+
+    #[test]
+    fn parses_version_block_with_whitespaces() {
+        let mut input = "{   VERSION
+          =    2.14
+          
+    } 
+        ";
         let expected = "2.14";
 
         let version = parse_version.parse_next(&mut input).unwrap();
