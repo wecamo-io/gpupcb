@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use hyperlynx_parser::parse;
+use hyperlynx_parser::parser::parse;
 
 fn main() {
     println!("{}", parse());

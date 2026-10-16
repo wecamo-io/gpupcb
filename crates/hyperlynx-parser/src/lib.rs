@@ -2,6 +2,4 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-pub fn parse() -> String {
-    String::from("Parser")
-}
+pub mod parser;
