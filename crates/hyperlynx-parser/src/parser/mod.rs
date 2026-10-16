@@ -6,16 +6,24 @@ use winnow::ascii::multispace0;
 use winnow::{ModalResult, Parser};
 use winnow::token::{literal, take_till};
 
-pub fn parse_version(input: &mut &str) -> ModalResult<String> {
+fn open_block(input: &mut &str, lit: &str) -> ModalResult<()> {
     multispace0(input)?;
     literal('{').parse_next(input)?;
     multispace0(input)?;
-    literal("VERSION").parse_next(input)?;
+    literal(lit).parse_next(input)?;
     multispace0(input)?;
+
+    Ok(())
+}
+
+pub fn parse_version(input: &mut &str) -> ModalResult<String> {
+    open_block(input, "VERSION")?;
+
     literal('=').parse_next(input)?;
     multispace0(input)?;
     let version = take_till(0.., '}').parse_next(input)?;
     multispace0(input)?;
+
     literal("}").parse_next(input)?;
     multispace0(input)?;
     
