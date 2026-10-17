@@ -118,4 +118,15 @@ mod tests {
 
         assert!(has_expected_error, "Expected VERSION error, got {:?}", err);
     }
+
+    #[test_case("{VERSION=2.14}xyz", "xyz"; "no whitespace")]
+    #[test_case("{VERSION=2.14}         xyz", "xyz"; "with whitespace")]
+    fn leaves_content_for_the_next_parser(input: &str, expected: &str) {
+        let mut input = input;
+
+        let version = parse_version.parse_next(&mut input).unwrap();
+
+        assert_eq!(version, "2.14");
+        assert_eq!(input, "xyz");
+    }
 }
