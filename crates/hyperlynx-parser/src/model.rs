@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+#[derive(Debug)]
 pub enum Units {
     English,
+    WrongUnit(String),
 }
 
 enum LayerType {
