@@ -69,6 +69,6 @@ mod tests {
         let version = parse_version.parse_next(&mut input).unwrap();
 
         assert_eq!(version, "2.14");
-        assert_eq!(input, "xyz");
+        assert_eq!(input, expected);
     }
 }
