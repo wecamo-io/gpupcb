@@ -2,39 +2,16 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{digit1, multispace0};
-use winnow::error::{StrContext, StrContextValue};
-use winnow::token::{literal};
-use winnow::{ModalResult, Parser};
-use utils::{open_block, close_block};
-
 mod utils;
-
-pub fn parse_version(input: &mut &str) -> ModalResult<String> {
-    open_block(input, "VERSION")?;
-
-    literal('=').parse_next(input)?;
-    multispace0(input)?;
-
-    // ensure version is in form of d.d
-    let version = (digit1, literal('.'), digit1)
-        .take()
-        .context(StrContext::Label("value boundary"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "valid form of version value",
-        )))
-        .parse_next(input)?;
-
-    close_block(input)?;
-
-    Ok(version.trim().to_owned())
-}
+pub mod version;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use test_case::test_case;
-    use winnow::error::ErrMode;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
+    use winnow::prelude::*;
+    use version::parse_version;
 
     // VERSION BLOCK UNIT TESTS
 
