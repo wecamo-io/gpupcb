@@ -97,8 +97,8 @@ mod tests {
         assert_eq!(version, expected);
     }
 
-    #[test_case("{VERxyzSION=2.14}", StrContext::Expected(StrContextValue::Description("VERSION")); "block name corruption")]
     #[test_case("xyz{VERSION=2.14}", StrContext::Label("opening block"); "opening block corruption")]
+    #[test_case("{VERxyzSION=2.14}", StrContext::Expected(StrContextValue::Description("VERSION")); "block name corruption")]
     #[test_case("{VERSIONxyz=2.14}", StrContext::Label("block name boundary"); "opening block corruption")]
     #[test_case("{VERSION=xyz2.14}", StrContext::Label("value boundary"); "before first digit corruption")]
     #[test_case("{VERSION=2xyz.14}", StrContext::Label("value boundary"); "after first digit corruption")]
