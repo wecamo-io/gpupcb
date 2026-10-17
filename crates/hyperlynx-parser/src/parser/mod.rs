@@ -11,13 +11,13 @@ use winnow::{ModalResult, Parser};
 fn open_block<'a>(
     input: &mut &'a str,
     lit: &'static str,
-) -> ModalResult<((), &'a str, &'a str, &'a str)> {
-    let (_, opening, _) = backtrack_err((multispace0, "{", multispace0))
+) -> ModalResult<()> {
+    backtrack_err((multispace0, "{", multispace0))
         .context(StrContext::Label("opening block"))
         .context(StrContext::Expected(StrContextValue::Description("{")))
         .parse_next(input)?;
 
-    let block_name = backtrack_err(literal(lit))
+    backtrack_err(literal(lit))
         .context(StrContext::Label("block name"))
         .context(StrContext::Expected(StrContextValue::Description(lit)))
         .parse_next(input)?;
@@ -31,13 +31,13 @@ fn open_block<'a>(
         )))
         .parse_next(input)?;
 
-    let ws_after_block_name = multispace0.parse_next(input)?;
+    multispace0.parse_next(input)?;
 
-    Ok(((), opening, block_name, ws_after_block_name))
+    Ok(())
 }
 
 fn close_block(input: &mut &str) -> ModalResult<()> {
-    let (_, closing, _) = backtrack_err((multispace0, "}", multispace0))
+    backtrack_err((multispace0, "}", multispace0))
         .context(StrContext::Label("closing block"))
         .context(StrContext::Expected(StrContextValue::Description("}")))
         .parse_next(input)?;
