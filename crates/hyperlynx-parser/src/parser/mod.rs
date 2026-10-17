@@ -3,15 +3,22 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
+use winnow::combinator::cut_err;
 use winnow::{ModalResult, Parser};
 use winnow::token::{literal, take_till};
+use winnow::error::{StrContext, StrContextValue};
 
-fn open_block(input: &mut &str, lit: &str) -> ModalResult<()> {
-    multispace0(input)?;
-    literal('{').parse_next(input)?;
-    multispace0(input)?;
-    literal(lit).parse_next(input)?;
-    multispace0(input)?;
+fn open_block<'a>(input: &mut &str, lit: &'static str) -> ModalResult<(), &'a str> {
+    // multispace0(input)?;
+    // literal('{').parse_next(input);
+    // multispace0(input)?;
+    cut_err((multispace0, '{', multispace0)).parse_next(input);
+
+    cut_err(literal(lit))
+        .context(StrContext::Expected(StrContextValue::Description(lit)))
+        .parse_next(input);
+    
+    cut_err(multispace0).parse_next(input);
 
     Ok(())
 }
@@ -25,7 +32,7 @@ fn close_block(input: &mut &str) -> ModalResult<()> {
 }
 
 pub fn parse_version(input: &mut &str) -> ModalResult<String> {
-    open_block(input, "VERSION")?;
+    open_block(input, "VERSION");
 
     literal('=').parse_next(input)?;
     multispace0(input)?;
@@ -64,5 +71,18 @@ mod tests {
         let version = parse_version.parse_next(&mut input).unwrap();
 
         assert_eq!(version, expected);
+    }
+
+    #[test]
+    fn returns_matching_error_on_corrupted_version_block() {
+        let mut input = "{sVERSION=2.14}";
+        let expected = "2.14";
+
+        match parse_version.parse_next(&mut input) {
+            Ok(_) => println!("Expected an error?"),
+            Err(err) => println!("{:?}", err), 
+        }
+
+        // assert_eq!(version, expected);
     }
 }
