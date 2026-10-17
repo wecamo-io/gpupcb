@@ -3,24 +3,30 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::cut_err;
-use winnow::{ModalResult, Parser};
-use winnow::token::{literal, take_till};
+use winnow::combinator::backtrack_err;
 use winnow::error::{StrContext, StrContextValue};
+use winnow::token::{literal, take_till};
+use winnow::{ModalResult, Parser};
 
-fn open_block<'a>(input: &mut &str, lit: &'static str) -> ModalResult<(), &'a str> {
-    // multispace0(input)?;
-    // literal('{').parse_next(input);
-    // multispace0(input)?;
-    cut_err((multispace0, '{', multispace0)).parse_next(input);
+fn open_block<'a>(
+    input: &mut &'a str,
+    lit: &'static str,
+) -> ModalResult<((), &'a str, &'a str, &'a str)> {
+    let (_, opening, _) = backtrack_err((multispace0, "{", multispace0))
+        .context(StrContext::Label("opening block"))
+        .context(StrContext::Expected(StrContextValue::Description("{")))
+        .parse_next(input)?;
 
-    cut_err(literal(lit))
+    let block_name = backtrack_err(literal(lit))
+        .context(StrContext::Label("block name"))
         .context(StrContext::Expected(StrContextValue::Description(lit)))
-        .parse_next(input);
-    
-    cut_err(multispace0).parse_next(input);
+        .parse_next(input)?;
 
-    Ok(())
+    let ws_after_block_name = backtrack_err(multispace0)
+        .context(StrContext::Label("white space after white block name"))
+        .parse_next(input)?;
+
+    Ok(((), opening, block_name, ws_after_block_name))
 }
 
 fn close_block(input: &mut &str) -> ModalResult<()> {
@@ -32,20 +38,21 @@ fn close_block(input: &mut &str) -> ModalResult<()> {
 }
 
 pub fn parse_version(input: &mut &str) -> ModalResult<String> {
-    open_block(input, "VERSION");
+    open_block(input, "VERSION")?;
 
     literal('=').parse_next(input)?;
     multispace0(input)?;
     let version = take_till(0.., '}').parse_next(input)?;
 
     close_block(input)?;
-    
+
     Ok(version.trim().to_owned())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use winnow::error::ErrMode;
 
     // VERSION BLOCK UNIT TESTS
 
@@ -75,14 +82,20 @@ mod tests {
 
     #[test]
     fn returns_matching_error_on_corrupted_version_block() {
-        let mut input = "{sVERSION=2.14}";
-        let expected = "2.14";
+        let mut input = "{VERxyzSION=2.14}";
 
-        match parse_version.parse_next(&mut input) {
-            Ok(_) => println!("Expected an error?"),
-            Err(err) => println!("{:?}", err), 
-        }
+        let err = parse_version.parse_next(&mut input).unwrap_err();
 
-        // assert_eq!(version, expected);
+        let has_expected_error = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => err.context().any(|ctx| {
+                matches!(
+                    ctx,
+                    StrContext::Expected(StrContextValue::Description("VERSION"))
+                )
+            }),
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert!(has_expected_error, "Expected VERSION error, got {:?}", err);
     }
 }
