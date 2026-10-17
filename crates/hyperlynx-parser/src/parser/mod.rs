@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::multispace0;
+use winnow::ascii::{digit1, multispace0};
 use winnow::combinator::{backtrack_err, peek};
 use winnow::error::{StrContext, StrContextValue};
-use winnow::token::{literal, one_of, take_till};
+use winnow::token::{literal, one_of};
 use winnow::{ModalResult, Parser};
 
 fn open_block<'a>(
@@ -49,7 +49,15 @@ pub fn parse_version(input: &mut &str) -> ModalResult<String> {
 
     literal('=').parse_next(input)?;
     multispace0(input)?;
-    let version = take_till(0.., '}').parse_next(input)?;
+
+    // ensure version is in form of d.d
+    let version = (digit1, literal('.'), digit1)
+        .take()
+        .context(StrContext::Label("value boundary"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "valid form of version value",
+        )))
+        .parse_next(input)?;
 
     close_block(input)?;
 
@@ -91,6 +99,10 @@ mod tests {
     #[test_case("{VERxyzSION=2.14}", StrContext::Expected(StrContextValue::Description("VERSION")); "block name corruption")]
     #[test_case("xyz{VERSION=2.14}", StrContext::Label("opening block"); "opening block corruption")]
     #[test_case("{VERSIONxyz=2.14}", StrContext::Label("block name boundary"); "opening block corruption")]
+    #[test_case("{VERSION=xyz2.14}", StrContext::Label("value boundary"); "before first digit corruption")]
+    #[test_case("{VERSION=2xyz.14}", StrContext::Label("value boundary"); "after first digit corruption")]
+    #[test_case("{VERSION=2xyz14}", StrContext::Label("value boundary"); "after first digit corruption")]
+    #[test_case("{VERSION=2.xyz14}", StrContext::Label("value boundary"); "before second digit corruption")]
     fn rejects_malformed_blocks(input: &str, expected: StrContext) {
         let mut input = input;
         let err = parse_version.parse_next(&mut input).unwrap_err();
