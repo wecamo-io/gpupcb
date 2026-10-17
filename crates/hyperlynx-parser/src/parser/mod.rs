@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::backtrack_err;
+use winnow::combinator::{backtrack_err, peek};
 use winnow::error::{StrContext, StrContextValue};
-use winnow::token::{literal, take_till};
+use winnow::token::{literal, one_of, take_till};
 use winnow::{ModalResult, Parser};
 
 fn open_block<'a>(
@@ -22,9 +22,16 @@ fn open_block<'a>(
         .context(StrContext::Expected(StrContextValue::Description(lit)))
         .parse_next(input)?;
 
-    let ws_after_block_name = backtrack_err(multispace0)
-        .context(StrContext::Label("white space after white block name"))
+    // applies one_of() parser without advancing the input
+    // it only checks if there is no malversation after block name
+    peek(one_of(['=', ' ', '\t', '\r', '\n']))
+        .context(StrContext::Label("block name boundary"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "valid character after block name",
+        )))
         .parse_next(input)?;
+
+    let ws_after_block_name = multispace0.parse_next(input)?;
 
     Ok(((), opening, block_name, ws_after_block_name))
 }
@@ -83,6 +90,7 @@ mod tests {
 
     #[test_case("{VERxyzSION=2.14}", StrContext::Expected(StrContextValue::Description("VERSION")); "block name corruption")]
     #[test_case("xyz{VERSION=2.14}", StrContext::Label("opening block"); "opening block corruption")]
+    #[test_case("{VERSIONxyz=2.14}", StrContext::Label("block name boundary"); "opening block corruption")]
     fn rejects_malformed_blocks(input: &str, expected: StrContext) {
         let mut input = input;
         let err = parse_version.parse_next(&mut input).unwrap_err();
