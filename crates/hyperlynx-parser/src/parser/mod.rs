@@ -52,6 +52,7 @@ pub fn parse_version(input: &mut &str) -> ModalResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
     use winnow::error::ErrMode;
 
     // VERSION BLOCK UNIT TESTS
@@ -80,19 +81,16 @@ mod tests {
         assert_eq!(version, expected);
     }
 
-    #[test]
-    fn returns_matching_error_on_corrupted_version_block() {
-        let mut input = "{VERxyzSION=2.14}";
-
+    #[test_case("{VERxyzSION=2.14}", StrContext::Expected(StrContextValue::Description("VERSION")); "block name corruption")]
+    #[test_case("xyz{VERSION=2.14}", StrContext::Label("opening block"); "opening block corruption")]
+    fn rejects_malformed_blocks(input: &str, expected: StrContext) {
+        let mut input = input;
         let err = parse_version.parse_next(&mut input).unwrap_err();
 
         let has_expected_error = match err {
-            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => err.context().any(|ctx| {
-                matches!(
-                    ctx,
-                    StrContext::Expected(StrContextValue::Description("VERSION"))
-                )
-            }),
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                err.context().any(|ctx| *ctx == expected)
+            }
             ErrMode::Incomplete(_) => todo!(),
         };
 
