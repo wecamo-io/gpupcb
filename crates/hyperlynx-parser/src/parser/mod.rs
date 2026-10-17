@@ -37,9 +37,10 @@ fn open_block<'a>(
 }
 
 fn close_block(input: &mut &str) -> ModalResult<()> {
-    multispace0(input)?;
-    literal("}").parse_next(input)?;
-    multispace0(input)?;
+    let (_, closing, _) = backtrack_err((multispace0, "}", multispace0))
+        .context(StrContext::Label("closing block"))
+        .context(StrContext::Expected(StrContextValue::Description("}")))
+        .parse_next(input)?;
 
     Ok(())
 }
@@ -103,6 +104,7 @@ mod tests {
     #[test_case("{VERSION=2xyz.14}", StrContext::Label("value boundary"); "after first digit corruption")]
     #[test_case("{VERSION=2xyz14}", StrContext::Label("value boundary"); "after first digit corruption")]
     #[test_case("{VERSION=2.xyz14}", StrContext::Label("value boundary"); "before second digit corruption")]
+    #[test_case("{VERSION=2.14xyz}", StrContext::Label("closing block"); "closing block corruption")]
     fn rejects_malformed_blocks(input: &str, expected: StrContext) {
         let mut input = input;
         let err = parse_version.parse_next(&mut input).unwrap_err();
