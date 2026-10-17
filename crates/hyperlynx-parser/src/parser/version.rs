@@ -8,7 +8,7 @@ use winnow::token::{literal};
 use winnow::{ModalResult, Parser};
 use crate::parser::utils::{open_block, close_block};
 
-pub fn parse_version(input: &mut &str) -> ModalResult<String> {
+pub fn parse_version_block(input: &mut &str) -> ModalResult<String> {
     open_block(input, "VERSION")?;
 
     literal('=').parse_next(input)?;
@@ -41,7 +41,7 @@ mod tests {
         let mut input = "{VERSION=2.14}";
         let expected = "2.14";
 
-        let version = parse_version.parse_next(&mut input).unwrap();
+        let version = parse_version_block.parse_next(&mut input).unwrap();
 
         assert_eq!(version, expected);
     }
@@ -55,7 +55,7 @@ mod tests {
         ";
         let expected = "2.14";
 
-        let version = parse_version.parse_next(&mut input).unwrap();
+        let version = parse_version_block.parse_next(&mut input).unwrap();
 
         assert_eq!(version, expected);
     }
@@ -70,7 +70,7 @@ mod tests {
     #[test_case("{VERSION=2.14xyz}", StrContext::Label("closing block"); "closing block corruption")]
     fn rejects_malformed_blocks(input: &str, expected: StrContext) {
         let mut input = input;
-        let err = parse_version.parse_next(&mut input).unwrap_err();
+        let err = parse_version_block.parse_next(&mut input).unwrap_err();
 
         let has_expected_error = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
@@ -87,7 +87,7 @@ mod tests {
     fn leaves_content_for_the_next_parser(input: &str, expected: &str) {
         let mut input = input;
 
-        let version = parse_version.parse_next(&mut input).unwrap();
+        let version = parse_version_block.parse_next(&mut input).unwrap();
 
         assert_eq!(version, "2.14");
         assert_eq!(input, expected);
