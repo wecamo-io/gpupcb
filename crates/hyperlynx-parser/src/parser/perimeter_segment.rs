@@ -99,18 +99,9 @@ mod tests {
         assert_eq!(perimeter_segment, expected);
     }
 
+    // X1 malformed cases
     #[test_case(
         "(PERIMETER_SEGMENT X1=xyz8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
-        StrContext::Label("perimeter segment X1 value"),
-        StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
-    )]
-    #[test_case(
-        "(PERIMETER_SEGMENT X1=8xyz.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
-        StrContext::Label("perimeter segment X1 value"),
-        StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
-    )]
-    #[test_case(
-        "(PERIMETER_SEGMENT X1=8.xyz415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
         StrContext::Label("perimeter segment X1 value"),
         StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
     )]
@@ -123,6 +114,54 @@ mod tests {
         "(PERIMETER_SEGMENT X1=8.415354331xyz Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
         StrContext::Label("perimeter segment X1 value"),
         StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+    )]
+    // Y1 malformed cases
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=xyz-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment Y1 value"),
+        StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.3343xyz21614 X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment Y1 value"),
+        StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614xyz X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment Y1 value"),
+        StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+    )]
+    // X2 malformed cases
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=xyz8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X2 value"),
+        StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.2511xyz81102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X2 value"),
+        StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102xyz Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X2 value"),
+        StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+    )]
+    // Y2 malformed cases
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=xyz-5.334321614)",
+        StrContext::Label("perimeter segment Y2 value"),
+        StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.3343xyz21614)",
+        StrContext::Label("perimeter segment Y2 value"),
+        StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614xyz)",
+        StrContext::Label("perimeter segment Y2 value"),
+        StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
     )]
     fn rejects_malformed_perimeter_row(
         input: &str,
