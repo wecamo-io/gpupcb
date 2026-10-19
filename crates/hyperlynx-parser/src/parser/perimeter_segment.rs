@@ -11,7 +11,7 @@ use winnow::error::{StrContext, StrContextValue};
 use crate::parser::utils::close_row;
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
-pub fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
+fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
     row_open(input, "PERIMETER_SEGMENT")?;
     multispace0(input)?;
 
@@ -59,16 +59,19 @@ pub fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSeg
 
 mod tests {
     use super::*;
+    use test_case::test_case;
 
-    #[test]
-    fn parses_single_perimeter_segment() {
-        let mut input = "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)";
-        let expected = PerimeterSegment {
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        PerimeterSegment {
             x1: 8.415354331,
             y1: -5.334321614,
             x2: 8.251181102,
             y2: -5.334321614,
-        };
+        }; "no whitespaces"
+    )]
+    fn parses_single_perimeter_segment(input: &str, expected: PerimeterSegment) {
+        let mut input = input;
 
         let perimeter_segment = parse_perimeter_segment_row(&mut input).unwrap();
     
