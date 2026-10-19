@@ -31,7 +31,8 @@ enum PolygonType {
     Pour,
 }
 
-struct PerimeterSegment {
+#[derive(Debug)]
+pub struct PerimeterSegment {
     x1: f64,
     x2: f64,
     y1: f64,
