@@ -4,7 +4,7 @@
 
 use winnow::ascii::{float, multispace0};
 use winnow::combinator::backtrack_err;
-use winnow::token::{literal};
+use winnow::token::{literal, take_while};
 use winnow::{ModalResult, Parser};
 use winnow::error::{StrContext, StrContextValue};
 
@@ -23,7 +23,8 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     literal('=').parse_next(input)?;
     multispace0(input)?;
     let x1: f64 = backtrack_err(
-        float
+        // for some reason float and terminated(float, multispace0) combinators doesn't work here
+        take_while(1.., |c: char| !c.is_whitespace()).parse_to()
     )
         .context(StrContext::Label("perimeter segment X1 value is not float"))
         .context(StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
@@ -104,6 +105,26 @@ mod tests {
 
     #[test_case(
         "(PERIMETER_SEGMENT X1=xyz8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X1 value is not float"),
+        StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8xyz.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X1 value is not float"),
+        StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.xyz415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X1 value is not float"),
+        StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.4153xyz54331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        StrContext::Label("perimeter segment X1 value is not float"),
+        StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331xyz Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
         StrContext::Label("perimeter segment X1 value is not float"),
         StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
     )]
