@@ -4,7 +4,7 @@
 
 use winnow::ascii::{multispace0};
 use winnow::combinator::{backtrack_err, peek};
-use winnow::token::{literal, one_of};
+use winnow::token::{literal, one_of, take_while};
 use winnow::{ModalResult, Parser};
 use winnow::error::{StrContext, StrContextValue};
 
@@ -75,4 +75,32 @@ pub fn close_row(input: &mut &str) -> ModalResult<()> {
         .parse_next(input)?;
 
     Ok(())
+}
+
+pub fn extract_float(
+    input: &mut &str,
+    key: &str,
+    key_error_label: &'static str,
+    key_error_description: &'static str,
+    value_error_label: &'static str,
+    value_error_description: &'static str,
+) -> ModalResult<f64> {
+    backtrack_err(literal(key))
+        .context(StrContext::Label(key_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(key_error_description)))
+        .parse_next(input)?;
+    multispace0(input)?;
+    literal('=').parse_next(input)?;
+    multispace0(input)?;
+    let value: f64 = backtrack_err(
+        // for some reason float and terminated(float, multispace0) combinators doesn't work here
+        take_while(1.., |c: char| !c.is_whitespace()).parse_to()
+    )
+        .context(StrContext::Label(value_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(value_error_description))
+    )
+        .parse_next(input)?;
+    multispace0(input)?;
+
+    Ok(value)
 }
