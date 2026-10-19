@@ -98,7 +98,7 @@ pub fn extract_float(
     multispace0(input)?;
     let value: f64 = backtrack_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
-        take_while(1.., |c: char| !c.is_whitespace()).parse_to()
+        take_while(1.., |c: char| !c.is_whitespace() && c != ')').parse_to()
     )
         .context(StrContext::Label(error_messages.value_error_label))
         .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
