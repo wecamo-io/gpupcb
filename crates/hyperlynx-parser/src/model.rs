@@ -31,12 +31,12 @@ enum PolygonType {
     Pour,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct PerimeterSegment {
-    x1: f64,
-    x2: f64,
-    y1: f64,
-    y2: f64,
+    pub x1: f64,
+    pub x2: f64,
+    pub y1: f64,
+    pub y2: f64,
 }
 
 struct Layer {
