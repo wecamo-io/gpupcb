@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{float, multispace0};
-use winnow::combinator::backtrack_err;
-use winnow::token::literal;
-use winnow::{ModalResult, Parser};
+use winnow::ModalResult;
 use winnow::error::{StrContext, StrContextValue};
 
 use crate::parser::utils::{ExtractValueErrorMessages, close_row, extract_float};
