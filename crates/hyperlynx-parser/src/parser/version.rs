@@ -79,7 +79,7 @@ mod tests {
             ErrMode::Incomplete(_) => todo!(),
         };
 
-        assert!(has_expected_error, "Expected VERSION error, got {:?}", err);
+        assert!(has_expected_error, "Expected UNITS error context {:?}, got {:?}", expected, err);
     }
 
     #[test_case("{VERSION=2.14}xyz", "xyz"; "no whitespace")]
