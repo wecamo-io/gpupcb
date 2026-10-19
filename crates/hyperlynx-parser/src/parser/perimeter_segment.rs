@@ -19,7 +19,9 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         .context(StrContext::Label("perimeter segment X1 value"))
         .context(StrContext::Expected(StrContextValue::Description("invalid X1 attribute name")))
         .parse_next(input)?;
+    multispace0(input)?;
     literal('=').parse_next(input)?;
+    multispace0(input)?;
     let x1: f64 = float.parse_next(input)?;
     multispace0(input)?;
 
@@ -27,7 +29,9 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         .context(StrContext::Label("perimeter segment Y1 value"))
         .context(StrContext::Expected(StrContextValue::Description("invalid Y1 attribute name")))
         .parse_next(input)?;
+    multispace0(input)?;
     literal('=').parse_next(input)?;
+    multispace0(input)?;
     let y1: f64 = float.parse_next(input)?;
     multispace0(input)?;
 
@@ -35,7 +39,9 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         .context(StrContext::Label("perimeter segment X2 value"))
         .context(StrContext::Expected(StrContextValue::Description("invalid X2 attribute name")))
         .parse_next(input)?;
+    multispace0(input)?;
     literal('=').parse_next(input)?;
+    multispace0(input)?;
     let x2: f64 = float.parse_next(input)?;
     multispace0(input)?;
 
@@ -43,7 +49,9 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         .context(StrContext::Label("perimeter segment Y2 value"))
         .context(StrContext::Expected(StrContextValue::Description("invalid Y2 attribute name")))
         .parse_next(input)?;
+    multispace0(input)?;
     literal('=').parse_next(input)?;
+    multispace0(input)?;
     let y2: f64 = float.parse_next(input)?;
     multispace0(input)?;
 
@@ -63,6 +71,15 @@ mod tests {
 
     #[test_case(
         "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        PerimeterSegment {
+            x1: 8.415354331,
+            y1: -5.334321614,
+            x2: 8.251181102,
+            y2: -5.334321614,
+        }; "no whitespaces"
+    )]
+    #[test_case(
+        " ( PERIMETER_SEGMENT\n X1\t=\n8.415354331 Y1\r=\n -5.334321614   X2 =\t8.251181102 Y2 =-5.334321614  ) \t",
         PerimeterSegment {
             x1: 8.415354331,
             y1: -5.334321614,
