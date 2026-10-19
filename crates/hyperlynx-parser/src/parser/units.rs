@@ -8,7 +8,7 @@ use winnow::{ModalResult, Parser};
 use crate::model::Units;
 use crate::parser::utils::{open_block, close_block};
 
-pub fn units_combinator(input: &mut &str) -> ModalResult<Units> {
+pub fn parse_units(input: &mut &str) -> ModalResult<Units> {
     open_block(input, "UNITS")?;
 
     literal('=').parse_next(input)?;
@@ -29,14 +29,15 @@ pub fn units_combinator(input: &mut &str) -> ModalResult<Units> {
 mod tests {
     use super::*;
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
     use crate::model::Units;
 
     #[test_case("{UNITS=ENGLISH LENGTH}", Units::English)]
     #[test_case("{UNITS=FRENCH LENGTH}", Units::WrongUnit(String::from("FRENCH LENGTH")))]
-    fn units_combinator_parses_value(input: &str, expected: Units) {
+    fn parses_units_block(input: &str, expected: Units) {
         let mut input = input;
 
-        let units = units_combinator.parse_next(&mut input).unwrap();
+        let units = parse_units.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
     }
@@ -46,12 +47,30 @@ mod tests {
         "{VERSION=2.14}",
         Units::English
     )]
-    fn units_combinator_leaves_further_content(input: &str, content_left: &str, expected: Units) {
+    fn leaves_content_for_the_next_parser(input: &str, content_left: &str, expected: Units) {
         let mut input = input;
 
-        let units = units_combinator.parse_next(&mut input).unwrap();
+        let units = parse_units.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
         assert_eq!(input, content_left);
+    }
+
+    #[test_case("xyz{UNITS=ENGLISH LENGTH}", StrContext::Label("opening block"); "opening block corruption")]
+    #[test_case("{UNITxyzS=ENGLISH LENGTH}", StrContext::Expected(StrContextValue::Description("UNITS")); "block name corruption")]
+    #[test_case("{UNITSxyz=ENGLISH LENGTH}", StrContext::Label("block name boundary"); "block name boundary corruption")]
+    #[test_case("{UNITS=ENGLISH LENGTH", StrContext::Label("closing block"); "closing block corruption")]
+    fn rejects_malformed_units_blocks(input: &str, expected: StrContext) {
+        let mut input = input;
+        let err = parse_units.parse_next(&mut input).unwrap_err();
+
+        let has_expected_error = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                err.context().any(|ctx| *ctx == expected)
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert!(has_expected_error, "Expected UNITS error context {:?}, got {:?}", expected, err);
     }
 }
