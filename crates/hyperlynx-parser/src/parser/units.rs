@@ -8,7 +8,7 @@ use winnow::{ModalResult, Parser};
 use crate::model::Units;
 use crate::parser::utils::{open_block, close_block};
 
-pub fn parse_units(input: &mut &str) -> ModalResult<Units> {
+pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
     open_block(input, "UNITS")?;
 
     literal('=').parse_next(input)?;
@@ -37,7 +37,7 @@ mod tests {
     fn parses_units_block(input: &str, expected: Units) {
         let mut input = input;
 
-        let units = parse_units.parse_next(&mut input).unwrap();
+        let units = parse_units_block.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
     }
@@ -50,7 +50,7 @@ mod tests {
     fn leaves_content_for_the_next_parser(input: &str, content_left: &str, expected: Units) {
         let mut input = input;
 
-        let units = parse_units.parse_next(&mut input).unwrap();
+        let units = parse_units_block.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
         assert_eq!(input, content_left);
@@ -62,7 +62,7 @@ mod tests {
     #[test_case("{UNITS=ENGLISH LENGTH", StrContext::Label("closing block"); "closing block corruption")]
     fn rejects_malformed_units_blocks(input: &str, expected: StrContext) {
         let mut input = input;
-        let err = parse_units.parse_next(&mut input).unwrap_err();
+        let err = parse_units_block.parse_next(&mut input).unwrap_err();
 
         let has_expected_error = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
