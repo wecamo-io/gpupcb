@@ -25,35 +25,38 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         },
     )?;
 
-    backtrack_err(literal("Y1"))
-        .context(StrContext::Label("perimeter segment Y1 value"))
-        .context(StrContext::Expected(StrContextValue::Description("invalid Y1 attribute name")))
-        .parse_next(input)?;
-    multispace0(input)?;
-    literal('=').parse_next(input)?;
-    multispace0(input)?;
-    let y1: f64 = float.parse_next(input)?;
-    multispace0(input)?;
+    let y1 = extract_float(
+        input,
+        "Y1",
+        ExtractValueErrorMessages {
+            key_error_label: "perimeter segment Y1 key",
+            key_error_description: "invalid Y1 key name",
+            value_error_label: "perimeter segment Y1 value",
+            value_error_description: "invalid Y1 attribute value",
+        },
+    )?;
 
-    backtrack_err(literal("X2"))
-        .context(StrContext::Label("perimeter segment X2 value"))
-        .context(StrContext::Expected(StrContextValue::Description("invalid X2 attribute name")))
-        .parse_next(input)?;
-    multispace0(input)?;
-    literal('=').parse_next(input)?;
-    multispace0(input)?;
-    let x2: f64 = float.parse_next(input)?;
-    multispace0(input)?;
+    let x2 = extract_float(
+        input,
+        "X2",
+        ExtractValueErrorMessages {
+            key_error_label: "perimeter segment X2 key",
+            key_error_description: "invalid X2 key name",
+            value_error_label: "perimeter segment X2 value",
+            value_error_description: "invalid X2 attribute value",
+        },
+    )?;
 
-    backtrack_err(literal("Y2"))
-        .context(StrContext::Label("perimeter segment Y2 value"))
-        .context(StrContext::Expected(StrContextValue::Description("invalid Y2 attribute name")))
-        .parse_next(input)?;
-    multispace0(input)?;
-    literal('=').parse_next(input)?;
-    multispace0(input)?;
-    let y2: f64 = float.parse_next(input)?;
-    multispace0(input)?;
+    let y2 = extract_float(
+        input,
+        "Y2",
+        ExtractValueErrorMessages {
+            key_error_label: "perimeter segment Y2 key",
+            key_error_description: "invalid Y2 key name",
+            value_error_label: "perimeter segment Y2 value",
+            value_error_description: "invalid Y2 attribute value",
+        },
+    )?;
 
     close_row(input)?;
 
