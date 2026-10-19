@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Units {
     English,
     WrongUnit(String),
