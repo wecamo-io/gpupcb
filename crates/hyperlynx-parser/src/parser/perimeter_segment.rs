@@ -8,7 +8,7 @@ use winnow::token::literal;
 use winnow::{ModalResult, Parser};
 use winnow::error::{StrContext, StrContextValue};
 
-use crate::parser::utils::{close_row, extract_float};
+use crate::parser::utils::{ExtractValueErrorMessages, close_row, extract_float};
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
 fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
@@ -17,10 +17,12 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let x1 = extract_float(
         input,
         "X1",
-        "perimeter segment X1 key",
-        "invalid X1 key name",
-        "perimeter segment X1 value",
-        "invalid X1 attribute value"
+        ExtractValueErrorMessages {
+            key_error_label: "perimeter segment X1 key",
+            key_error_description: "invalid X1 key name",
+            value_error_label: "perimeter segment X1 value",
+            value_error_description: "invalid X1 attribute value",
+        },
     )?;
 
     backtrack_err(literal("Y1"))
