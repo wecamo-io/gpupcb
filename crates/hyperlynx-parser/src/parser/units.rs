@@ -7,7 +7,7 @@ use winnow::token::{literal, take_till};
 use winnow::{ModalResult, Parser};
 use crate::parser::utils::{open_block, close_block};
 
-pub fn parse_units_block(input: &mut &str) -> ModalResult<String> {
+pub fn units_block(input: &mut &str) -> ModalResult<String> {
     open_block(input, "UNITS")?;
 
     literal('=').parse_next(input)?;
@@ -35,7 +35,7 @@ mod tests {
     fn parses_units_block(input: &str, expected: Units) {
         let mut input = input;
 
-        let units = parse_units_block.parse_next(&mut input).unwrap();
+        let units = units_block.parse_next(&mut input).unwrap();
     }
 
 }
