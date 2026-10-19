@@ -44,3 +44,35 @@ pub fn close_block(input: &mut &str) -> ModalResult<()> {
 
     Ok(())
 }
+
+pub fn row_open<'a>(input: &mut &str, lit: &'static str) -> ModalResult<()> {
+    backtrack_err((multispace0, "(", multispace0))
+        .context(StrContext::Label("opening row"))
+        .context(StrContext::Expected(StrContextValue::Description("(")))
+        .parse_next(input)?;
+
+    backtrack_err(literal(lit))
+        .context(StrContext::Label("row name"))
+        .context(StrContext::Expected(StrContextValue::Description(lit)))
+        .parse_next(input)?;
+
+    peek(one_of(['=', ' ', '\t', '\r', '\n']))
+        .context(StrContext::Label("block name boundary"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "valid character after row name",
+        )))
+        .parse_next(input)?;
+
+    multispace0.parse_next(input)?;
+
+    Ok(())
+}
+
+pub fn close_row(input: &mut &str) -> ModalResult<()> {
+    backtrack_err((multispace0, ")", multispace0))
+        .context(StrContext::Label("closing row"))
+        .context(StrContext::Expected(StrContextValue::Description(")")))
+        .parse_next(input)?;
+
+    Ok(())
+}
