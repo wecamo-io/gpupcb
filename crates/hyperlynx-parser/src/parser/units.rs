@@ -56,21 +56,45 @@ mod tests {
         assert_eq!(input, content_left);
     }
 
-    #[test_case("xyz{UNITS=ENGLISH LENGTH}", StrContext::Label("opening block"); "opening block corruption")]
-    #[test_case("{UNITxyzS=ENGLISH LENGTH}", StrContext::Expected(StrContextValue::Description("UNITS")); "block name corruption")]
-    #[test_case("{UNITSxyz=ENGLISH LENGTH}", StrContext::Label("block name boundary"); "block name boundary corruption")]
-    #[test_case("{UNITS=ENGLISH LENGTH", StrContext::Label("closing block"); "closing block corruption")]
-    fn rejects_malformed_units_blocks(input: &str, expected: StrContext) {
+    #[test_case(
+        "xyz{UNITS=ENGLISH LENGTH}",
+        StrContext::Label("opening block"),
+        StrContext::Expected(StrContextValue::Description("{"));
+        "opening block corruption"
+    )]
+    #[test_case(
+        "{UNITxyzS=ENGLISH LENGTH}",
+        StrContext::Label("block name"),
+        StrContext::Expected(StrContextValue::Description("UNITS"));
+        "block name corruption"
+    )]
+    #[test_case(
+        "{UNITSxyz=ENGLISH LENGTH}",
+        StrContext::Label("block name boundary"),
+        StrContext::Expected(StrContextValue::Description("valid character after block name"));
+        "block name boundary corruption"
+    )]
+    #[test_case(
+        "{UNITS=ENGLISH LENGTH",
+        StrContext::Label("closing block"),
+        StrContext::Expected(StrContextValue::Description("}"));
+        "closing block corruption"
+    )]
+    fn rejects_malformed_units_blocks(input: &str, expected_label: StrContext, expected_description: StrContext) {
         let mut input = input;
         let err = parse_units_block.parse_next(&mut input).unwrap_err();
 
-        let has_expected_error = match err {
+        let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                err.context().any(|ctx| *ctx == expected)
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                
+                errors   
             }
             ErrMode::Incomplete(_) => todo!(),
         };
 
-        assert!(has_expected_error, "Expected UNITS error context {:?}, got {:?}", expected, err);
+        assert_eq!(*errors.0, expected_label);
+        assert_eq!(*errors.1, expected_description);
     }
 }
