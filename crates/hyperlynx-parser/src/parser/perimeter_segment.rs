@@ -170,13 +170,15 @@ mod tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let errors = err.context().collect::<Vec<_>>();
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                
                 errors                
             }
             ErrMode::Incomplete(_) => todo!(),
         };
 
-        assert_eq!(*errors[0], expected_label);
-        assert_eq!(*errors[1], expected_description);
+        assert_eq!(*errors.0, expected_label);
+        assert_eq!(*errors.1, expected_description);
     }
 }
