@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ModalResult;
+use winnow::token::take_until;
+use winnow::{ModalResult, Parser};
+use winnow::ascii::multispace0;
+use winnow::combinator::{delimited, repeat};
 use winnow::error::{StrContext, StrContextValue};
 
-use crate::parser::utils::{ExtractValueErrorMessages, close_row, extract_float};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float, open_block};
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
 fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
@@ -63,6 +66,25 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         x2,
         y2,
     })
+}
+
+fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
+    open_block(input, "BOARD")?;
+
+    multispace0(input)?;
+
+    delimited('"', take_until(0.., '"'), '"')
+        .parse_next(input)?;
+
+    multispace0(input)?;
+
+    let perimeter_segments: Vec<PerimeterSegment> = repeat(0.., parse_perimeter_segment_row).parse_next(input)?;
+
+    multispace0(input)?;
+
+    close_block(input)?;
+
+    Ok(perimeter_segments)
 }
 
 mod tests {
@@ -180,5 +202,24 @@ mod tests {
 
         assert_eq!(*errors.0, expected_label);
         assert_eq!(*errors.1, expected_description);
+    }
+
+    #[test]
+    fn parse_board_block_parses() {
+        let mut input = r#"{BOARD "/path/to/file/example.kicad_pcb"
+            (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)
+            (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)
+            (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)
+            (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)
+            (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)
+            (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)
+            (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)
+            (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)
+        }"#;
+        let expected_length: usize = 8;
+
+        let perimeter_segments = parse_board_block.parse_next(&mut input).unwrap();
+
+        assert_eq!(perimeter_segments.len(), expected_length);
     }
 }
