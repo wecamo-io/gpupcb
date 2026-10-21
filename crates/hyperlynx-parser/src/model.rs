@@ -49,9 +49,10 @@ pub struct Layer {
     pub material: LayerMaterial,
 }
 
-struct Device {
-    reference: String,
-    layer: String,
+#[derive(Debug, PartialEq)]
+pub struct Device {
+    pub reference: String,
+    pub layer: String,
 }
 
 struct Pad {
