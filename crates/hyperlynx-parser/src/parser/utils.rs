@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::{multispace0};
-use winnow::combinator::{backtrack_err, peek};
-use winnow::token::{literal, one_of, take_while};
+use winnow::combinator::{alt, backtrack_err, delimited, peek};
+use winnow::token::{literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
 use winnow::error::{StrContext, StrContextValue};
 
@@ -107,4 +107,34 @@ pub fn extract_float(
     multispace0(input)?;
 
     Ok(value)
+}
+
+pub fn extract_string(
+    input: &mut &str,
+    key: &str,
+    error_messages: ExtractValueErrorMessages
+) -> ModalResult<String> {
+    backtrack_err(literal(key))
+        .context(StrContext::Label(error_messages.key_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(error_messages.key_error_description)))
+        .parse_next(input)?;
+    multispace0(input)?;
+    literal('=').parse_next(input)?;
+    multispace0(input)?;
+
+    let value: &str = backtrack_err(
+        alt((
+            // quoted string parsing
+            delimited('"', take_until(0.., '"'), '"'),
+            // unquoted string parsing
+            take_till(1.., |c: char| c.is_whitespace() || c == ')' || c == '}'),
+        ))
+    )
+        .context(StrContext::Label(error_messages.value_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
+    )
+        .parse_next(input)?;
+    multispace0(input)?;
+
+    Ok(String::from(value))
 }
