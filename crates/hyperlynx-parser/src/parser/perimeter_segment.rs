@@ -87,6 +87,7 @@ fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
     Ok(perimeter_segments)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use winnow::error::ErrMode;
