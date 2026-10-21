@@ -21,7 +21,6 @@ pub enum LayerMaterial {
     FR4,
     PR1080,
     PR2116,
-    UnknownMaterial(String),
 }
 
 enum PadShape {
