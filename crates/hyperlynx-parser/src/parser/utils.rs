@@ -84,15 +84,30 @@ pub fn close_row(input: &mut &str) -> ModalResult<()> {
     Ok(())
 }
 
+fn extract_key(
+    input: &mut &str,
+    key: &str,
+    error_messages: &ExtractValueErrorMessages,
+) -> ModalResult<()> {
+    (
+        literal(key),
+        peek(one_of(['=', ' ', '\t', '\r', '\n'])),
+    )
+        .void()  // check if unwanted characters are present after key name
+        .context(StrContext::Label(error_messages.key_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(
+            error_messages.key_error_description,
+        ))
+    )
+        .parse_next(input)
+}
+
 pub fn extract_float(
     input: &mut &str,
     key: &str,
     error_messages: ExtractValueErrorMessages
 ) -> ModalResult<f64> {
-    backtrack_err(literal(key))
-        .context(StrContext::Label(error_messages.key_error_label))
-        .context(StrContext::Expected(StrContextValue::Description(error_messages.key_error_description)))
-        .parse_next(input)?;
+    extract_key(input, key, &error_messages)?;
     multispace0(input)?;
     literal('=').parse_next(input)?;
     multispace0(input)?;
@@ -114,10 +129,7 @@ pub fn extract_string(
     key: &str,
     error_messages: ExtractValueErrorMessages
 ) -> ModalResult<String> {
-    backtrack_err(literal(key))
-        .context(StrContext::Label(error_messages.key_error_label))
-        .context(StrContext::Expected(StrContextValue::Description(error_messages.key_error_description)))
-        .parse_next(input)?;
+    extract_key(input, key, &error_messages)?;
     multispace0(input)?;
     literal('=').parse_next(input)?;
     multispace0(input)?;
