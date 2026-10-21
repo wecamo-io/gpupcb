@@ -423,6 +423,17 @@ mod tests {
         StrContext::Label("signal M key"),
         StrContext::Expected(StrContextValue::Description("invalid M key name"))
     )]
+    // P attribute malformation
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 xyzP=0 C=1.724e-08 L="F.Cu" xyzM=COPPER)"#,
+        StrContext::Label("signal P key"),
+        StrContext::Expected(StrContextValue::Description("invalid P key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 Pxyz=0 C=1.724e-08 L="F.Cu" Mxyz=COPPER)"#,
+        StrContext::Label("signal P key"),
+        StrContext::Expected(StrContextValue::Description("invalid P key name"))
+    )]
     fn rejects_malformed_layer_row(
         input: &str,
         expected_label: StrContext,
