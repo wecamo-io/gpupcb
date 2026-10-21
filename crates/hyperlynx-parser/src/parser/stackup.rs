@@ -1,7 +1,7 @@
 use winnow::combinator::{alt, peek, repeat};
 use winnow::token::literal;
 use winnow::{ModalResult, Parser};
-use winnow::error::{StrContext, StrContextValue};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float, extract_string, open_block, row_open};
@@ -60,7 +60,13 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             "FR4" => LayerMaterial::FR4,
             "PR1080" => LayerMaterial::PR1080,
             "PR2116" => LayerMaterial::PR2116,
-            other => LayerMaterial::UnknownMaterial(String::from(other)),
+            _ => {
+                let mut err = ContextError::new();
+                err.push(StrContext::Label("dielectric M value"));
+                err.push(StrContext::Expected(StrContextValue::Description("invalid M attribute value")));
+
+                Err(ErrMode::Backtrack(err))
+            }?
         }
     };
 
@@ -135,7 +141,13 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
-            other => LayerMaterial::UnknownMaterial(String::from(format!("Material {other} is not valid for Signal layer"))),
+            _ => {
+                let mut err = ContextError::new();
+                err.push(StrContext::Label("signal M value"));
+                err.push(StrContext::Expected(StrContextValue::Description("invalid M attribute value")));
+
+                Err(ErrMode::Backtrack(err))
+            }?
         }
     };
 
@@ -223,15 +235,6 @@ mod tests {
             material: LayerMaterial::PR2116
         }
     )]
-    #[test_case(
-        r#"(DIELECTRIC T=0.001 C=3.8 L="EXOTIC" M=CUSTOM_FOAM)"#,
-        Layer {
-            layer_type: LayerType::Dielectric { dielectric_constant: 3.8 },
-            thickness: 0.001,
-            layer_name: String::from("EXOTIC"),
-            material: LayerMaterial::UnknownMaterial(String::from("CUSTOM_FOAM"))
-        }
-    )]
     fn parses_dielectric_layer(input: &str, expected: Layer) {
         let mut input = input;
         
@@ -256,15 +259,6 @@ mod tests {
             thickness: 0.00137795,
             layer_name: String::from("B.Cu"),
             material: LayerMaterial::COPPER
-        }
-    )]
-    #[test_case(
-        r#"(SIGNAL T=0.000708661 P=1 C=2.1e-08 L="F.Cu" M="Solder Mask")"#,
-        Layer {
-            layer_type: LayerType::Signal { resistivity: 2.1e-08, plating_thickness: 1.0 },
-            thickness: 0.000708661,
-            layer_name: String::from("F.Cu"),
-            material: LayerMaterial::UnknownMaterial(String::from("Material Solder Mask is not valid for Signal layer"))
         }
     )]
     fn parses_signal_layer(input: &str, expected: Layer) {
@@ -433,6 +427,100 @@ mod tests {
         r#"(SIGNAL T=0.00137795 Pxyz=0 C=1.724e-08 L="F.Cu" Mxyz=COPPER)"#,
         StrContext::Label("signal P key"),
         StrContext::Expected(StrContextValue::Description("invalid P key name"))
+    )]
+    // T attribute value malformation
+    #[test_case(
+        r#"(DIELECTRIC T=xyz0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric T value"),
+        StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000xyz393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric T value"),
+        StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701xyz C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric T value"),
+        StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=xyz0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal T value"),
+        StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.001xyz37795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal T value"),
+        StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795xyz P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal T value"),
+        StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+    )]
+    // C attribute value malformation
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=xyz3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric C value"),
+        StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.xyz3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric C value"),
+        StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3xyz L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric C value"),
+        StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=xyz1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal C value"),
+        StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724xyz e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal C value"),
+        StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08xyz L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal C value"),
+        StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+    )]
+    // M attribute value malformation
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M=xyz"Solder Mask")"#,
+        StrContext::Label("dielectric M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder xyzMask")"#,
+        StrContext::Label("dielectric M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=xyzCOPPER)"#,
+        StrContext::Label("signal M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COxyzPPER)"#,
+        StrContext::Label("signal M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    // P attribute value malformation (SIGNAL only)
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=xyz0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal P value"),
+        StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0xyz C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal P value"),
+        StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
     )]
     fn rejects_malformed_layer_row(
         input: &str,
