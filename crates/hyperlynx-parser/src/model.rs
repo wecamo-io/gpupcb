@@ -8,13 +8,13 @@ pub enum Units {
     WrongUnit(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LayerType {
     Dielectric { dielectric_constant: f64 },
     Signal { resistivity: f64 },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LayerMaterial {
     SolderMask,
     COPPER,
@@ -42,7 +42,7 @@ pub struct PerimeterSegment {
     pub y2: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Layer {
     pub layer_type: LayerType,
     pub thickness: f64,
