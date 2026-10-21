@@ -522,6 +522,17 @@ mod tests {
         StrContext::Label("signal P value"),
         StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
     )]
+    // closing parenthesis ')'
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask" xyz)"#,
+        StrContext::Label("closing row"),
+        StrContext::Expected(StrContextValue::Description(")"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER xyz)"#,
+        StrContext::Label("closing row"),
+        StrContext::Expected(StrContextValue::Description(")"))
+    )]
     fn rejects_malformed_layer_row(
         input: &str,
         expected_label: StrContext,
