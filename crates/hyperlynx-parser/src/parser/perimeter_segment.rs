@@ -108,7 +108,7 @@ mod tests {
             y1: -5.334321614,
             x2: 8.251181102,
             y2: -5.334321614,
-        }; "no whitespaces"
+        }; "whitespaces present "
     )]
     fn parses_single_perimeter_segment(input: &str, expected: PerimeterSegment) {
         let mut input = input;
