@@ -1,5 +1,7 @@
-use winnow::combinator::{alt, repeat};
+use winnow::combinator::{alt, peek, repeat};
+use winnow::token::literal;
 use winnow::{ModalResult, Parser};
+use winnow::error::{StrContext, StrContextValue};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float, extract_string, open_block, row_open};
@@ -147,8 +149,26 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     })
 }
 
+// use conditions instead of winnow::alt due to wrong error context
+// for any case other than SIGNAL or DIELECTRIC run alt()
 fn parse_layer(input: &mut &str) -> ModalResult<Layer> {
-    alt((dielectric, signal)).parse_next(input)
+    // see what is the layer's type with winnow::peek 
+    // this does not mutate the imput
+    let is_signal: ModalResult<&str> =
+        peek(literal("(SIGNAL")).parse_next(input);
+
+    if is_signal.is_ok() {
+        signal.parse_next(input)
+    } else {
+        let is_dielectric: ModalResult<&str> =
+            peek(literal("(DIELECTRIC")).parse_next(input);
+
+        if is_dielectric.is_ok() {
+            dielectric.parse_next(input)
+        } else {
+            alt((dielectric, signal)).parse_next(input)
+        }
+    }
 }
 
 pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
@@ -164,6 +184,7 @@ pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use winnow::error::ErrMode;
     use test_case::test_case;
 
     #[test_case(
@@ -280,5 +301,85 @@ mod tests {
 
         // leaves further input
         assert_eq!(input, expected_further_input);
+    }
+
+    #[test_case(
+        r#"xyz(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("opening row"),
+        StrContext::Expected(StrContextValue::Description("("))
+    )]
+    // row name malformations
+    #[test_case(
+        r#"(xyzDIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("row name"),
+        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+    )]
+    #[test_case(
+        r#"(DIELExyzCTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("row name"),
+        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+    )]
+    #[test_case(
+        r#"(DIELECTRICxyz T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("block name boundary"),
+        StrContext::Expected(StrContextValue::Description("valid character after row name"))
+    )]
+    #[test_case(
+        r#"(xyzSIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("row name"),
+        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+    )]
+    #[test_case(
+        r#"(SIGxyzNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("row name"),
+        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+    )]
+    #[test_case(
+        r#"(SIGNALxyz T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("block name boundary"),
+        StrContext::Expected(StrContextValue::Description("valid character after row name"))
+    )]
+    // T attribute malformation
+    #[test_case(
+        r#"(DIELECTRIC xyzT=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric T key"),
+        StrContext::Expected(StrContextValue::Description("invalid T key name"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC Txyz=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric T key"),
+        StrContext::Expected(StrContextValue::Description("invalid T key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL xyzT=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal T key"),
+        StrContext::Expected(StrContextValue::Description("invalid T key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL Txyz=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal T key"),
+        StrContext::Expected(StrContextValue::Description("invalid T key name"))
+    )]
+    fn rejects_malformed_layer_row(
+        input: &str,
+        expected_label: StrContext,
+        expected_description: StrContext
+    ) {
+        let mut input = input;
+        let err = parse_layer(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                
+                errors                
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        println!("{:?}", errors);
+        assert_eq!(*errors.0, expected_label);
+        assert_eq!(*errors.1, expected_description);
     }
 }
