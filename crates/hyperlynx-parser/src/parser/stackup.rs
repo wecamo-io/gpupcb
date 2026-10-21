@@ -1,7 +1,8 @@
+use winnow::combinator::{alt, repeat};
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
-use crate::parser::utils::{ExtractValueErrorMessages, close_row, extract_float, extract_string, row_open};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float, extract_string, open_block, row_open};
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "DIELECTRIC")?;
@@ -146,6 +147,20 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     })
 }
 
+fn parse_layer(input: &mut &str) -> ModalResult<Layer> {
+    alt((dielectric, signal)).parse_next(input)
+}
+
+pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
+    open_block(input, "STACKUP")?;
+
+    let layers: Vec<Layer> = repeat(0.., parse_layer).parse_next(input)?;
+
+    close_block(input)?;
+
+    Ok(layers)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,7 +250,35 @@ mod tests {
         let mut input = input;
 
         let signal_layer = signal.parse_next(&mut input).unwrap();
-        println!("{:?}", signal_layer);
+
         assert_eq!(signal_layer, expected);
+    }
+
+    #[test]
+    fn parses_stackup_block() {
+        let mut input = r#"{STACKUP
+  (DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")
+  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)
+  (DIELECTRIC T=0.0594488 C=4.5 L="DE_F.Cu" M="FR4")
+  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="B.Cu" M=COPPER)
+  (DIELECTRIC T=0.000393701 C=3.3 L="B.Mask" M="Solder Mask")
+} some_further_input"#;
+        let expected_signals_length: usize = 2;
+        let expected_dielectrics_length: usize = 3;
+        let expected_further_input = "some_further_input";
+
+        let layers = parse_stackup_block(&mut input).unwrap();
+
+        let (signals, dielectrics): (Vec<_>, Vec<_>) = layers
+            .into_iter()
+            .partition(
+                |l| matches!(l.layer_type, LayerType::Signal { resistivity: _, plating_thickness: _ })
+            );
+
+        assert_eq!(expected_signals_length, signals.len());
+        assert_eq!(expected_dielectrics_length, dielectrics.len());
+
+        // leaves further input
+        assert_eq!(input, expected_further_input);
     }
 }
