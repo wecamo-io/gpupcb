@@ -71,6 +71,81 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     })
 }
 
+fn signal(input: &mut &str) -> ModalResult<Layer> {
+    row_open(input, "SIGNAL")?;
+
+    let thickness = extract_float(
+        input,
+        "T",
+        ExtractValueErrorMessages {
+            key_error_label: "signal T key",
+            key_error_description: "invalid T key name",
+            value_error_label: "signal T value",
+            value_error_description: "invalid T attribute value",
+        }
+    )?;
+
+    let plating_thickness = extract_float(
+        input,
+        "P",
+        ExtractValueErrorMessages {
+            key_error_label: "signal P key",
+            key_error_description: "invalid P key name",
+            value_error_label: "signal P value",
+            value_error_description: "invalid P attribute value",
+        }
+    )?;
+
+    let resistivity = extract_float(
+        input,
+        "C",
+        ExtractValueErrorMessages {
+            key_error_label: "signal C key",
+            key_error_description: "invalid C key name",
+            value_error_label: "signal C value",
+            value_error_description: "invalid C attribute value",
+        }
+    )?;
+
+    let layer_name = extract_string(
+        input,
+        "L",
+        ExtractValueErrorMessages {
+            key_error_label: "signal L key",
+            key_error_description: "invalid L key name",
+            value_error_label: "signal L value",
+            value_error_description: "invalid L attribute value",
+        }
+    )?;
+
+    let material = {
+        let m = extract_string(
+            input,
+            "M",
+            ExtractValueErrorMessages {
+                key_error_label: "signal M key",
+                key_error_description: "invalid M key name",
+                value_error_label: "signal M value",
+                value_error_description: "invalid M attribute value",
+            }
+        ).unwrap();
+
+        match m.as_str() {
+            "COPPER" => LayerMaterial::COPPER,
+            other => LayerMaterial::UnknownMaterial(String::from(format!("Material {other} is not valid for Signal layer"))),
+        }
+    };
+
+    close_row(input)?;
+
+    Ok(Layer {
+        layer_type: LayerType::Signal { resistivity, plating_thickness },
+        thickness,
+        layer_name: String::from(layer_name),
+        material
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,5 +202,40 @@ mod tests {
         let dielectric_layer = dielectric.parse_next(&mut input).unwrap();
 
         assert_eq!(dielectric_layer, expected);
+    }
+
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        Layer {
+            layer_type: LayerType::Signal { resistivity: 1.724e-08, plating_thickness: 0.0 },
+            thickness: 0.00137795,
+            layer_name: String::from("F.Cu"),
+            material: LayerMaterial::COPPER
+        }
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="B.Cu" M=COPPER)"#,
+        Layer {
+            layer_type: LayerType::Signal { resistivity: 1.724e-08, plating_thickness: 0.0 },
+            thickness: 0.00137795,
+            layer_name: String::from("B.Cu"),
+            material: LayerMaterial::COPPER
+        }
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.000708661 P=1 C=2.1e-08 L="F.Cu" M="Solder Mask")"#,
+        Layer {
+            layer_type: LayerType::Signal { resistivity: 2.1e-08, plating_thickness: 1.0 },
+            thickness: 0.000708661,
+            layer_name: String::from("F.Cu"),
+            material: LayerMaterial::UnknownMaterial(String::from("Material Solder Mask is not valid for Signal layer"))
+        }
+    )]
+    fn parses_signal_layer(input: &str, expected: Layer) {
+        let mut input = input;
+
+        let signal_layer = signal.parse_next(&mut input).unwrap();
+        println!("{:?}", signal_layer);
+        assert_eq!(signal_layer, expected);
     }
 }
