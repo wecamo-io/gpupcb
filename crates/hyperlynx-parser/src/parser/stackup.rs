@@ -52,7 +52,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
                 value_error_label: "dielectric M value",
                 value_error_description: "invalid M attribute value",
             }
-        ).unwrap();
+        )?;
 
         match m.as_str() {
             "Solder Mask" => LayerMaterial::SolderMask,
@@ -131,7 +131,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
                 value_error_label: "signal M value",
                 value_error_description: "invalid M attribute value",
             }
-        ).unwrap();
+        )?;
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
@@ -360,13 +360,76 @@ mod tests {
         StrContext::Label("signal T key"),
         StrContext::Expected(StrContextValue::Description("invalid T key name"))
     )]
+    // C attribute malformation
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 xyzC=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric C key"),
+        StrContext::Expected(StrContextValue::Description("invalid C key name"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 Cxyz=3.3 L="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric C key"),
+        StrContext::Expected(StrContextValue::Description("invalid C key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 xyzC=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal C key"),
+        StrContext::Expected(StrContextValue::Description("invalid C key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 Cxyz=1.724e-08 L="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal C key"),
+        StrContext::Expected(StrContextValue::Description("invalid C key name"))
+    )]
+    // L attribute malformation
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 xyzL="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 Lxyz="F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 xyzL="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 Lxyz="F.Cu" M=COPPER)"#,
+        StrContext::Label("signal L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+    )]
+    // M attribute malformation
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" xyzM="Solder Mask")"#,
+        StrContext::Label("dielectric M key"),
+        StrContext::Expected(StrContextValue::Description("invalid M key name"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" Mxyz="Solder Mask")"#,
+        StrContext::Label("dielectric M key"),
+        StrContext::Expected(StrContextValue::Description("invalid M key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" xyzM=COPPER)"#,
+        StrContext::Label("signal M key"),
+        StrContext::Expected(StrContextValue::Description("invalid M key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" Mxyz=COPPER)"#,
+        StrContext::Label("signal M key"),
+        StrContext::Expected(StrContextValue::Description("invalid M key name"))
+    )]
     fn rejects_malformed_layer_row(
         input: &str,
         expected_label: StrContext,
         expected_description: StrContext
     ) {
         let mut input = input;
-        let err = parse_layer(&mut input).unwrap_err();
+        let err = parse_layer.parse_next(&mut input).unwrap_err();
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
@@ -378,7 +441,6 @@ mod tests {
             ErrMode::Incomplete(_) => todo!(),
         };
 
-        println!("{:?}", errors);
         assert_eq!(*errors.0, expected_label);
         assert_eq!(*errors.1, expected_description);
     }
