@@ -1,7 +1,8 @@
 use winnow::{ModalResult, Parser};
+use winnow::combinator::repeat;
 
 use crate::model::Device;
-use crate::parser::utils::{ExtractValueErrorMessages, close_row, extract_string, row_open};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_string, open_block, row_open};
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     row_open(input, "?")?;
@@ -36,6 +37,16 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     })
 }
 
+pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
+    open_block(input, "DEVICES")?;
+
+    let devices: Vec<Device> = repeat(0.., parse_device_row).parse_next(input)?;
+
+    close_block(input)?;
+
+    Ok(devices)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,5 +75,25 @@ mod tests {
         let device = parse_device_row.parse_next(&mut input).unwrap();
 
         assert_eq!(device, expected);
+    }
+
+    #[test]
+    fn parses_devices_block() {
+        let mut input = "{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n  (? REF=\"D1\" L=\"F.Cu\")\n  (? REF=\"C3\" L=\"F.Cu\")\n  (? REF=\"U3\" L=\"F.Cu\")\n  (? REF=\"SW1\" L=\"B.Cu\")\n}";
+        let expected = vec![
+            Device { reference: String::from("R3"), layer: String::from("F.Cu") },
+            Device { reference: String::from("D1"), layer: String::from("F.Cu") },
+            Device { reference: String::from("C3"), layer: String::from("F.Cu") },
+            Device { reference: String::from("U3"), layer: String::from("F.Cu") },
+            Device { reference: String::from("SW1"), layer: String::from("B.Cu") },
+        ];
+
+        let devices = parse_devices_block.parse_next(&mut input).unwrap();
+
+        assert_eq!(devices.len(), expected.len());
+
+        for (i, device) in devices.iter().enumerate() {
+            assert_eq!(*device, expected[i]);
+        }
     }
 }
