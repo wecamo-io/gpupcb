@@ -50,7 +50,7 @@ pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winnow::error::ErrMode;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
     use test_case::test_case;
 
     #[test_case(
@@ -95,5 +95,84 @@ mod tests {
         for (i, device) in devices.iter().enumerate() {
             assert_eq!(*device, expected[i]);
         }
+    }
+
+    #[test_case(
+        r#"xyz(? REF="R3" L="F.Cu")"#,
+        (
+        StrContext::Label("opening row"),
+        StrContext::Expected(StrContextValue::Description("("))
+        )
+    )]
+    #[test_case(
+        r#"(xyz? REF="R3" L="F.Cu")"#,
+        (
+        StrContext::Label("row name"),
+        StrContext::Expected(StrContextValue::Description("?"))
+        )
+    )]
+    #[test_case(
+        r#"(?xyz REF="R3" L="F.Cu")"#,
+        (
+        StrContext::Label("block name boundary"),
+        StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        )
+    )]
+    // REF attribute malversations
+    #[test_case(
+        r#"(? xyzREF="R3" L="F.Cu")"#,
+        (
+        StrContext::Label("device REF key"),
+        StrContext::Expected(StrContextValue::Description("invalid REF key name"))
+        )
+    )]
+    #[test_case(
+        r#"(? REFxyz="R3" L="F.Cu")"#,
+        (
+        StrContext::Label("device REF key"),
+        StrContext::Expected(StrContextValue::Description("invalid REF key name"))
+        )
+    )]
+    // L attribute malversations
+    #[test_case(
+        r#"(? REF="R3" xyzL="F.Cu")"#,
+        (
+        StrContext::Label("device L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        )
+    )]
+    #[test_case(
+        r#"(? REF="R3" Lxyz="F.Cu")"#,
+        (
+        StrContext::Label("device L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        )
+    )]
+    #[test_case(
+        r#"(? REF="R3" L="F.Cu" xyz)"#,
+        (
+        StrContext::Label("closing row"),
+        StrContext::Expected(StrContextValue::Description(")"))
+        )
+    )]
+    fn rejects_malformed_device_row(
+        input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let mut input = input;
+        let err = parse_device_row.parse_next(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                
+                errors                
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
     }
 }
