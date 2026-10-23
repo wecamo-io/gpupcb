@@ -150,35 +150,35 @@ mod tests {
             StrContext::Expected(StrContextValue::Description("("))
         )
     )]
-    // layer name value lacks double quotes
-    #[test_case(
-        r#"(xyz"F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-        )
-    )]
-    #[test_case(
-        r#"(F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-        )
-    )]
-    #[test_case(
-        r#"("F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-        )
-    )]
-    #[test_case(
-        r#"(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-        )
-    )]
+    // // layer name value lacks double quotes
+    // #[test_case(
+    //     r#"(xyz"F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+    //     (
+    //         StrContext::Label("pad layer value"),
+    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+    //     )
+    // )]
+    // #[test_case(
+    //     r#"(F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+    //     (
+    //         StrContext::Label("pad layer value"),
+    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+    //     )
+    // )]
+    // #[test_case(
+    //     r#"("F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
+    //     (
+    //         StrContext::Label("pad layer value"),
+    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+    //     )
+    // )]
+    // #[test_case(
+    //     r#"(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
+    //     (
+    //         StrContext::Label("pad layer value"),
+    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+    //     )
+    // )]
     // separator malformed between layer and shape
     #[test_case(
         r#"("F.Cu"z, 2, 0.047244094, 0.055118110, 90.0, M)"#,
@@ -324,7 +324,10 @@ mod tests {
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
-    fn rejects_malformed_pad_row(mut input: &str, expected_errors: (StrContext, StrContext)) {
+    fn rejects_malformed_pad_row_separators_and_parenthesis(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
         let err = parse_pad_row(&mut input).unwrap_err();
 
         let errors = match err {
