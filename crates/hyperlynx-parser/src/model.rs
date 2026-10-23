@@ -65,10 +65,11 @@ pub struct Pad {
     pub angle: f64,
 }
 
-struct Padstack {
-    id: u32,
-    drill: f64,
-    pads: Vec<Pad>,
+#[derive(Debug, PartialEq)]
+pub struct Padstack {
+    pub id: u32,
+    pub drill: f64,
+    pub pads: Vec<Pad>,
 }
 
 struct Pin {
