@@ -2,14 +2,17 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::digit1;
-use winnow::combinator::{backtrack_err, delimited};
-use winnow::error::{ErrMode, ContextError, StrContext, StrContextValue};
+use winnow::ascii::{dec_uint, digit1};
+use winnow::combinator::{backtrack_err, delimited, repeat};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::{literal, take_until};
 use winnow::{ModalResult, Parser};
 
-use crate::model::{Pad, PadShape};
-use crate::parser::utils::{close_row, extract_float_value, row_open, ExtractValueErrorMessages};
+use crate::model::{Pad, PadShape, Padstack};
+use crate::parser::utils::{
+    close_block, close_row, extract_float_value, extract_unsigned_integer_entry, open_block,
+    row_open, ExtractEntryErrorMessages, ExtractValueErrorMessages,
+};
 
 fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<()> {
     let (separator, label, desc) = if closing {
@@ -64,7 +67,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
                 )));
 
                 Err(ErrMode::Backtrack(err))
-            }?
+            }?,
         }
     };
 
@@ -112,6 +115,46 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         size_y,
         angle,
     })
+}
+
+fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
+    open_block(input, "")?;
+
+    let id = extract_unsigned_integer_entry(
+        input,
+        "PADSTACK",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "padstack PADSTACK key",
+            key_error_description: "invalid PADSTACK key name",
+            value_error_label: "padstack ID value",
+            value_error_description: "invalid ID attribute value",
+        },
+    )?;
+
+    parse_pad_arguments_separator(input)?;
+
+    let drill = extract_float_value(
+        input,
+        ' ',
+        ExtractValueErrorMessages {
+            value_error_label: "padstack Drill value",
+            value_error_description: "invalid Drill attribute value",
+        },
+    )?;
+
+    backtrack_err(literal("\n  "))
+        .context(StrContext::Label("padstack new line"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "invalid padstack new line",
+        )))
+        .parse_next(input)?;
+
+    let pads: Vec<Pad> = repeat(0.., parse_pad_row).parse_next(input)?;
+
+    close_block(input)?;
+
+    Ok(Padstack { id, drill, pads })
 }
 
 #[cfg(test)]
@@ -462,5 +505,26 @@ mod tests {
 
         assert_eq!(*errors.0, expected_errors.0);
         assert_eq!(*errors.1, expected_errors.1);
+    }
+
+    #[test]
+    fn parses_padstack_block() {
+        let mut input =
+            "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}";
+        let expected = Padstack {
+            id: 15,
+            drill: 0.007874016,
+            pads: vec![Pad {
+                layer: String::from("MDEF"),
+                shape: PadShape::Oval,
+                size_x: 0.023622047,
+                size_y: 0.023622047,
+                angle: 0.0,
+            }],
+        };
+
+        let padstack = parse_padstack_block.parse_next(&mut input).unwrap();
+
+        assert_eq!(padstack, expected);
     }
 }
