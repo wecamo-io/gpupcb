@@ -193,28 +193,28 @@ mod tests {
     )]
     // separator malformed between shape and size_x
     #[test_case(
-        r#"("F.Cu",2z, 0.047244094, 0.055118110, 90.0, M)"#,
+        r#"("F.Cu", 2z, 0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2,z 0.047244094, 0.055118110, 90.0, M)"#,
+        r#"("F.Cu", 2,z 0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2,0.047244094, 0.055118110, 90.0, M)"#,
+        r#"("F.Cu", 2,0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2 ,0.047244094, 0.055118110, 90.0, M)"#,
+        r#"("F.Cu", 2 ,0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
@@ -222,35 +222,21 @@ mod tests {
     )]
     // separator malformed between size_x and size_y
     #[test_case(
-        r#"("F.Cu",2, 0.047244094z, 0.055118110, 90.0, M)"#,
+        r#"("F.Cu", 2, 0.047244094,z 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2, 0.047244094,z 0.055118110, 90.0, M)"#,
+        r#"("F.Cu", 2, 0.047244094,0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2, 0.047244094,0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("pad ', ' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
-        )
-    )]
-    #[test_case(
-        r#"("F.Cu",2, 0.047244094 ,0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("pad ', ' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
-        )
-    )]
-    #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110z, 90.0, M)"#,
+        r#"("F.Cu", 2, 0.047244094 ,0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
@@ -258,21 +244,21 @@ mod tests {
     )]
     // separator malformed between size_y and angle
     #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110,z 90.0, M)"#,
+        r#"("F.Cu", 2, 0.047244094, 0.055118110,z 90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110,90.0, M)"#,
+        r#"("F.Cu", 2, 0.047244094, 0.055118110,90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110 ,90.0, M)"#,
+        r#"("F.Cu", 2, 0.047244094, 0.055118110 ,90.0, M)"#,
         (
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
@@ -280,31 +266,24 @@ mod tests {
     )]
     // separator malformed between angle and M
     #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110, 90.0z, M)"#,
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0,z M)"#,
         (
-            StrContext::Label("pad ', ' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+            StrContext::Label("pad ', M' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110, 90.0,z M)"#,
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0,M)"#,
         (
-            StrContext::Label("pad ', ' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+            StrContext::Label("pad ', M' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
         )
     )]
     #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110, 90.0,M)"#,
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0 ,M)"#,
         (
-            StrContext::Label("pad ', ' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
-        )
-    )]
-    #[test_case(
-        r#"("F.Cu",2, 0.047244094, 0.055118110, 90.0 ,M)"#,
-        (
-            StrContext::Label("pad ', ' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+            StrContext::Label("pad ', M' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
         )
     )]
     fn rejects_malformed_pad_row_separators_and_parenthesis(

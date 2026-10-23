@@ -121,7 +121,7 @@ pub fn extract_float_value(
 ) -> ModalResult<f64> {
     let value: f64 = backtrack_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
-        take_while(1.., |c: char| c != till_literal).parse_to()
+        take_while(1.., |c: char| !c.is_whitespace() && c != till_literal).parse_to()
     )
         .context(StrContext::Label(error_messages.value_error_label))
         .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
