@@ -179,4 +179,52 @@ mod tests {
         assert_eq!(*errors.0, expected_errors.0);
         assert_eq!(*errors.1, expected_errors.1);
     }
+
+    #[test_case(
+        r#"xyz{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}"#,
+        (
+        StrContext::Label("opening block"),
+        StrContext::Expected(StrContextValue::Description("{"))
+        )
+    )]
+    #[test_case(
+        r#"{xyzDEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}"#,
+        (
+        StrContext::Label("block name"),
+        StrContext::Expected(StrContextValue::Description("DEVICES"))
+        )
+    )]
+    #[test_case(
+        r#"{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\nxyz}"#,
+        (
+        StrContext::Label("block name boundary"),
+        StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        )
+    )]
+    #[test_case(
+        r#"{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}xyz"#,
+        (
+        StrContext::Label("block name boundary"),
+        StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        )
+    )]
+    fn rejects_malformed_devices_block(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let err = parse_devices_block.parse_next(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
 }
