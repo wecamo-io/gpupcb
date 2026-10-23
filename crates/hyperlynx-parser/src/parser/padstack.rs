@@ -527,4 +527,100 @@ mod tests {
 
         assert_eq!(padstack, expected);
     }
+
+    // opening brace malversations
+    #[test_case(
+        "xyz{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
+        )
+    )]
+    // PADSTACK entry malversations
+    #[test_case(
+        "{xyzPADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("padstack PADSTACK key"),
+            StrContext::Expected(StrContextValue::Description("invalid PADSTACK key name"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=xyz15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("padstack ID value"),
+            StrContext::Expected(StrContextValue::Description("invalid ID attribute value"))
+        )
+    )]
+    // ', ' separator malversation
+    #[test_case(
+        "{PADSTACK=15xyz, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15,xyz 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+        )
+    )]
+    // Drill value malversation
+    #[test_case(
+        "{PADSTACK=15, xyz0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("padstack Drill value"),
+            StrContext::Expected(StrContextValue::Description("invalid Drill attribute value"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0xyz.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("padstack Drill value"),
+            StrContext::Expected(StrContextValue::Description("invalid Drill attribute value"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.xyz007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("padstack Drill value"),
+            StrContext::Expected(StrContextValue::Description("invalid Drill attribute value"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.007874016xyz\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("padstack Drill value"),
+            StrContext::Expected(StrContextValue::Description("invalid Drill attribute value"))
+        )
+    )]
+    // closing brace malversations
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\nxyz}",
+        (
+            StrContext::Label("closing block"),
+            StrContext::Expected(StrContextValue::Description("}"))
+        )
+    )]
+    fn rejects_malformed_padstack_block(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext),
+    ) {
+        let mut input = input;
+        let err = parse_padstack_block.parse_next(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
 }
