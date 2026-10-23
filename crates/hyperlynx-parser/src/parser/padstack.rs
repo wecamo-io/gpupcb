@@ -4,7 +4,7 @@
 
 use winnow::ascii::digit1;
 use winnow::combinator::{backtrack_err, delimited};
-use winnow::error::{StrContext, StrContextValue};
+use winnow::error::{ErrMode, ContextError, StrContext, StrContextValue};
 use winnow::token::{literal, take_until};
 use winnow::{ModalResult, Parser};
 
@@ -45,13 +45,26 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
     parse_pad_arguments_separator(input)?;
 
     let shape = {
-        let value = digit1.parse_next(input)?;
+        let value = backtrack_err(digit1)
+            .context(StrContext::Label("pad shape value"))
+            .context(StrContext::Expected(StrContextValue::Description(
+                "invalid shape value",
+            )))
+            .parse_next(input)?;
 
         match value {
             "0" => PadShape::Oval,
             "1" => PadShape::Roundrect,
             "2" => PadShape::Rectangle,
-            _ => todo!(),
+            _ => {
+                let mut err = ContextError::new();
+                err.push(StrContext::Label("pad shape value"));
+                err.push(StrContext::Expected(StrContextValue::Description(
+                    "invalid pad shape value, should be 0-2",
+                )));
+
+                Err(ErrMode::Backtrack(err))
+            }?
         }
     };
 
@@ -105,7 +118,6 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
 mod tests {
     use super::*;
     use test_case::test_case;
-    use winnow::error::ErrMode;
 
     #[test_case(
         r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
@@ -150,35 +162,6 @@ mod tests {
             StrContext::Expected(StrContextValue::Description("("))
         )
     )]
-    // // layer name value lacks double quotes
-    // #[test_case(
-    //     r#"(xyz"F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
-    //     (
-    //         StrContext::Label("pad layer value"),
-    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-    //     )
-    // )]
-    // #[test_case(
-    //     r#"(F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
-    //     (
-    //         StrContext::Label("pad layer value"),
-    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-    //     )
-    // )]
-    // #[test_case(
-    //     r#"("F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
-    //     (
-    //         StrContext::Label("pad layer value"),
-    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-    //     )
-    // )]
-    // #[test_case(
-    //     r#"(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
-    //     (
-    //         StrContext::Label("pad layer value"),
-    //         StrContext::Expected(StrContextValue::Description("invalid layer name value"))
-    //     )
-    // )]
     // separator malformed between layer and shape
     #[test_case(
         r#"("F.Cu"z, 2, 0.047244094, 0.055118110, 90.0, M)"#,
@@ -326,7 +309,165 @@ mod tests {
     )]
     fn rejects_malformed_pad_row_separators_and_parenthesis(
         mut input: &str,
-        expected_errors: (StrContext, StrContext)
+        expected_errors: (StrContext, StrContext),
+    ) {
+        let err = parse_pad_row(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
+
+    // layer name value lacks double quotes
+    #[test_case(
+        r#"(xyz"F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad layer value"),
+            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+        )
+    )]
+    #[test_case(
+        r#"(F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad layer value"),
+            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad layer value"),
+            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+        )
+    )]
+    #[test_case(
+        r#"(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad layer value"),
+            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+        )
+    )]
+    // shape value malversation
+    #[test_case(
+        r#"("F.Cu", xyz2, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad shape value"),
+            StrContext::Expected(StrContextValue::Description("invalid shape value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 3, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad shape value"),
+            StrContext::Expected(StrContextValue::Description("invalid pad shape value, should be 0-2"))
+        )
+    )]
+    // size_x value malversation
+    #[test_case(
+        r#"("F.Cu", 2, xyz0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_x value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_x value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0xyz.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_x value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_x value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.xyz047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_x value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_x value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094xyz, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_x value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_x value"))
+        )
+    )]
+    // size_y value malversation
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, xyz0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_y value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_y value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0xyz.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_y value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_y value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.xyz055118110, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_y value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_y value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110xyz, 90.0, M)"#,
+        (
+            StrContext::Label("pad size_y value"),
+            StrContext::Expected(StrContextValue::Description("invalid size_y value"))
+        )
+    )]
+    // angle value malversation
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, xyz90.0, M)"#,
+        (
+            StrContext::Label("pad angle value"),
+            StrContext::Expected(StrContextValue::Description("invalid angle value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 9xyz0.0, M)"#,
+        (
+            StrContext::Label("pad angle value"),
+            StrContext::Expected(StrContextValue::Description("invalid angle value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90xyz.0, M)"#,
+        (
+            StrContext::Label("pad angle value"),
+            StrContext::Expected(StrContextValue::Description("invalid angle value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.xyz0, M)"#,
+        (
+            StrContext::Label("pad angle value"),
+            StrContext::Expected(StrContextValue::Description("invalid angle value"))
+        )
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0xyz, M)"#,
+        (
+            StrContext::Label("pad angle value"),
+            StrContext::Expected(StrContextValue::Description("invalid angle value"))
+        )
+    )]
+    fn rejects_malformed_pad_row_arguments(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext),
     ) {
         let err = parse_pad_row(&mut input).unwrap_err();
 
