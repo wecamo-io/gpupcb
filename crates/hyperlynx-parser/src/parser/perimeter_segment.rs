@@ -8,7 +8,7 @@ use winnow::ascii::multispace0;
 use winnow::combinator::{delimited, repeat};
 use winnow::error::{StrContext, StrContextValue};
 
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float_entry, open_block};
+use crate::parser::utils::{ExtractEntryErrorMessages, close_block, close_row, extract_float_entry, open_block};
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
 fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
@@ -17,7 +17,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let x1 = extract_float_entry(
         input,
         "X1",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "perimeter segment X1 key",
             key_error_description: "invalid X1 key name",
             value_error_label: "perimeter segment X1 value",
@@ -28,7 +28,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let y1 = extract_float_entry(
         input,
         "Y1",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "perimeter segment Y1 key",
             key_error_description: "invalid Y1 key name",
             value_error_label: "perimeter segment Y1 value",
@@ -39,7 +39,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let x2 = extract_float_entry(
         input,
         "X2",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "perimeter segment X2 key",
             key_error_description: "invalid X2 key name",
             value_error_label: "perimeter segment X2 value",
@@ -50,7 +50,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let y2 = extract_float_entry(
         input,
         "Y2",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "perimeter segment Y2 key",
             key_error_description: "invalid Y2 key name",
             value_error_label: "perimeter segment Y2 value",

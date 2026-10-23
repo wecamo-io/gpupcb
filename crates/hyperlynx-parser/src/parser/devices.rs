@@ -6,7 +6,7 @@ use winnow::{ModalResult, Parser};
 use winnow::combinator::repeat;
 
 use crate::model::Device;
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_string_entry, open_block, row_open};
+use crate::parser::utils::{ExtractEntryErrorMessages, close_block, close_row, extract_string_entry, open_block, row_open};
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     row_open(input, "?")?;
@@ -14,7 +14,7 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     let reference = extract_string_entry(
         input,
         "REF",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "device REF key",
             key_error_description: "invalid REF key name",
             value_error_label: "device REF value",
@@ -25,7 +25,7 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     let layer = extract_string_entry(
         input,
         "L",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "device L key",
             key_error_description: "invalid L key name",
             value_error_label: "device L value",

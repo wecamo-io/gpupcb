@@ -8,7 +8,7 @@ use winnow::{ModalResult, Parser};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float_entry, extract_string_entry, open_block, row_open};
+use crate::parser::utils::{ExtractEntryErrorMessages, close_block, close_row, extract_float_entry, extract_string_entry, open_block, row_open};
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "DIELECTRIC")?;
@@ -16,7 +16,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     let thickness = extract_float_entry(
         input,
         "T",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "dielectric T key",
             key_error_description: "invalid T key name",
             value_error_label: "dielectric T value",
@@ -27,7 +27,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     let dielectric_constant = extract_float_entry(
         input,
         "C",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "dielectric C key",
             key_error_description: "invalid C key name",
             value_error_label: "dielectric C value",
@@ -38,7 +38,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     let layer_name = extract_string_entry(
         input,
         "L",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "dielectric L key",
             key_error_description: "invalid L key name",
             value_error_label: "dielectric L value",
@@ -50,7 +50,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         let m = extract_string_entry(
             input,
             "M",
-            ExtractValueErrorMessages {
+            ExtractEntryErrorMessages {
                 key_error_label: "dielectric M key",
                 key_error_description: "invalid M key name",
                 value_error_label: "dielectric M value",
@@ -90,7 +90,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let thickness = extract_float_entry(
         input,
         "T",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "signal T key",
             key_error_description: "invalid T key name",
             value_error_label: "signal T value",
@@ -101,7 +101,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let plating_thickness = extract_float_entry(
         input,
         "P",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "signal P key",
             key_error_description: "invalid P key name",
             value_error_label: "signal P value",
@@ -112,7 +112,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let resistivity = extract_float_entry(
         input,
         "C",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "signal C key",
             key_error_description: "invalid C key name",
             value_error_label: "signal C value",
@@ -123,7 +123,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let layer_name = extract_string_entry(
         input,
         "L",
-        ExtractValueErrorMessages {
+        ExtractEntryErrorMessages {
             key_error_label: "signal L key",
             key_error_description: "invalid L key name",
             value_error_label: "signal L value",
@@ -135,7 +135,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         let m = extract_string_entry(
             input,
             "M",
-            ExtractValueErrorMessages {
+            ExtractEntryErrorMessages {
                 key_error_label: "signal M key",
                 key_error_description: "invalid M key name",
                 value_error_label: "signal M value",

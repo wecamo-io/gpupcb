@@ -8,7 +8,17 @@ use winnow::token::{literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
 use winnow::error::{StrContext, StrContextValue};
 
+pub struct ExtractKeyErrorMessages {
+    pub key_error_label: &'static str,
+    pub key_error_description: &'static str,
+}
+
 pub struct ExtractValueErrorMessages {
+    pub value_error_label: &'static str,
+    pub value_error_description: &'static str,
+}
+
+pub struct ExtractEntryErrorMessages {
     pub key_error_label: &'static str,
     pub key_error_description: &'static str,
     pub value_error_label: &'static str,
@@ -89,7 +99,7 @@ pub fn close_row(input: &mut &str) -> ModalResult<()> {
 fn extract_key(
     input: &mut &str,
     key: &str,
-    error_messages: &ExtractValueErrorMessages,
+    error_messages: ExtractKeyErrorMessages,
 ) -> ModalResult<()> {
     (
         literal(key),
@@ -106,7 +116,7 @@ fn extract_key(
 
 pub fn extract_float_value(
     input: &mut &str,
-    error_messages: &ExtractValueErrorMessages
+    error_messages: ExtractValueErrorMessages
 ) -> ModalResult<f64> {
     let value: f64 = backtrack_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
@@ -122,7 +132,7 @@ pub fn extract_float_value(
 
 pub fn extract_string_value(
     input: &mut &str,
-    error_messages: &ExtractValueErrorMessages
+    error_messages: ExtractValueErrorMessages
 ) -> ModalResult<String> {
     let value: &str = backtrack_err(
         alt((
@@ -143,15 +153,28 @@ pub fn extract_string_value(
 pub fn extract_float_entry(
     input: &mut &str,
     key: &str,
-    error_messages: ExtractValueErrorMessages
+    error_messages: ExtractEntryErrorMessages
 ) -> ModalResult<f64> {
-    extract_key(input, key, &error_messages)?;
+    extract_key(
+        input,
+        key,
+        ExtractKeyErrorMessages {
+            key_error_label: error_messages.key_error_label,
+            key_error_description: error_messages.key_error_description
+        }
+    )?;
     multispace0(input)?;
 
     literal('=').parse_next(input)?;
     multispace0(input)?;
 
-    let value: f64 = extract_float_value(input, &error_messages)?;
+    let value: f64 = extract_float_value(
+        input,
+        ExtractValueErrorMessages {
+            value_error_label: error_messages.value_error_label,
+            value_error_description: error_messages.value_error_description
+        }
+    )?;
     multispace0(input)?;
 
     Ok(value)
@@ -160,14 +183,28 @@ pub fn extract_float_entry(
 pub fn extract_string_entry(
     input: &mut &str,
     key: &str,
-    error_messages: ExtractValueErrorMessages
+    error_messages: ExtractEntryErrorMessages
 ) -> ModalResult<String> {
-    extract_key(input, key, &error_messages)?;
+    extract_key(
+        input,
+        key,
+        ExtractKeyErrorMessages {
+            key_error_label: error_messages.key_error_label,
+            key_error_description: error_messages.key_error_description
+        }
+    )?;
     multispace0(input)?;
+
     literal('=').parse_next(input)?;
     multispace0(input)?;
 
-    let value = extract_string_value(input, &error_messages)?;
+    let value = extract_string_value(
+        input,
+        ExtractValueErrorMessages {
+            value_error_label: error_messages.value_error_label,
+            value_error_description: error_messages.value_error_description
+        }
+    )?;
     multispace0(input)?;
 
     Ok(value)
