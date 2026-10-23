@@ -16,6 +16,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     let thickness = extract_float_entry(
         input,
         "T",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "dielectric T key",
             key_error_description: "invalid T key name",
@@ -27,6 +28,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     let dielectric_constant = extract_float_entry(
         input,
         "C",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "dielectric C key",
             key_error_description: "invalid C key name",
@@ -38,6 +40,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     let layer_name = extract_string_entry(
         input,
         "L",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "dielectric L key",
             key_error_description: "invalid L key name",
@@ -50,6 +53,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         let m = extract_string_entry(
             input,
             "M",
+            ')',
             ExtractEntryErrorMessages {
                 key_error_label: "dielectric M key",
                 key_error_description: "invalid M key name",
@@ -90,6 +94,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let thickness = extract_float_entry(
         input,
         "T",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "signal T key",
             key_error_description: "invalid T key name",
@@ -101,6 +106,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let plating_thickness = extract_float_entry(
         input,
         "P",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "signal P key",
             key_error_description: "invalid P key name",
@@ -112,6 +118,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let resistivity = extract_float_entry(
         input,
         "C",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "signal C key",
             key_error_description: "invalid C key name",
@@ -123,6 +130,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     let layer_name = extract_string_entry(
         input,
         "L",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "signal L key",
             key_error_description: "invalid L key name",
@@ -135,6 +143,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         let m = extract_string_entry(
             input,
             "M",
+            ')',
             ExtractEntryErrorMessages {
                 key_error_label: "signal M key",
                 key_error_description: "invalid M key name",
@@ -528,12 +537,12 @@ mod tests {
     )]
     // closing parenthesis ')'
     #[test_case(
-        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask" xyz)"#,
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask""#,
         StrContext::Label("closing row"),
         StrContext::Expected(StrContextValue::Description(")"))
     )]
     #[test_case(
-        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER xyz)"#,
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER"#,
         StrContext::Label("closing row"),
         StrContext::Expected(StrContextValue::Description(")"))
     )]

@@ -116,11 +116,12 @@ fn extract_key(
 
 pub fn extract_float_value(
     input: &mut &str,
+    till_literal: char,
     error_messages: ExtractValueErrorMessages
 ) -> ModalResult<f64> {
     let value: f64 = backtrack_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
-        take_while(1.., |c: char| !c.is_whitespace() && c != ')').parse_to()
+        take_while(1.., |c: char| c != till_literal).parse_to()
     )
         .context(StrContext::Label(error_messages.value_error_label))
         .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
@@ -132,6 +133,7 @@ pub fn extract_float_value(
 
 pub fn extract_string_value(
     input: &mut &str,
+    till_literal: char,
     error_messages: ExtractValueErrorMessages
 ) -> ModalResult<String> {
     let value: &str = backtrack_err(
@@ -139,7 +141,7 @@ pub fn extract_string_value(
             // quoted string parsing
             delimited('"', take_until(0.., '"'), '"'),
             // unquoted string parsing
-            take_till(1.., |c: char| c.is_whitespace() || c == ')' || c == '}'),
+            take_till(1.., |c: char| c == till_literal),
         ))
     )
         .context(StrContext::Label(error_messages.value_error_label))
@@ -153,6 +155,7 @@ pub fn extract_string_value(
 pub fn extract_float_entry(
     input: &mut &str,
     key: &str,
+    till_literal: char,
     error_messages: ExtractEntryErrorMessages
 ) -> ModalResult<f64> {
     extract_key(
@@ -170,6 +173,7 @@ pub fn extract_float_entry(
 
     let value: f64 = extract_float_value(
         input,
+        till_literal,
         ExtractValueErrorMessages {
             value_error_label: error_messages.value_error_label,
             value_error_description: error_messages.value_error_description
@@ -183,6 +187,7 @@ pub fn extract_float_entry(
 pub fn extract_string_entry(
     input: &mut &str,
     key: &str,
+    till_literal: char,
     error_messages: ExtractEntryErrorMessages
 ) -> ModalResult<String> {
     extract_key(
@@ -200,6 +205,7 @@ pub fn extract_string_entry(
 
     let value = extract_string_value(
         input,
+        till_literal,
         ExtractValueErrorMessages {
             value_error_label: error_messages.value_error_label,
             value_error_description: error_messages.value_error_description

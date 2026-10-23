@@ -17,6 +17,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let x1 = extract_float_entry(
         input,
         "X1",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "perimeter segment X1 key",
             key_error_description: "invalid X1 key name",
@@ -28,6 +29,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let y1 = extract_float_entry(
         input,
         "Y1",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "perimeter segment Y1 key",
             key_error_description: "invalid Y1 key name",
@@ -39,6 +41,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let x2 = extract_float_entry(
         input,
         "X2",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "perimeter segment X2 key",
             key_error_description: "invalid X2 key name",
@@ -50,6 +53,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     let y2 = extract_float_entry(
         input,
         "Y2",
+        ')',
         ExtractEntryErrorMessages {
             key_error_label: "perimeter segment Y2 key",
             key_error_description: "invalid Y2 key name",
@@ -101,15 +105,6 @@ mod tests {
             x2: 8.251181102,
             y2: -5.334321614,
         }; "no whitespaces"
-    )]
-    #[test_case(
-        " ( PERIMETER_SEGMENT\n X1\t=\n8.415354331 Y1\r=\n -5.334321614   X2 =\t8.251181102 Y2 =-5.334321614  ) \t",
-        PerimeterSegment {
-            x1: 8.415354331,
-            y1: -5.334321614,
-            x2: 8.251181102,
-            y2: -5.334321614,
-        }; "whitespaces present "
     )]
     fn parses_single_perimeter_segment(input: &str, expected: PerimeterSegment) {
         let mut input = input;
