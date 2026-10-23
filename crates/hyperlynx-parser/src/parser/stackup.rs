@@ -8,7 +8,7 @@ use winnow::{ModalResult, Parser};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float_entry, extract_string, open_block, row_open};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float_entry, extract_string_entry, open_block, row_open};
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "DIELECTRIC")?;
@@ -35,7 +35,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         }
     )?;
 
-    let layer_name = extract_string(
+    let layer_name = extract_string_entry(
         input,
         "L",
         ExtractValueErrorMessages {
@@ -47,7 +47,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     )?;
 
     let material = {
-        let m = extract_string(
+        let m = extract_string_entry(
             input,
             "M",
             ExtractValueErrorMessages {
@@ -120,7 +120,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         }
     )?;
 
-    let layer_name = extract_string(
+    let layer_name = extract_string_entry(
         input,
         "L",
         ExtractValueErrorMessages {
@@ -132,7 +132,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     )?;
 
     let material = {
-        let m = extract_string(
+        let m = extract_string_entry(
             input,
             "M",
             ExtractValueErrorMessages {

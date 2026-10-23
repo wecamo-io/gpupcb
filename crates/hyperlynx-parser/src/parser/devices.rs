@@ -6,12 +6,12 @@ use winnow::{ModalResult, Parser};
 use winnow::combinator::repeat;
 
 use crate::model::Device;
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_string, open_block, row_open};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_string_entry, open_block, row_open};
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     row_open(input, "?")?;
 
-    let reference = extract_string(
+    let reference = extract_string_entry(
         input,
         "REF",
         ExtractValueErrorMessages {
@@ -22,7 +22,7 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
         }
     )?;
 
-    let layer = extract_string(
+    let layer = extract_string_entry(
         input,
         "L",
         ExtractValueErrorMessages {

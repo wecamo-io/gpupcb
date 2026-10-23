@@ -120,6 +120,26 @@ pub fn extract_float_value(
     Ok(value)
 }
 
+pub fn extract_string_value(
+    input: &mut &str,
+    error_messages: &ExtractValueErrorMessages
+) -> ModalResult<String> {
+    let value: &str = backtrack_err(
+        alt((
+            // quoted string parsing
+            delimited('"', take_until(0.., '"'), '"'),
+            // unquoted string parsing
+            take_till(1.., |c: char| c.is_whitespace() || c == ')' || c == '}'),
+        ))
+    )
+        .context(StrContext::Label(error_messages.value_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
+    )
+        .parse_next(input)?;
+
+    Ok(String::from(value))
+}
+
 pub fn extract_float_entry(
     input: &mut &str,
     key: &str,
@@ -137,7 +157,7 @@ pub fn extract_float_entry(
     Ok(value)
 }
 
-pub fn extract_string(
+pub fn extract_string_entry(
     input: &mut &str,
     key: &str,
     error_messages: ExtractValueErrorMessages
@@ -147,19 +167,8 @@ pub fn extract_string(
     literal('=').parse_next(input)?;
     multispace0(input)?;
 
-    let value: &str = backtrack_err(
-        alt((
-            // quoted string parsing
-            delimited('"', take_until(0.., '"'), '"'),
-            // unquoted string parsing
-            take_till(1.., |c: char| c.is_whitespace() || c == ')' || c == '}'),
-        ))
-    )
-        .context(StrContext::Label(error_messages.value_error_label))
-        .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
-    )
-        .parse_next(input)?;
+    let value = extract_string_value(input, &error_messages)?;
     multispace0(input)?;
 
-    Ok(String::from(value))
+    Ok(value)
 }
