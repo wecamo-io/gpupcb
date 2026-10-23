@@ -8,12 +8,12 @@ use winnow::{ModalResult, Parser};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float, extract_string, open_block, row_open};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float_entry, extract_string, open_block, row_open};
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "DIELECTRIC")?;
 
-    let thickness = extract_float(
+    let thickness = extract_float_entry(
         input,
         "T",
         ExtractValueErrorMessages {
@@ -24,7 +24,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         }
     )?;
 
-    let dielectric_constant = extract_float(
+    let dielectric_constant = extract_float_entry(
         input,
         "C",
         ExtractValueErrorMessages {
@@ -87,7 +87,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
 fn signal(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "SIGNAL")?;
 
-    let thickness = extract_float(
+    let thickness = extract_float_entry(
         input,
         "T",
         ExtractValueErrorMessages {
@@ -98,7 +98,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         }
     )?;
 
-    let plating_thickness = extract_float(
+    let plating_thickness = extract_float_entry(
         input,
         "P",
         ExtractValueErrorMessages {
@@ -109,7 +109,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         }
     )?;
 
-    let resistivity = extract_float(
+    let resistivity = extract_float_entry(
         input,
         "C",
         ExtractValueErrorMessages {

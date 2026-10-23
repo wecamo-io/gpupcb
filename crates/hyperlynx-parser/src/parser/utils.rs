@@ -104,15 +104,10 @@ fn extract_key(
         .parse_next(input)
 }
 
-pub fn extract_float(
+pub fn extract_float_value(
     input: &mut &str,
-    key: &str,
-    error_messages: ExtractValueErrorMessages
+    error_messages: &ExtractValueErrorMessages
 ) -> ModalResult<f64> {
-    extract_key(input, key, &error_messages)?;
-    multispace0(input)?;
-    literal('=').parse_next(input)?;
-    multispace0(input)?;
     let value: f64 = backtrack_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
         take_while(1.., |c: char| !c.is_whitespace() && c != ')').parse_to()
@@ -121,6 +116,22 @@ pub fn extract_float(
         .context(StrContext::Expected(StrContextValue::Description(error_messages.value_error_description))
     )
         .parse_next(input)?;
+
+    Ok(value)
+}
+
+pub fn extract_float_entry(
+    input: &mut &str,
+    key: &str,
+    error_messages: ExtractValueErrorMessages
+) -> ModalResult<f64> {
+    extract_key(input, key, &error_messages)?;
+    multispace0(input)?;
+
+    literal('=').parse_next(input)?;
+    multispace0(input)?;
+
+    let value: f64 = extract_float_value(input, &error_messages)?;
     multispace0(input)?;
 
     Ok(value)

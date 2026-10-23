@@ -8,13 +8,13 @@ use winnow::ascii::multispace0;
 use winnow::combinator::{delimited, repeat};
 use winnow::error::{StrContext, StrContextValue};
 
-use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float, open_block};
+use crate::parser::utils::{ExtractValueErrorMessages, close_block, close_row, extract_float_entry, open_block};
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
 fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
     row_open(input, "PERIMETER_SEGMENT")?;
 
-    let x1 = extract_float(
+    let x1 = extract_float_entry(
         input,
         "X1",
         ExtractValueErrorMessages {
@@ -25,7 +25,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         },
     )?;
 
-    let y1 = extract_float(
+    let y1 = extract_float_entry(
         input,
         "Y1",
         ExtractValueErrorMessages {
@@ -36,7 +36,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         },
     )?;
 
-    let x2 = extract_float(
+    let x2 = extract_float_entry(
         input,
         "X2",
         ExtractValueErrorMessages {
@@ -47,7 +47,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         },
     )?;
 
-    let y2 = extract_float(
+    let y2 = extract_float_entry(
         input,
         "Y2",
         ExtractValueErrorMessages {
