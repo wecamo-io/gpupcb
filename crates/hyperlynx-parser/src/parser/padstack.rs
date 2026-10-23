@@ -11,6 +11,27 @@ use winnow::{ModalResult, Parser};
 use crate::model::{Pad, PadShape};
 use crate::parser::utils::{close_row, extract_float_value, row_open, ExtractValueErrorMessages};
 
+fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<()> {
+    let (separator, label, desc) = if closing {
+        (", M", "pad ', M' separator", "invalid ', M' separator")
+    } else {
+        (", ", "pad ', ' separator", "invalid ', ' separator")
+    };
+
+    backtrack_err(literal(separator))
+        .context(StrContext::Label(label))
+        .context(StrContext::Expected(StrContextValue::Description(desc)))
+        .parse_next(input)?;
+
+    Ok(())
+}
+
+fn parse_pad_arguments_separator(input: &mut &str) -> ModalResult<()> {
+    parse_pad_closing_separator(input, false)?;
+
+    Ok(())
+}
+
 fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
     row_open(input, "")?;
 
@@ -21,12 +42,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         )))
         .parse_next(input)?;
 
-    backtrack_err(literal(", "))
-        .context(StrContext::Label("pad ', ' separator"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid ', ' separator",
-        )))
-        .parse_next(input)?;
+    parse_pad_arguments_separator(input)?;
 
     let shape = {
         let value = digit1.parse_next(input)?;
@@ -39,12 +55,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         }
     };
 
-    backtrack_err(literal(", "))
-        .context(StrContext::Label("pad ', ' separator"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid ', ' separator",
-        )))
-        .parse_next(input)?;
+    parse_pad_arguments_separator(input)?;
 
     let size_x = extract_float_value(
         input,
@@ -55,12 +66,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         },
     )?;
 
-    backtrack_err(literal(", "))
-        .context(StrContext::Label("pad ', ' separator"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid ', ' separator",
-        )))
-        .parse_next(input)?;
+    parse_pad_arguments_separator(input)?;
 
     let size_y = extract_float_value(
         input,
@@ -71,12 +77,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         },
     )?;
 
-    backtrack_err(literal(", "))
-        .context(StrContext::Label("pad ', ' separator"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid ', ' separator",
-        )))
-        .parse_next(input)?;
+    parse_pad_arguments_separator(input)?;
 
     let angle = extract_float_value(
         input,
@@ -87,12 +88,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         },
     )?;
 
-    backtrack_err(literal(", M"))
-        .context(StrContext::Label("pad ', M' separator"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid ', M' separator",
-        )))
-        .parse_next(input)?;
+    parse_pad_closing_separator(input, true)?;
 
     close_row(input)?;
 
