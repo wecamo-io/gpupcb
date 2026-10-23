@@ -23,7 +23,8 @@ pub enum LayerMaterial {
     PR2116,
 }
 
-enum PadShape {
+#[derive(Debug, PartialEq)]
+pub enum PadShape {
     Oval,
     Roundrect,
     Rectangle,
@@ -55,12 +56,13 @@ pub struct Device {
     pub layer: String,
 }
 
-struct Pad {
-    layer: String,
-    shape: PadShape,
-    size_x: f64,
-    size_y: f64,
-    angle: f64,
+#[derive(Debug, PartialEq)]
+pub struct Pad {
+    pub layer: String,
+    pub shape: PadShape,
+    pub size_x: f64,
+    pub size_y: f64,
+    pub angle: f64,
 }
 
 struct Padstack {
