@@ -34,19 +34,21 @@ pub fn open_block<'a>(
         .context(StrContext::Expected(StrContextValue::Description("{")))
         .parse_next(input)?;
 
-    backtrack_err(literal(lit))
-        .context(StrContext::Label("block name"))
-        .context(StrContext::Expected(StrContextValue::Description(lit)))
-        .parse_next(input)?;
+    if lit != "" {
+        backtrack_err(literal(lit))
+            .context(StrContext::Label("block name"))
+            .context(StrContext::Expected(StrContextValue::Description(lit)))
+            .parse_next(input)?;
 
-    // applies one_of() parser without advancing the input
-    // it only checks if there is no malversation after block name
-    peek(one_of(['=', ' ', '\t', '\r', '\n']))
-        .context(StrContext::Label("block name boundary"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "valid character after block name",
-        )))
-        .parse_next(input)?;
+        // applies one_of() parser without advancing the input
+        // it only checks if there is no malversation after block name
+        peek(one_of(['=', ' ', '\t', '\r', '\n']))
+            .context(StrContext::Label("block name boundary"))
+            .context(StrContext::Expected(StrContextValue::Description(
+                "valid character after block name",
+            )))
+            .parse_next(input)?;
+    }
 
     multispace0.parse_next(input)?;
 
