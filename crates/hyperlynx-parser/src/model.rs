@@ -10,8 +10,13 @@ pub enum Units {
 
 #[derive(Debug, PartialEq)]
 pub enum LayerType {
-    Dielectric { dielectric_constant: f64 },
-    Signal { resistivity: f64, plating_thickness: f64 },
+    Dielectric {
+        dielectric_constant: f64,
+    },
+    Signal {
+        resistivity: f64,
+        plating_thickness: f64,
+    },
 }
 
 #[derive(Debug, PartialEq)]

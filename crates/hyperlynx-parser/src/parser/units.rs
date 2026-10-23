@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{multispace0};
+use crate::model::Units;
+use crate::parser::utils::{close_block, open_block};
+use winnow::ascii::multispace0;
 use winnow::token::{literal, take_till};
 use winnow::{ModalResult, Parser};
-use crate::model::Units;
-use crate::parser::utils::{open_block, close_block};
 
 pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
     open_block(input, "UNITS")?;
@@ -14,8 +14,7 @@ pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
     literal('=').parse_next(input)?;
     multispace0(input)?;
 
-    let units = take_till(0.., '}')
-        .parse_next(input)?;
+    let units = take_till(0.., '}').parse_next(input)?;
 
     close_block(input)?;
 
@@ -28,12 +27,15 @@ pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::Units;
     use test_case::test_case;
     use winnow::error::{ErrMode, StrContext, StrContextValue};
-    use crate::model::Units;
 
     #[test_case("{UNITS=ENGLISH LENGTH}", Units::English)]
-    #[test_case("{UNITS=FRENCH LENGTH}", Units::WrongUnit(String::from("FRENCH LENGTH")))]
+    #[test_case(
+        "{UNITS=FRENCH LENGTH}",
+        Units::WrongUnit(String::from("FRENCH LENGTH"))
+    )]
     fn parses_units_block(input: &str, expected: Units) {
         let mut input = input;
 
@@ -80,7 +82,11 @@ mod tests {
         StrContext::Expected(StrContextValue::Description("}"));
         "closing block corruption"
     )]
-    fn rejects_malformed_units_blocks(input: &str, expected_label: StrContext, expected_description: StrContext) {
+    fn rejects_malformed_units_blocks(
+        input: &str,
+        expected_label: StrContext,
+        expected_description: StrContext,
+    ) {
         let mut input = input;
         let err = parse_units_block.parse_next(&mut input).unwrap_err();
 
@@ -88,8 +94,8 @@ mod tests {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
                 let mut iter = err.context().into_iter();
                 let errors = (iter.next().unwrap(), iter.next().unwrap());
-                
-                errors   
+
+                errors
             }
             ErrMode::Incomplete(_) => todo!(),
         };

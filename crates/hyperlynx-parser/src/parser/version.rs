@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use crate::parser::utils::{close_block, open_block};
 use winnow::ascii::{digit1, multispace0};
 use winnow::error::{StrContext, StrContextValue};
-use winnow::token::{literal};
+use winnow::token::literal;
 use winnow::{ModalResult, Parser};
-use crate::parser::utils::{open_block, close_block};
 
 pub fn parse_version_block(input: &mut &str) -> ModalResult<String> {
     open_block(input, "VERSION")?;
@@ -108,7 +108,11 @@ mod tests {
         StrContext::Expected(StrContextValue::Description("}"));
         "closing block corruption"
     )]
-    fn rejects_malformed_blocks(input: &str, expected_label: StrContext, expected_description: StrContext) {
+    fn rejects_malformed_blocks(
+        input: &str,
+        expected_label: StrContext,
+        expected_description: StrContext,
+    ) {
         let mut input = input;
         let err = parse_version_block.parse_next(&mut input).unwrap_err();
 
@@ -116,8 +120,8 @@ mod tests {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
                 let mut iter = err.context().into_iter();
                 let errors = (iter.next().unwrap(), iter.next().unwrap());
-                
-                errors   
+
+                errors
             }
             ErrMode::Incomplete(_) => todo!(),
         };

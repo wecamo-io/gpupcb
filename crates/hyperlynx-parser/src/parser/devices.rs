@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::{ModalResult, Parser};
 use winnow::combinator::repeat;
+use winnow::{ModalResult, Parser};
 
 use crate::model::Device;
-use crate::parser::utils::{ExtractEntryErrorMessages, close_block, close_row, extract_string_entry, open_block, row_open};
+use crate::parser::utils::{
+    close_block, close_row, extract_string_entry, open_block, row_open, ExtractEntryErrorMessages,
+};
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     row_open(input, "?")?;
@@ -20,7 +22,7 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
             key_error_description: "invalid REF key name",
             value_error_label: "device REF value",
             value_error_description: "invalid REF attribute value",
-        }
+        },
     )?;
 
     let layer = extract_string_entry(
@@ -32,15 +34,12 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
             key_error_description: "invalid L key name",
             value_error_label: "device L value",
             value_error_description: "invalid L attribute value",
-        }
+        },
     )?;
 
     close_row(input)?;
 
-    Ok(Device {
-        reference,
-        layer,
-    })
+    Ok(Device { reference, layer })
 }
 
 pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
@@ -56,8 +55,8 @@ pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winnow::error::{ErrMode, StrContext, StrContextValue};
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
         r#"(? REF="R3" L="F.Cu")"#,
@@ -87,11 +86,26 @@ mod tests {
     fn parses_devices_block() {
         let mut input = "{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n  (? REF=\"D1\" L=\"F.Cu\")\n  (? REF=\"C3\" L=\"F.Cu\")\n  (? REF=\"U3\" L=\"F.Cu\")\n  (? REF=\"SW1\" L=\"B.Cu\")\n}";
         let expected = vec![
-            Device { reference: String::from("R3"), layer: String::from("F.Cu") },
-            Device { reference: String::from("D1"), layer: String::from("F.Cu") },
-            Device { reference: String::from("C3"), layer: String::from("F.Cu") },
-            Device { reference: String::from("U3"), layer: String::from("F.Cu") },
-            Device { reference: String::from("SW1"), layer: String::from("B.Cu") },
+            Device {
+                reference: String::from("R3"),
+                layer: String::from("F.Cu"),
+            },
+            Device {
+                reference: String::from("D1"),
+                layer: String::from("F.Cu"),
+            },
+            Device {
+                reference: String::from("C3"),
+                layer: String::from("F.Cu"),
+            },
+            Device {
+                reference: String::from("U3"),
+                layer: String::from("F.Cu"),
+            },
+            Device {
+                reference: String::from("SW1"),
+                layer: String::from("B.Cu"),
+            },
         ];
 
         let devices = parse_devices_block.parse_next(&mut input).unwrap();
@@ -161,10 +175,7 @@ mod tests {
         StrContext::Expected(StrContextValue::Description(")"))
         )
     )]
-    fn rejects_malformed_device_row(
-        input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_device_row(input: &str, expected_errors: (StrContext, StrContext)) {
         let mut input = input;
         let err = parse_device_row.parse_next(&mut input).unwrap_err();
 
@@ -172,8 +183,8 @@ mod tests {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
                 let mut iter = err.context().into_iter();
                 let errors = (iter.next().unwrap(), iter.next().unwrap());
-                
-                errors                
+
+                errors
             }
             ErrMode::Incomplete(_) => todo!(),
         };
@@ -210,17 +221,14 @@ mod tests {
         StrContext::Expected(StrContextValue::Description("valid character after block name"))
         )
     )]
-    fn rejects_malformed_devices_block(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_devices_block(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_devices_block.parse_next(&mut input).unwrap_err();
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
                 let mut iter = err.context().into_iter();
                 let errors = (iter.next().unwrap(), iter.next().unwrap());
-                
+
                 errors
             }
             ErrMode::Incomplete(_) => todo!(),

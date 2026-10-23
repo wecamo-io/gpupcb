@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::combinator::{alt, peek, repeat};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::literal;
 use winnow::{ModalResult, Parser};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
-use crate::parser::utils::{ExtractEntryErrorMessages, close_block, close_row, extract_float_entry, extract_string_entry, open_block, row_open};
+use crate::parser::utils::{
+    close_block, close_row, extract_float_entry, extract_string_entry, open_block, row_open,
+    ExtractEntryErrorMessages,
+};
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "DIELECTRIC")?;
@@ -22,7 +25,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid T key name",
             value_error_label: "dielectric T value",
             value_error_description: "invalid T attribute value",
-        }
+        },
     )?;
 
     let dielectric_constant = extract_float_entry(
@@ -34,7 +37,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid C key name",
             value_error_label: "dielectric C value",
             value_error_description: "invalid C attribute value",
-        }
+        },
     )?;
 
     let layer_name = extract_string_entry(
@@ -46,7 +49,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid L key name",
             value_error_label: "dielectric L value",
             value_error_description: "invalid L attribute value",
-        }
+        },
     )?;
 
     let material = {
@@ -59,7 +62,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
                 key_error_description: "invalid M key name",
                 value_error_label: "dielectric M value",
                 value_error_description: "invalid M attribute value",
-            }
+            },
         )?;
 
         match m.as_str() {
@@ -71,20 +74,24 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             _ => {
                 let mut err = ContextError::new();
                 err.push(StrContext::Label("dielectric M value"));
-                err.push(StrContext::Expected(StrContextValue::Description("invalid M attribute value")));
+                err.push(StrContext::Expected(StrContextValue::Description(
+                    "invalid M attribute value",
+                )));
 
                 Err(ErrMode::Backtrack(err))
-            }?
+            }?,
         }
     };
 
     close_row(input)?;
 
     Ok(Layer {
-        layer_type: LayerType::Dielectric { dielectric_constant },
+        layer_type: LayerType::Dielectric {
+            dielectric_constant,
+        },
         thickness,
         layer_name: String::from(layer_name),
-        material
+        material,
     })
 }
 
@@ -100,7 +107,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid T key name",
             value_error_label: "signal T value",
             value_error_description: "invalid T attribute value",
-        }
+        },
     )?;
 
     let plating_thickness = extract_float_entry(
@@ -112,7 +119,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid P key name",
             value_error_label: "signal P value",
             value_error_description: "invalid P attribute value",
-        }
+        },
     )?;
 
     let resistivity = extract_float_entry(
@@ -124,7 +131,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid C key name",
             value_error_label: "signal C value",
             value_error_description: "invalid C attribute value",
-        }
+        },
     )?;
 
     let layer_name = extract_string_entry(
@@ -136,7 +143,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             key_error_description: "invalid L key name",
             value_error_label: "signal L value",
             value_error_description: "invalid L attribute value",
-        }
+        },
     )?;
 
     let material = {
@@ -149,7 +156,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
                 key_error_description: "invalid M key name",
                 value_error_label: "signal M value",
                 value_error_description: "invalid M attribute value",
-            }
+            },
         )?;
 
         match m.as_str() {
@@ -157,36 +164,39 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             _ => {
                 let mut err = ContextError::new();
                 err.push(StrContext::Label("signal M value"));
-                err.push(StrContext::Expected(StrContextValue::Description("invalid M attribute value")));
+                err.push(StrContext::Expected(StrContextValue::Description(
+                    "invalid M attribute value",
+                )));
 
                 Err(ErrMode::Backtrack(err))
-            }?
+            }?,
         }
     };
 
     close_row(input)?;
 
     Ok(Layer {
-        layer_type: LayerType::Signal { resistivity, plating_thickness },
+        layer_type: LayerType::Signal {
+            resistivity,
+            plating_thickness,
+        },
         thickness,
         layer_name: String::from(layer_name),
-        material
+        material,
     })
 }
 
 // use conditions instead of winnow::alt due to wrong error context
 // for any case other than SIGNAL or DIELECTRIC run alt()
 fn parse_layer(input: &mut &str) -> ModalResult<Layer> {
-    // see what is the layer's type with winnow::peek 
+    // see what is the layer's type with winnow::peek
     // this does not mutate the imput
-    let is_signal: ModalResult<&str> =
-        peek(literal("(SIGNAL")).parse_next(input);
+    let is_signal: ModalResult<&str> = peek(literal("(SIGNAL")).parse_next(input);
 
     if is_signal.is_ok() {
         signal.parse_next(input)
     } else {
-        let is_dielectric: ModalResult<&str> =
-            peek(literal("(DIELECTRIC")).parse_next(input);
+        let is_dielectric: ModalResult<&str> = peek(literal("(DIELECTRIC")).parse_next(input);
 
         if is_dielectric.is_ok() {
             dielectric.parse_next(input)
@@ -209,8 +219,8 @@ pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winnow::error::ErrMode;
     use test_case::test_case;
+    use winnow::error::ErrMode;
 
     #[test_case(
         r#"(DIELECTRIC T=0.0594488 C=4.5 L="F.Cu" M="FR4")"#,
@@ -250,7 +260,7 @@ mod tests {
     )]
     fn parses_dielectric_layer(input: &str, expected: Layer) {
         let mut input = input;
-        
+
         let dielectric_layer = dielectric.parse_next(&mut input).unwrap();
 
         assert_eq!(dielectric_layer, expected);
@@ -297,11 +307,15 @@ mod tests {
 
         let layers = parse_stackup_block(&mut input).unwrap();
 
-        let (signals, dielectrics): (Vec<_>, Vec<_>) = layers
-            .into_iter()
-            .partition(
-                |l| matches!(l.layer_type, LayerType::Signal { resistivity: _, plating_thickness: _ })
-            );
+        let (signals, dielectrics): (Vec<_>, Vec<_>) = layers.into_iter().partition(|l| {
+            matches!(
+                l.layer_type,
+                LayerType::Signal {
+                    resistivity: _,
+                    plating_thickness: _
+                }
+            )
+        });
 
         assert_eq!(expected_signals_length, signals.len());
         assert_eq!(expected_dielectrics_length, dielectrics.len());
@@ -549,7 +563,7 @@ mod tests {
     fn rejects_malformed_layer_row(
         input: &str,
         expected_label: StrContext,
-        expected_description: StrContext
+        expected_description: StrContext,
     ) {
         let mut input = input;
         let err = parse_layer.parse_next(&mut input).unwrap_err();
@@ -558,8 +572,8 @@ mod tests {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
                 let mut iter = err.context().into_iter();
                 let errors = (iter.next().unwrap(), iter.next().unwrap());
-                
-                errors                
+
+                errors
             }
             ErrMode::Incomplete(_) => todo!(),
         };
