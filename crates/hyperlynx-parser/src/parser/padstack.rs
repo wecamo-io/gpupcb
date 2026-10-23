@@ -623,4 +623,14 @@ mod tests {
         assert_eq!(*errors.0, expected_errors.0);
         assert_eq!(*errors.1, expected_errors.1);
     }
+
+    #[test]
+    fn leaves_further_input_after_block_parsing_finish() {
+        let mut input ="{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}further input";
+        let expected = "further input";
+
+        let _padstack = parse_padstack_block(&mut input).unwrap();
+
+        assert_eq!(input, expected);
+    }
 }

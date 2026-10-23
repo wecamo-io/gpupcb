@@ -4,6 +4,11 @@
 
 use version::parse_version_block;
 
+mod devices;
+mod padstack;
+mod perimeter_segment;
+mod stackup;
+mod units;
 mod utils;
 mod version;
 

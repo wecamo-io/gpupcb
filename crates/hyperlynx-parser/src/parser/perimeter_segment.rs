@@ -2,13 +2,15 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::token::take_until;
-use winnow::{ModalResult, Parser};
 use winnow::ascii::multispace0;
 use winnow::combinator::{delimited, repeat};
 use winnow::error::{StrContext, StrContextValue};
+use winnow::token::take_until;
+use winnow::{ModalResult, Parser};
 
-use crate::parser::utils::{ExtractEntryErrorMessages, close_block, close_row, extract_float_entry, open_block};
+use crate::parser::utils::{
+    close_block, close_row, extract_float_entry, open_block, ExtractEntryErrorMessages,
+};
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
 fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
@@ -64,12 +66,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
 
     close_row(input)?;
 
-    Ok(PerimeterSegment {
-        x1,
-        y1,
-        x2,
-        y2,
-    })
+    Ok(PerimeterSegment { x1, y1, x2, y2 })
 }
 
 fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
@@ -77,12 +74,12 @@ fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
 
     multispace0(input)?;
 
-    delimited('"', take_until(0.., '"'), '"')
-        .parse_next(input)?;
+    delimited('"', take_until(0.., '"'), '"').parse_next(input)?;
 
     multispace0(input)?;
 
-    let perimeter_segments: Vec<PerimeterSegment> = repeat(0.., parse_perimeter_segment_row).parse_next(input)?;
+    let perimeter_segments: Vec<PerimeterSegment> =
+        repeat(0.., parse_perimeter_segment_row).parse_next(input)?;
 
     multispace0(input)?;
 
@@ -94,8 +91,8 @@ fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use winnow::error::ErrMode;
     use test_case::test_case;
+    use winnow::error::ErrMode;
 
     #[test_case(
         "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
@@ -110,7 +107,7 @@ mod tests {
         let mut input = input;
 
         let perimeter_segment = parse_perimeter_segment_row(&mut input).unwrap();
-    
+
         assert_eq!(perimeter_segment, expected);
     }
 
@@ -181,7 +178,7 @@ mod tests {
     fn rejects_malformed_perimeter_row(
         input: &str,
         expected_label: StrContext,
-        expected_description: StrContext
+        expected_description: StrContext,
     ) {
         let mut input = input;
         let err = parse_perimeter_segment_row(&mut input).unwrap_err();
@@ -190,8 +187,8 @@ mod tests {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
                 let mut iter = err.context().into_iter();
                 let errors = (iter.next().unwrap(), iter.next().unwrap());
-                
-                errors                
+
+                errors
             }
             ErrMode::Incomplete(_) => todo!(),
         };
