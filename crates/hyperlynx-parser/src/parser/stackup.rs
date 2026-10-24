@@ -578,6 +578,37 @@ mod tests {
         StrContext::Label("signal C value"),
         StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
     )]
+    // L attribute value malformation
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L=xyz"F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L=F.Mask" M="Solder Mask")"#,
+        StrContext::Label("dielectric L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask M="Solder Mask")"#,
+        StrContext::Label("dielectric M key"),
+        StrContext::Expected(StrContextValue::Description("invalid M key name"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=xyz"F.Cu" M=COPPER)"#,
+        StrContext::Label("signal L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=F.Cu" M=COPPER)"#,
+        StrContext::Label("signal L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu M=COPPER)"#,
+        StrContext::Label("signal L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+    )]
     // M attribute value malformation
     #[test_case(
         r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M=xyz"Solder Mask")"#,
@@ -596,6 +627,31 @@ mod tests {
     )]
     #[test_case(
         r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COxyzPPER)"#,
+        StrContext::Label("signal M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M=xyz"Solder Mask")"#,
+        StrContext::Label("dielectric M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M=xyzSolder Mask")"#,
+        StrContext::Label("dielectric M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask)"#,
+        StrContext::Label("dielectric M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M="COPPER)"#,
+        StrContext::Label("signal M value"),
+        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
+    )]
+    #[test_case(
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER")"#,
         StrContext::Label("signal M value"),
         StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
     )]
