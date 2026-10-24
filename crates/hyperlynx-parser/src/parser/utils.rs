@@ -74,7 +74,7 @@ pub fn row_open<'a>(input: &mut &str, lit: &'static str) -> ModalResult<()> {
             .parse_next(input)?;
 
         peek(one_of(['=', ' ', '\t', '\r', '\n']))
-            .context(StrContext::Label("block name boundary"))
+            .context(StrContext::Label("row name boundary"))
             .context(StrContext::Expected(StrContextValue::Description(
                 "valid character after row name",
             )))

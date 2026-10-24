@@ -134,7 +134,7 @@ mod tests {
     #[test_case(
         r#"(?xyz REF="R3" L="F.Cu")"#,
         (
-        StrContext::Label("block name boundary"),
+        StrContext::Label("row name boundary"),
         StrContext::Expected(StrContextValue::Description("valid character after row name"))
         )
     )]

@@ -342,7 +342,7 @@ mod tests {
     )]
     #[test_case(
         r#"(DIELECTRICxyz T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
-        StrContext::Label("block name boundary"),
+        StrContext::Label("row name boundary"),
         StrContext::Expected(StrContextValue::Description("valid character after row name"))
     )]
     #[test_case(
@@ -357,7 +357,7 @@ mod tests {
     )]
     #[test_case(
         r#"(SIGNALxyz T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
-        StrContext::Label("block name boundary"),
+        StrContext::Label("row name boundary"),
         StrContext::Expected(StrContextValue::Description("valid character after row name"))
     )]
     // T attribute malformation
