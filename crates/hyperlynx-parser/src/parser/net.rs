@@ -75,9 +75,9 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         "X1",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "perimeter segment X1 key",
+            key_error_label: "seg X1 key",
             key_error_description: "invalid X1 key name",
-            value_error_label: "perimeter segment X1 value",
+            value_error_label: "seg X1 value",
             value_error_description: "invalid X1 attribute value",
         },
     )?;
@@ -87,9 +87,9 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         "Y1",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "perimeter segment Y1 key",
+            key_error_label: "seg Y1 key",
             key_error_description: "invalid Y1 key name",
-            value_error_label: "perimeter segment Y1 value",
+            value_error_label: "seg Y1 value",
             value_error_description: "invalid Y1 attribute value",
         },
     )?;
@@ -99,9 +99,9 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         "X2",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "perimeter segment X2 key",
+            key_error_label: "seg X2 key",
             key_error_description: "invalid X2 key name",
-            value_error_label: "perimeter segment X2 value",
+            value_error_label: "seg X2 value",
             value_error_description: "invalid X2 attribute value",
         },
     )?;
@@ -111,9 +111,9 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         "Y2",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "perimeter segment Y2 key",
+            key_error_label: "seg Y2 key",
             key_error_description: "invalid Y2 key name",
-            value_error_label: "perimeter segment Y2 value",
+            value_error_label: "seg Y2 value",
             value_error_description: "invalid Y2 attribute value",
         },
     )?;
@@ -123,10 +123,10 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         "W",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "perimeter segment Y2 key",
-            key_error_description: "invalid Y2 key name",
-            value_error_label: "perimeter segment Y2 value",
-            value_error_description: "invalid Y2 attribute value",
+            key_error_label: "seg W key",
+            key_error_description: "invalid W key name",
+            value_error_label: "seg W value",
+            value_error_description: "invalid W attribute value",
         },
     )?;
 
@@ -134,9 +134,9 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         input,
         "L",
         ExtractEntryErrorMessages {
-            key_error_label: "perimeter segment L key",
+            key_error_label: "seg L key",
             key_error_description: "invalid L key name",
-            value_error_label: "perimeter segment L value",
+            value_error_label: "seg L value",
             value_error_description: "invalid L attribute value",
         },
     )?;
@@ -380,6 +380,301 @@ mod tests {
         expected_errors: (StrContext, StrContext),
     ) {
         let err = parse_pin_row(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
+
+    // opening row
+    #[test_case(
+        r#"xyz(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("opening row"),
+            StrContext::Expected(StrContextValue::Description("("))
+        )
+    )]
+    // row name
+    #[test_case(
+        r#"(xyzSEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("SEG"))
+        )
+    )]
+    // X1 entry
+    #[test_case(
+        r#"(SEG xyzX1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 key name"))
+        ); "before X1"
+    )]
+    #[test_case(
+        r#"(SEG X1xyz=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 key name"))
+        ); "after X1"
+    )]
+    #[test_case(
+        r#"(SEG X1=xyz8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "before X1 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8xyz.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "inside X1 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.xyz2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "inside X1 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961xyz Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "after X1 value"
+    )]
+    // Y1 entry
+    #[test_case(
+        r#"(SEG X1=8.2480314961 xyzY1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 key name"))
+        ); "before Y1 key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1xyz=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 key name"))
+        ); "after Y1 key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=xyz-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "before Y1 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4xyz.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "inside Y1 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.xyz8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "inside Y1 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709xyz X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "after Y1 value"
+    )]
+    // X2 entry
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 xyzX2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 key name"))
+        ); "before X2"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2xyz=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 key name"))
+        ); "after X2"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=xyz8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "before X2 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8xyz.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "inside X2 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.xyz3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "inside X2 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110xyz Y2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "after X2 value"
+    )]
+    // Y2 entry
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 xyzY2=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 key name"))
+        ); "before Y2 key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2xyz=-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 key name"))
+        ); "after Y2 key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=xyz-4.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "before Y2 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4xyz.9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "inside Y2 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.xyz9429133858 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "inside Y2 value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858xyz W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "after Y2 value"
+    )]
+    // W entry
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 xyzW=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg W key"),
+            StrContext::Expected(StrContextValue::Description("invalid W key name"))
+        ); "before W key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 Wxyz=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg W key"),
+            StrContext::Expected(StrContextValue::Description("invalid W key name"))
+        ); "after W key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=xyz0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "before W value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0xyz.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "inside W value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.xyz0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("seg W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "inside W value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236xyz L="F.Cu")"#,
+        (
+            StrContext::Label("seg W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "after W value"
+    )]
+    // L entry
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 xyzL="F.Cu")"#,
+        (
+            StrContext::Label("seg L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        ); "before L key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 Lxyz="F.Cu")"#,
+        (
+            StrContext::Label("seg L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        ); "after L key"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L=xyz"F.Cu")"#,
+        (
+            StrContext::Label("seg L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "before L value"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L=F.Cu")"#,
+        (
+            StrContext::Label("seg L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "missing first double quote"
+    )]
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu)"#,
+        (
+            StrContext::Label("seg L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "missing second double quote"
+    )]
+    // closing row
+    #[test_case(
+        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu"xyz)"#,
+        (
+            StrContext::Label("closing row"),
+            StrContext::Expected(StrContextValue::Description(")"))
+        )
+    )]
+    fn rejects_malformed_seg_row(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let err = parse_seg_row(&mut input).unwrap_err();
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
