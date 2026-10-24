@@ -85,10 +85,11 @@ pub struct Pin {
     pub padstack_id: u32,
 }
 
-struct Via {
-    x: f64,
-    y: f64,
-    padstack_id: u32,
+#[derive(Debug, PartialEq)]
+pub struct Via {
+    pub x: f64,
+    pub y: f64,
+    pub padstack_id: u32,
 }
 
 #[derive(Debug, PartialEq)]
