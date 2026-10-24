@@ -375,7 +375,7 @@ mod tests {
             StrContext::Expected(StrContextValue::Description(")"))
         )
     )]
-    fn rejects_malformed_input_row(
+    fn rejects_malformed_pin_row(
         mut input: &str,
         expected_errors: (StrContext, StrContext),
     ) {
