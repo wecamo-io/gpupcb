@@ -151,6 +151,27 @@ mod tests {
         StrContext::Expected(StrContextValue::Description("invalid REF key name"))
         )
     )]
+    #[test_case(
+        r#"(? REF=xyz"R3" L="F.Cu")"#,
+        (
+        StrContext::Label("device REF value"),
+        StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(? REF=R3" L="F.Cu")"#,
+        (
+        StrContext::Label("device REF value"),
+        StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(? REF="R3 L="F.Cu")"#,
+        (
+        StrContext::Label("device L key"),
+        StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        )
+    )]
     // L attribute malversations
     #[test_case(
         r#"(? REF="R3" xyzL="F.Cu")"#,
@@ -166,6 +187,28 @@ mod tests {
         StrContext::Expected(StrContextValue::Description("invalid L key name"))
         )
     )]
+    #[test_case(
+        r#"(? REF="R3" L=xyz"F.Cu")"#,
+        (
+        StrContext::Label("device L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(? REF="R3" L=F.Cu")"#,
+        (
+        StrContext::Label("device L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(? REF="R3" L="F.Cu)"#,
+        (
+        StrContext::Label("device L value"),
+        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        )
+    )]
+    // closing row
     #[test_case(
         r#"(? REF="R3" L="F.Cu" xyz)"#,
         (
