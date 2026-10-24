@@ -5,6 +5,7 @@
 use version::parse_version_block;
 
 mod devices;
+mod net;
 mod padstack;
 mod perimeter_segment;
 mod stackup;
