@@ -77,11 +77,12 @@ pub struct Padstack {
     pub pads: Vec<Pad>,
 }
 
-struct Pin {
-    x: f64,
-    y: f64,
-    component_reference: String,
-    padstack_id: u32,
+#[derive(Debug, PartialEq)]
+pub struct Pin {
+    pub x: f64,
+    pub y: f64,
+    pub component_reference: String,
+    pub padstack_id: u32,
 }
 
 struct Via {
