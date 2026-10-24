@@ -4,7 +4,7 @@
 
 use winnow::{ModalResult, Parser};
 
-use crate::model::Pin;
+use crate::model::{Pin, Segment};
 use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry, extract_unsigned_integer_entry, row_open};
 
 fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
@@ -67,6 +67,92 @@ fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     })
 }
 
+fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
+    row_open(input, "SEG")?;
+
+    let x1 = extract_float_entry(
+        input,
+        "X1",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "perimeter segment X1 key",
+            key_error_description: "invalid X1 key name",
+            value_error_label: "perimeter segment X1 value",
+            value_error_description: "invalid X1 attribute value",
+        },
+    )?;
+
+    let y1 = extract_float_entry(
+        input,
+        "Y1",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "perimeter segment Y1 key",
+            key_error_description: "invalid Y1 key name",
+            value_error_label: "perimeter segment Y1 value",
+            value_error_description: "invalid Y1 attribute value",
+        },
+    )?;
+
+    let x2 = extract_float_entry(
+        input,
+        "X2",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "perimeter segment X2 key",
+            key_error_description: "invalid X2 key name",
+            value_error_label: "perimeter segment X2 value",
+            value_error_description: "invalid X2 attribute value",
+        },
+    )?;
+
+    let y2 = extract_float_entry(
+        input,
+        "Y2",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "perimeter segment Y2 key",
+            key_error_description: "invalid Y2 key name",
+            value_error_label: "perimeter segment Y2 value",
+            value_error_description: "invalid Y2 attribute value",
+        },
+    )?;
+
+    let width = extract_float_entry(
+        input,
+        "W",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "perimeter segment Y2 key",
+            key_error_description: "invalid Y2 key name",
+            value_error_label: "perimeter segment Y2 value",
+            value_error_description: "invalid Y2 attribute value",
+        },
+    )?;
+
+    let layer = extract_quoted_string_entry(
+        input,
+        "L",
+        ExtractEntryErrorMessages {
+            key_error_label: "perimeter segment L key",
+            key_error_description: "invalid L key name",
+            value_error_label: "perimeter segment L value",
+            value_error_description: "invalid L attribute value",
+        },
+    )?;
+
+    close_row(input)?;
+
+    Ok(Segment {
+        x1,
+        y1,
+        x2,
+        y2,
+        width,
+        layer: String::from(layer),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -95,6 +181,23 @@ mod tests {
         let pin = parse_pin_row(&mut input).unwrap();
 
         assert_eq!(pin, expected);
+    }
+
+    #[test_case(
+        r#"(SEG X1=8.2024606299 Y1=-5.0408464567 X2=8.2495078740 Y2=-5.0408464567 W=0.0196850394 L="F.Cu")"#,
+        Segment {
+            x1: 8.2024606299,
+            y1: -5.0408464567,
+            x2: 8.2495078740,
+            y2: -5.0408464567,
+            width: 0.0196850394,
+            layer: String::from("F.Cu"),
+        }
+    )]
+    fn parses_seg_row(mut input: &str, expected: Segment) {
+        let segment = parse_seg_row(&mut input).unwrap();
+
+        assert_eq!(segment, expected);
     }
 
     // malformed opening row
