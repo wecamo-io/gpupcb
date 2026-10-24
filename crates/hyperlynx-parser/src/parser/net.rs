@@ -5,7 +5,7 @@
 use winnow::{ModalResult, Parser};
 
 use crate::model::Pin;
-use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_string_entry, extract_unsigned_integer_entry, row_open};
+use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry, extract_unsigned_integer_entry, row_open};
 
 fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     row_open(input, "PIN")?;
@@ -34,10 +34,9 @@ fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
         },
     )?;
 
-    let component_reference = extract_string_entry(
+    let component_reference = extract_quoted_string_entry(
         input,
         "R",
-        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "pin R key",
             key_error_description: "invalid R key name",
@@ -72,6 +71,7 @@ fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
 mod tests {
     use super::*;
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
         r#"(PIN X=8.2480314961 Y=-4.8622047244 R="R3.1" P=0)"#,
@@ -95,5 +95,200 @@ mod tests {
         let pin = parse_pin_row(&mut input).unwrap();
 
         assert_eq!(pin, expected);
+    }
+
+    // malformed opening row
+    #[test_case(
+        r#"xyz(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("opening row"),
+            StrContext::Expected(StrContextValue::Description("("))
+        )
+    )]
+    // row name
+    #[test_case(
+        r#"(xyzPIN X=8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN"))
+        )
+    )]
+    #[test_case(
+        r#"(PINxyz X=8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("row name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        )
+    )]
+    // X entry
+    #[test_case(
+        r#"(PIN xyzX=8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin X key"),
+            StrContext::Expected(StrContextValue::Description("invalid X key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN Xxyz=8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin X key"),
+            StrContext::Expected(StrContextValue::Description("invalid X key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=xyz8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8xyz.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.xyz3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646xyz Y=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        )
+    )]
+    // Y entry
+    #[test_case(
+        r#"(PIN X=8.3572834646 xyzY=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin Y key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Yxyz=-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin Y key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=xyz-4.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4xyz.5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.xyz5978346457 R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457xyz R="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        )
+    )]
+    // R entry
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 xyzR="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin R key"),
+            StrContext::Expected(StrContextValue::Description("invalid R key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 Rxyz="U2.2" P=12)"#,
+        (
+            StrContext::Label("pin R key"),
+            StrContext::Expected(StrContextValue::Description("invalid R key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R=xyz"U2.2" P=12)"#,
+        (
+            StrContext::Label("pin R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R=U2.2" P=12)"#,
+        (
+            StrContext::Label("pin R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2 P=12)"#,
+        (
+            StrContext::Label("pin R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        )
+    )]
+    // P entry
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2" xyzP=12)"#,
+        (
+            StrContext::Label("pin P key"),
+            StrContext::Expected(StrContextValue::Description("invalid P key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2" Pxyz=12)"#,
+        (
+            StrContext::Label("pin P key"),
+            StrContext::Expected(StrContextValue::Description("invalid P key name"))
+        )
+    )]
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2" P=xyz12)"#,
+        (
+            StrContext::Label("pin P value"),
+            StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
+        )
+    )]
+    // closing row
+    #[test_case(
+        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2" P=12xyz)"#,
+        (
+            StrContext::Label("closing row"),
+            StrContext::Expected(StrContextValue::Description(")"))
+        )
+    )]
+    fn rejects_malformed_input_row(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext),
+    ) {
+        let err = parse_pin_row(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
     }
 }
