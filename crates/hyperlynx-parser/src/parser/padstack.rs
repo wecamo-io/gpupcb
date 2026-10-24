@@ -2,16 +2,15 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{dec_uint, digit1};
-use winnow::combinator::{backtrack_err, delimited, repeat};
+use winnow::ascii::digit1;
+use winnow::combinator::{backtrack_err, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
-use winnow::token::{literal, take_until};
+use winnow::token::literal;
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Pad, PadShape, Padstack};
 use crate::parser::utils::{
-    close_block, close_row, extract_float_value, extract_unsigned_integer_entry, open_block,
-    row_open, ExtractEntryErrorMessages, ExtractValueErrorMessages,
+    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row, extract_float_value, extract_quoted_string_value, extract_unsigned_integer_entry, open_block, row_open,
 };
 
 fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<()> {
@@ -38,12 +37,13 @@ fn parse_pad_arguments_separator(input: &mut &str) -> ModalResult<()> {
 fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
     row_open(input, "")?;
 
-    let layer = backtrack_err(delimited('"', take_until(0.., '"'), '"'))
-        .context(StrContext::Label("pad layer value"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid layer name value",
-        )))
-        .parse_next(input)?;
+    let layer = extract_quoted_string_value(
+        input,
+        ExtractValueErrorMessages {
+            value_error_label: "pad layer value",
+            value_error_description: "invalid layer value",
+        }
+    )?;
 
     parse_pad_arguments_separator(input)?;
 
@@ -354,28 +354,28 @@ mod tests {
         r#"(xyz"F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+            StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     #[test_case(
         r#"(F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+            StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     #[test_case(
         r#"("F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+            StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     #[test_case(
         r#"(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
         (
             StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer name value"))
+            StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     // shape value malversation
