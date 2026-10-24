@@ -91,13 +91,14 @@ struct Via {
     padstack_id: u32,
 }
 
-struct Segment {
-    x1: f64,
-    y1: f64,
-    x2: f64,
-    y2: f64,
-    width: f64,
-    layer: String,
+#[derive(Debug, PartialEq)]
+pub struct Segment {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub width: f64,
+    pub layer: String,
 }
 
 struct Arc {
