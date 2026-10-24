@@ -18,6 +18,7 @@ pub struct ExtractValueErrorMessages {
     pub value_error_description: &'static str,
 }
 
+#[derive(Clone)]
 pub struct ExtractEntryErrorMessages {
     pub key_error_label: &'static str,
     pub key_error_description: &'static str,
@@ -127,17 +128,30 @@ pub fn extract_float_value(
     Ok(value)
 }
 
-pub fn extract_string_value(
+pub fn extract_quoted_string_value(
+    input: &mut &str,
+    error_messages: ExtractValueErrorMessages,
+) -> ModalResult<String> {
+    let value: &str = backtrack_err(
+        delimited('"', take_until(0.., '"'), '"'),
+    )
+    .context(StrContext::Label(error_messages.value_error_label))
+    .context(StrContext::Expected(StrContextValue::Description(
+        error_messages.value_error_description,
+    )))
+    .parse_next(input)?;
+
+    Ok(String::from(value))
+}
+
+pub fn extract_unquoted_string_value(
     input: &mut &str,
     till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<String> {
-    let value: &str = backtrack_err(alt((
-        // quoted string parsing
-        delimited('"', take_until(0.., '"'), '"'),
-        // unquoted string parsing
+    let value: &str = backtrack_err(
         take_till(1.., |c: char| c == till_literal),
-    )))
+    )
     .context(StrContext::Label(error_messages.value_error_label))
     .context(StrContext::Expected(StrContextValue::Description(
         error_messages.value_error_description,
@@ -209,7 +223,37 @@ pub fn extract_float_entry(
     Ok(value)
 }
 
-pub fn extract_string_entry(
+pub fn extract_quoted_string_entry(
+    input: &mut &str,
+    key: &str,
+    error_messages: ExtractEntryErrorMessages,
+) -> ModalResult<String> {
+    extract_key(
+        input,
+        key,
+        ExtractKeyErrorMessages {
+            key_error_label: error_messages.key_error_label,
+            key_error_description: error_messages.key_error_description,
+        },
+    )?;
+    multispace0(input)?;
+
+    literal('=').parse_next(input)?;
+    multispace0(input)?;
+
+    let value = extract_quoted_string_value(
+        input,
+        ExtractValueErrorMessages {
+            value_error_label: error_messages.value_error_label,
+            value_error_description: error_messages.value_error_description,
+        },
+    )?;
+    multispace0(input)?;
+
+    Ok(value)
+}
+
+pub fn extract_unquoted_string_entry(
     input: &mut &str,
     key: &str,
     till_literal: char,
@@ -228,7 +272,7 @@ pub fn extract_string_entry(
     literal('=').parse_next(input)?;
     multispace0(input)?;
 
-    let value = extract_string_value(
+    let value = extract_unquoted_string_value(
         input,
         till_literal,
         ExtractValueErrorMessages {
