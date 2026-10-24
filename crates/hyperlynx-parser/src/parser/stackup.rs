@@ -9,9 +9,36 @@ use winnow::{ModalResult, Parser};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
-    close_block, close_row, extract_float_entry, extract_string_entry, open_block, row_open,
+    close_block, close_row, extract_float_entry, extract_quoted_string_entry, extract_unquoted_string_entry, open_block, row_open,
     ExtractEntryErrorMessages,
 };
+
+fn parse_m_attribute_quoted(input: &mut &str, layer: &str) -> ModalResult<String> {
+    extract_quoted_string_entry(
+        input,
+        "M",
+        ExtractEntryErrorMessages {
+            key_error_label: " M key",
+            key_error_description: "invalid M key name",
+            value_error_label: "dielectric M value",
+            value_error_description: "invalid M attribute value",
+        }
+    )
+}
+
+fn parse_m_attribute_unquoted(input: &mut &str) -> ModalResult<String> {
+    extract_unquoted_string_entry(
+        input,
+        "M",
+        ')',
+        ExtractEntryErrorMessages {
+            key_error_label: "dielectric M key",
+            key_error_description: "invalid M key name",
+            value_error_label: "dielectric M value",
+            value_error_description: "invalid M attribute value",
+        }
+    )
+}
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     row_open(input, "DIELECTRIC")?;
@@ -40,10 +67,9 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         },
     )?;
 
-    let layer_name = extract_string_entry(
+    let layer_name = extract_quoted_string_entry(
         input,
         "L",
-        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "dielectric L key",
             key_error_description: "invalid L key name",
@@ -53,17 +79,35 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     )?;
 
     let material = {
-        let m = extract_string_entry(
-            input,
-            "M",
-            ')',
-            ExtractEntryErrorMessages {
-                key_error_label: "dielectric M key",
-                key_error_description: "invalid M key name",
-                value_error_label: "dielectric M value",
-                value_error_description: "invalid M attribute value",
-            },
-        )?;
+        let m = alt(
+            (
+                |input: &mut &str| {
+                    extract_quoted_string_entry(
+                        input,
+                        "M",
+                        ExtractEntryErrorMessages {
+                            key_error_label: "dielectric M key",
+                            key_error_description: "invalid M key name",
+                            value_error_label: "dielectric M value",
+                            value_error_description: "invalid M attribute value",
+                        }
+                    )
+                },
+                |input: &mut &str| {
+                    extract_unquoted_string_entry(
+                        input,
+                        "M",
+                        ')',
+                        ExtractEntryErrorMessages {
+                            key_error_label: "dielectric M key",
+                            key_error_description: "invalid M key name",
+                            value_error_label: "dielectric M value",
+                            value_error_description: "invalid M attribute value",
+                        }
+                    )
+                },
+        )
+        ).parse_next(input)?;
 
         match m.as_str() {
             "Solder Mask" => LayerMaterial::SolderMask,
@@ -134,10 +178,9 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         },
     )?;
 
-    let layer_name = extract_string_entry(
+    let layer_name = extract_quoted_string_entry(
         input,
         "L",
-        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "signal L key",
             key_error_description: "invalid L key name",
@@ -147,17 +190,35 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     )?;
 
     let material = {
-        let m = extract_string_entry(
-            input,
-            "M",
-            ')',
-            ExtractEntryErrorMessages {
-                key_error_label: "signal M key",
-                key_error_description: "invalid M key name",
-                value_error_label: "signal M value",
-                value_error_description: "invalid M attribute value",
-            },
-        )?;
+        let m = alt(
+            (
+                |input: &mut &str| {
+                    extract_quoted_string_entry(
+                        input,
+                        "M",
+                        ExtractEntryErrorMessages {
+                            key_error_label: "signal M key",
+                            key_error_description: "invalid M key name",
+                            value_error_label: "signal M value",
+                            value_error_description: "invalid M attribute value",
+                        }
+                    )
+                },
+                |input: &mut &str| {
+                    extract_unquoted_string_entry(
+                        input,
+                        "M",
+                        ')',
+                        ExtractEntryErrorMessages {
+                            key_error_label: "signal M key",
+                            key_error_description: "invalid M key name",
+                            value_error_label: "signal M value",
+                            value_error_description: "invalid M attribute value",
+                        }
+                    )
+                },
+        )
+        ).parse_next(input)?;
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
