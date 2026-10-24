@@ -4,7 +4,7 @@
 
 use winnow::{ModalResult, Parser};
 
-use crate::model::{Pin, Segment};
+use crate::model::{Pin, Segment, Via};
 use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry, extract_unsigned_integer_entry, row_open};
 
 fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
@@ -153,6 +153,52 @@ fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
     })
 }
 
+fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
+    row_open(input, "VIA")?;
+
+    let x = extract_float_entry(
+        input,
+        "X",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "via X key",
+            key_error_description: "invalid X key name",
+            value_error_label: "via X value",
+            value_error_description: "invalid X attribute value",
+        }
+    )?;
+
+    let y = extract_float_entry(
+        input,
+        "Y",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "via Y key",
+            key_error_description: "invalid Y key name",
+            value_error_label: "via Y value",
+            value_error_description: "invalid Y attribute value",
+        }
+    )?;
+
+    let padstack_id = extract_unsigned_integer_entry(
+        input,
+        "P",
+        ')',
+        ExtractEntryErrorMessages {
+            key_error_label: "via P key",
+            key_error_description: "invalid P key name",
+            value_error_label: "via P value",
+            value_error_description: "invalid P attribute value",
+        }
+    )?;
+
+    Ok(Via {
+        x,
+        y,
+        padstack_id
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,6 +244,20 @@ mod tests {
         let segment = parse_seg_row(&mut input).unwrap();
 
         assert_eq!(segment, expected);
+    }
+
+    #[test_case(
+        r#"(VIA X=8.1917322835 Y=-5.0476377953 P=18)"#,
+        Via {
+            x: 8.1917322835,
+            y: -5.0476377953,
+            padstack_id: 18,
+        }
+    )]
+    fn parses_via_row(mut input: &str, expected: Via) {
+        let via = parse_via_row(&mut input).unwrap();
+
+        assert_eq!(via, expected);
     }
 
     // malformed opening row
