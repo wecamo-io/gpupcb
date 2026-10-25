@@ -153,9 +153,9 @@ mod arc_row_parser_tests {
         }
     )]
     fn parses_arc_row(mut input: &str, expected: Arc) {
-        let via = parse_arc_row(&mut input).unwrap();
+        let arc = parse_arc_row(&mut input).unwrap();
 
-        assert_eq!(via, expected);
+        assert_eq!(arc, expected);
     }
 
     // opening row
