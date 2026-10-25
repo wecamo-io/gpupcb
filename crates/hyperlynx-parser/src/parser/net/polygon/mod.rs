@@ -64,7 +64,6 @@ pub fn parse_polyvoid_block(input: &mut &str) -> ModalResult<Polyvoid> {
 }
 
 pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
-    println!("{:#?}", input);
     open_block(input, "POLYGON")?;
 
     let polygon_type = {

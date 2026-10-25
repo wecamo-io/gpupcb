@@ -56,7 +56,7 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
     let mut arcs: Vec<Arc> = vec![];
     let mut polygons: Vec<Polygon> = vec![];
     let mut polyvoids: Vec<Polyvoid> = vec![];
-    
+
     let elements: Vec<NetElement> = repeat(0.., parse_net_element).parse_next(input)?;
 
     for element in elements {
@@ -85,7 +85,7 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
 mod net_block_parser_tests {
     use crate::model::PolygonType;
 
-use super::*;
+    use super::*;
     use test_case::test_case;
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
@@ -189,5 +189,55 @@ use super::*;
         let net = parse_net_block(&mut input).unwrap();
 
         assert_eq!(net, expected);
+    }
+
+    // opening block
+    #[test_case(
+        "xyz{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
+        )
+    )]
+    // NET entry
+    #[test_case(
+        "{xyzNET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("net NET key"),
+            StrContext::Expected(StrContextValue::Description("invalid NET key name"))
+        ); "before NET key"
+    )]
+    #[test_case(
+        "{NETxyz=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("net NET key"),
+            StrContext::Expected(StrContextValue::Description("invalid NET key name"))
+        ); "after NET key"
+    )]
+    #[test_case(
+        "{NET=GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("net NET value"),
+            StrContext::Expected(StrContextValue::Description("invalid NET attribute value"))
+        ); "before NET value"
+    )]
+    fn rejects_malformed_net_block(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let err = parse_net_block(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
     }
 }
