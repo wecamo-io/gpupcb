@@ -4,5 +4,6 @@
 
 mod arc;
 mod pin;
+mod polygon;
 mod seg;
 mod via;
