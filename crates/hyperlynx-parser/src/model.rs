@@ -124,11 +124,12 @@ struct Polygon {
     outline: Vec<(f64, f64)>,
 }
 
-struct Polyvoid {
-    id: u32,
-    x: f64,
-    y: f64,
-    outline: Vec<(f64, f64)>,
+#[derive(Debug, PartialEq)]
+pub struct Polyvoid {
+    pub id: u32,
+    pub x: f64,
+    pub y: f64,
+    pub outline: Vec<(f64, f64)>,
 }
 
 struct Net {
