@@ -134,14 +134,15 @@ pub struct Polyvoid {
     pub outline: Vec<(f64, f64)>,
 }
 
-struct Net {
-    name: String,
-    pins: Vec<Pin>,
-    vias: Vec<Via>,
-    segments: Vec<Segment>,
-    arcs: Vec<Arc>,
-    polygons: Vec<Polygon>,
-    polyvoids: Vec<Polyvoid>,
+#[derive(Debug, PartialEq)]
+pub struct Net {
+    pub name: String,
+    pub pins: Vec<Pin>,
+    pub vias: Vec<Via>,
+    pub segments: Vec<Segment>,
+    pub arcs: Vec<Arc>,
+    pub polygons: Vec<Polygon>,
+    pub polyvoids: Vec<Polyvoid>,
 }
 
 struct Board {
