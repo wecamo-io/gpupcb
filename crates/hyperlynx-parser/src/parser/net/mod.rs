@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+mod arc;
 mod pin;
 mod seg;
 mod via;
