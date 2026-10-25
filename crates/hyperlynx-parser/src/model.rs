@@ -102,16 +102,17 @@ pub struct Segment {
     pub layer: String,
 }
 
-struct Arc {
-    x1: f64,
-    y1: f64,
-    x2: f64,
-    y2: f64,
-    xc: f64,
-    yc: f64,
-    radius: f64,
-    width: f64,
-    layer: String,
+#[derive(Debug, PartialEq)]
+pub struct Arc {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub xc: f64,
+    pub yc: f64,
+    pub radius: f64,
+    pub width: f64,
+    pub layer: String,
 }
 
 struct Polygon {
