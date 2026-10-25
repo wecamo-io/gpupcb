@@ -102,9 +102,9 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
             "POUR" => PolygonType::Pour,
             _ => {
                 let mut err = ContextError::new();
-                err.push(StrContext::Label("dielectric M value"));
+                err.push(StrContext::Label("polygon T value"));
                 err.push(StrContext::Expected(StrContextValue::Description(
-                    "invalid M attribute value",
+                    "invalid T attribute value",
                 )));
 
                 Err(ErrMode::Backtrack(err))
@@ -116,9 +116,9 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         input,
         "L",
         ExtractEntryErrorMessages {
-            key_error_label: "polyvoid L key",
+            key_error_label: "polygon L key",
             key_error_description: "invalid L key name",
-            value_error_label: "polyvoid L value",
+            value_error_label: "polygon L value",
             value_error_description: "invalid L attribute value",
         },
     )?;
@@ -128,9 +128,9 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         "ID",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "polyvoid ID key",
+            key_error_label: "polygon ID key",
             key_error_description: "invalid ID key name",
-            value_error_label: "polyvoid ID value",
+            value_error_label: "polygon ID value",
             value_error_description: "invalid ID attribute value",
         },
     )?;
@@ -140,9 +140,9 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         "X",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "polyvoid X key",
+            key_error_label: "polygon X key",
             key_error_description: "invalid X key name",
-            value_error_label: "polyvoid X value",
+            value_error_label: "polygon X value",
             value_error_description: "invalid X attribute value",
         }
     )?;
@@ -152,9 +152,9 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         "Y",
         ' ',
         ExtractEntryErrorMessages {
-            key_error_label: "polyvoid Y key",
+            key_error_label: "polygon Y key",
             key_error_description: "invalid Y key name",
-            value_error_label: "polyvoid Y value",
+            value_error_label: "polygon Y value",
             value_error_description: "invalid Y attribute value",
         }
     )?;
@@ -354,6 +354,230 @@ mod polyvoid_block_parser_tests {
         expected_errors: (StrContext, StrContext)
     ) {
         let err = parse_polyvoid_block(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
+
+    // opening block
+    #[test_case(
+        "xyz{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
+        )
+    )]
+    // block name
+    #[test_case(
+        "{xyzPOLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("POLYGON"))
+        )
+    )]
+    #[test_case(
+        "{POLYGONxyz T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        )
+    )]
+    // T entry
+    #[test_case(
+        "{POLYGON xyzT=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon T key"),
+            StrContext::Expected(StrContextValue::Description("invalid T key name"))
+        ); "before T key"
+    )]
+    #[test_case(
+        "{POLYGON Txyz=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon T key"),
+            StrContext::Expected(StrContextValue::Description("invalid T key name"))
+        ); "after T key"
+    )]
+    #[test_case(
+        "{POLYGON T=xyzPOUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon T value"),
+            StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+        ); "before T value"
+    )]
+    #[test_case(
+        "{POLYGON T=POURxyz L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon T value"),
+            StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+        ); "after T value"
+    )]
+    // L entry
+    #[test_case(
+        "{POLYGON T=POUR xyzL=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        ); "before L key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR Lxyz=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        ); "after L key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=xyz\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "before L value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=B.Cu ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "after L value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "after L value"
+    )]
+    // ID entry
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" xyzID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon ID key"),
+            StrContext::Expected(StrContextValue::Description("invalid ID key name"))
+        ); "before ID key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" IDxyz=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon ID key"),
+            StrContext::Expected(StrContextValue::Description("invalid ID key name"))
+        ); "after ID key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=xyz2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon ID value"),
+            StrContext::Expected(StrContextValue::Description("invalid ID attribute value"))
+        ); "before ID value"
+    )]
+    // X entry
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 xyzX=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon X key"),
+            StrContext::Expected(StrContextValue::Description("invalid X key name"))
+        ); "before X key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 Xxyz=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon X key"),
+            StrContext::Expected(StrContextValue::Description("invalid X key name"))
+        ); "after X key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=xyz8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "before X value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8xyz.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "inside X value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.xyz3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "inside X value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071xyz Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "after X value"
+    )]
+    // Y entry
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 xyzY=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon Y key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y key name"))
+        ); "before Y key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Yxyz=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon Y key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y key name"))
+        ); "after Y key"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=xyz-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "before Y value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4xyz.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "inside Y value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.xyz5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "inside Y value"
+    )]
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157xyz\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
+        (
+            StrContext::Label("polygon Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "after Y value"
+    )]
+    // closing block
+    #[test_case(
+        "{POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\nxyz}",
+        (
+            StrContext::Label("closing block"),
+            StrContext::Expected(StrContextValue::Description("}"))
+        )
+    )]
+    fn rejects_malformed_polygon_block(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let err = parse_polygon_block(&mut input).unwrap_err();
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
