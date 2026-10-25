@@ -7,7 +7,7 @@ use winnow::{ModalResult, Parser};
 use crate::model::Via;
 use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_unsigned_integer_entry, row_open};
 
-fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
+pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
     row_open(input, "VIA")?;
 
     let x = extract_float_entry(
