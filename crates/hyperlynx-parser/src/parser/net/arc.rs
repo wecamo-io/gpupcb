@@ -157,4 +157,421 @@ mod arc_row_parser_tests {
 
         assert_eq!(via, expected);
     }
+
+    // opening row
+    #[test_case(
+        r#"xyz(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("opening row"),
+            StrContext::Expected(StrContextValue::Description("("))
+        )
+    )]
+    // row name
+    #[test_case(
+        r#"(xyzARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("ARC"))
+        )
+    )]
+    #[test_case(
+        r#"(ARCxyz X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("row name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        )
+    )]
+    // X1 entry
+    #[test_case(
+        r#"(ARC xyzX1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 key name"))
+        ); "before X1 key"
+    )]
+    #[test_case(
+        r#"(ARC X1xyz=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 key name"))
+        ); "after X1 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=xyz8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "before X1 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8xyz.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "inside X1 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.xyz2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "inside X1 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961xyz Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
+        ); "after X1 value"
+    )]
+    // Y1 entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 xyzY1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 key name"))
+        ); "before Y1 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1xyz=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y1 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 key name"))
+        ); "after Y1 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=xyz-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "before Y1 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4xyz.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "inside Y1 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.xyz8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "inside Y1 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709xyz X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y1 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
+        ); "after Y1 value"
+    )]
+    // X2 entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 xyzX2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 key name"))
+        ); "before X2 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2xyz=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 key name"))
+        ); "after X2 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=xyz8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "before X2 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8xyz.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "inside X2 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.xyz3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "inside X2 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110xyz Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc X2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
+        ); "after X2 value"
+    )]
+    // Y2 entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 xyzY2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 key name"))
+        ); "before Y2 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2xyz=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y2 key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 key name"))
+        ); "after Y2 key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=xyz-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "before Y2 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4xyz.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "inside Y2 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.xyz9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "inside Y2 value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858xyz XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc Y2 value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
+        ); "after Y2 value"
+    )]
+    // XC entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 xyzXC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc XC key"),
+            StrContext::Expected(StrContextValue::Description("invalid XC key name"))
+        ); "before XC key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XCxyz=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc XC key"),
+            StrContext::Expected(StrContextValue::Description("invalid XC key name"))
+        ); "after XC key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=xyz0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc XC value"),
+            StrContext::Expected(StrContextValue::Description("invalid XC attribute value"))
+        ); "before XC value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0xyz.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc XC value"),
+            StrContext::Expected(StrContextValue::Description("invalid XC attribute value"))
+        ); "inside XC value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.xyz5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc XC value"),
+            StrContext::Expected(StrContextValue::Description("invalid XC attribute value"))
+        ); "inside XC value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5xyz YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc XC value"),
+            StrContext::Expected(StrContextValue::Description("invalid XC attribute value"))
+        ); "after XC value"
+    )]
+    // YC entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 xyzYC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc YC key"),
+            StrContext::Expected(StrContextValue::Description("invalid YC key name"))
+        ); "before YC key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YCxyz=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc YC key"),
+            StrContext::Expected(StrContextValue::Description("invalid YC key name"))
+        ); "after YC key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=xyz0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc YC value"),
+            StrContext::Expected(StrContextValue::Description("invalid YC attribute value"))
+        ); "before YC value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0xyz.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc YC value"),
+            StrContext::Expected(StrContextValue::Description("invalid YC attribute value"))
+        ); "inside YC value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.xyz5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc YC value"),
+            StrContext::Expected(StrContextValue::Description("invalid YC attribute value"))
+        ); "inside YC value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5xyz R=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc YC value"),
+            StrContext::Expected(StrContextValue::Description("invalid YC attribute value"))
+        ); "after YC value"
+    )]
+    // R entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 xyzR=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc R key"),
+            StrContext::Expected(StrContextValue::Description("invalid R key name"))
+        ); "before R key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 Rxyz=1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc R key"),
+            StrContext::Expected(StrContextValue::Description("invalid R key name"))
+        ); "after R key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=xyz1.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        ); "before R value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1xyz.0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        ); "inside R value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.xyz0 W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        ); "inside R value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0xyz W=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc R value"),
+            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
+        ); "after R value"
+    )]
+    // W entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 xyzW=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc W key"),
+            StrContext::Expected(StrContextValue::Description("invalid W key name"))
+        ); "before W key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 Wxyz=0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc W key"),
+            StrContext::Expected(StrContextValue::Description("invalid W key name"))
+        ); "after W key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=xyz0.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "before W value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0xyz.0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "inside W value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.xyz0118110236 L="F.Cu")"#,
+        (
+            StrContext::Label("arc W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "inside W value"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236xyz L="F.Cu")"#,
+        (
+            StrContext::Label("arc W value"),
+            StrContext::Expected(StrContextValue::Description("invalid W attribute value"))
+        ); "after W value"
+    )]
+    // L entry
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 xyzL="F.Cu")"#,
+        (
+            StrContext::Label("arc L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        ); "before L key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 Lxyz="F.Cu")"#,
+        (
+            StrContext::Label("arc L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        ); "after L key"
+    )]
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=xyz"F.Cu")"#,
+        (
+            StrContext::Label("arc L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        ); "before L value"
+    )]
+    // closing row
+    #[test_case(
+        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu"xyz)"#,
+        (
+            StrContext::Label("closing row"),
+            StrContext::Expected(StrContextValue::Description(")"))
+        ); "after L value"
+    )]
+    fn rejects_malformed_arc_row(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let err = parse_arc_row(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
 }
