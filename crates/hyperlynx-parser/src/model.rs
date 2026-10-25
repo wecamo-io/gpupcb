@@ -35,7 +35,8 @@ pub enum PadShape {
     Rectangle,
 }
 
-enum PolygonType {
+#[derive(Debug, PartialEq)]
+pub enum PolygonType {
     Pour,
 }
 
@@ -115,13 +116,14 @@ pub struct Arc {
     pub layer: String,
 }
 
-struct Polygon {
-    polygon_type: PolygonType,
-    layer: String,
-    id: u32,
-    x: f64,
-    y: f64,
-    outline: Vec<(f64, f64)>,
+#[derive(Debug, PartialEq)]
+pub struct Polygon {
+    pub polygon_type: PolygonType,
+    pub layer: String,
+    pub id: u32,
+    pub x: f64,
+    pub y: f64,
+    pub outline: Vec<(f64, f64)>,
 }
 
 #[derive(Debug, PartialEq)]
