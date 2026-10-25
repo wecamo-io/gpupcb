@@ -69,7 +69,7 @@ mod polyvoid_block_parser_tests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
-        "{POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }",
+        "{POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n    (LINE X=8.1200787402 Y=-4.6751968504)\n}",
         Polyvoid {
             id: 1,
             x: 8.1200787402,
@@ -81,5 +81,164 @@ mod polyvoid_block_parser_tests {
         let polyvoid = parse_polyvoid_block(&mut input).unwrap();
 
         assert_eq!(polyvoid, expected);
+    }
+
+    // opening block
+    #[test_case(
+        "xyz{POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
+        )
+    )]
+    // block name
+    #[test_case(
+        "{xyzPOLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("POLYVOID"))
+        )
+    )]
+    #[test_case(
+        "{POLYVOIDxyz ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        )
+    )]
+    // ID entry
+    #[test_case(
+        "{POLYVOID xyzID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid ID key"),
+            StrContext::Expected(StrContextValue::Description("invalid ID key name"))
+        ); "before ID key"
+    )]
+    #[test_case(
+        "{POLYVOID IDxyz=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid ID key"),
+            StrContext::Expected(StrContextValue::Description("invalid ID key name"))
+        ); "after ID key"
+    )]
+    #[test_case(
+        "{POLYVOID ID=xyz1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid ID value"),
+            StrContext::Expected(StrContextValue::Description("invalid ID attribute value"))
+        ); "before ID value"
+    )]
+    // X entry
+    #[test_case(
+        "{POLYVOID ID=1 xyzX=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid X key"),
+            StrContext::Expected(StrContextValue::Description("invalid X key name"))
+        ); "before X key"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 Xxyz=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid X key"),
+            StrContext::Expected(StrContextValue::Description("invalid X key name"))
+        ); "after X key"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=xyz8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "before X value"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8xyz.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "inside X value"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.xyz1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "inside X value"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402xyz Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid X value"),
+            StrContext::Expected(StrContextValue::Description("invalid X attribute value"))
+        ); "after X value"
+    )]
+    // Y entry
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 xyzY=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid Y key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y key name"))
+        ); "before Y key"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 Yxyz=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid Y key"),
+            StrContext::Expected(StrContextValue::Description("invalid Y key name"))
+        ); "after Y key"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 Y=xyz-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "before Y value"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 Y=-4xyz.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "inside Y value"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 Y=-4.xyz6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "inside Y value"
+    )]
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504xyz\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
+        (
+            StrContext::Label("polyvoid Y value"),
+            StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
+        ); "after Y value"
+    )]
+    // closing block
+    #[test_case(
+        "{POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\nxyz}",
+        (
+            StrContext::Label("closing block"),
+            StrContext::Expected(StrContextValue::Description("}"))
+        )
+    )]
+    fn rejects_malformed_polyvoid_block(
+        mut input: &str,
+        expected_errors: (StrContext, StrContext)
+    ) {
+        let err = parse_polyvoid_block(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
     }
 }
