@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::digit1;
-use winnow::combinator::{backtrack_err, repeat};
+use winnow::ascii::{digit1, multispace0};
+use winnow::combinator::{backtrack_err, cut_err, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::literal;
 use winnow::{ModalResult, Parser};
@@ -117,6 +117,12 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
     })
 }
 
+fn parse_pad_row_with_err(input: &mut &str) -> ModalResult<Pad> {
+    peek((multispace0, "(")).parse_next(input)?;
+
+    cut_err(parse_pad_row).parse_next(input)
+}
+
 pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
     open_block(input, "")?;
 
@@ -150,7 +156,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
         )))
         .parse_next(input)?;
 
-    let pads: Vec<Pad> = repeat(0.., parse_pad_row).parse_next(input)?;
+    let pads: Vec<Pad> = repeat(0.., parse_pad_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
@@ -158,7 +164,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
 }
 
 #[cfg(test)]
-mod tests {
+mod padstack_block_parser_tests {
     use super::*;
     use test_case::test_case;
 
@@ -593,6 +599,49 @@ mod tests {
         (
             StrContext::Label("padstack Drill value"),
             StrContext::Expected(StrContextValue::Description("invalid Drill attribute value"))
+        )
+    )]
+    // row malversations
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("pad layer value"),
+            StrContext::Expected(StrContextValue::Description("invalid layer value"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (\"MDEF\" 0, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 6, 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("pad shape value"),
+            StrContext::Expected(StrContextValue::Description("invalid pad shape value, should be 0-2"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0 0.023622047, 0.023622047, 0.0, M)\n}",
+        (
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0 M)\n}",
+        (
+            StrContext::Label("pad ', M' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
+        )
+    )]
+    #[test_case(
+        "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0,)\n}",
+        (
+            StrContext::Label("pad ', M' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
         )
     )]
     // closing brace malversations
