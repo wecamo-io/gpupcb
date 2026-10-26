@@ -2,15 +2,16 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::combinator::{alt, peek, repeat};
+use winnow::ascii::multispace0;
+use winnow::combinator::{alt, cut_err, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::literal;
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
-    close_block, close_row, extract_float_entry, extract_quoted_string_entry, extract_unquoted_string_entry, open_block, row_open,
-    ExtractEntryErrorMessages,
+    close_block, close_row, extract_float_entry, extract_quoted_string_entry,
+    extract_unquoted_string_entry, open_block, row_open, ExtractEntryErrorMessages,
 };
 
 fn parse_m_attribute_quoted(input: &mut &str, layer: &str) -> ModalResult<String> {
@@ -22,7 +23,7 @@ fn parse_m_attribute_quoted(input: &mut &str, layer: &str) -> ModalResult<String
             key_error_description: "invalid M key name",
             value_error_label: "dielectric M value",
             value_error_description: "invalid M attribute value",
-        }
+        },
     )
 }
 
@@ -36,12 +37,22 @@ fn parse_m_attribute_unquoted(input: &mut &str) -> ModalResult<String> {
             key_error_description: "invalid M key name",
             value_error_label: "dielectric M value",
             value_error_description: "invalid M attribute value",
-        }
+        },
     )
 }
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
-    row_open(input, "DIELECTRIC")?;
+    match row_open(input, "DIELECTRIC") {
+        Ok(_) => {}
+        Err(_) => {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("layer row name"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "dielectric/signal key name",
+            )));
+            return Err(ErrMode::Cut(err));
+        }
+    };
 
     let thickness = extract_float_entry(
         input,
@@ -79,35 +90,34 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     )?;
 
     let material = {
-        let m = alt(
-            (
-                |input: &mut &str| {
-                    extract_quoted_string_entry(
-                        input,
-                        "M",
-                        ExtractEntryErrorMessages {
-                            key_error_label: "dielectric M key",
-                            key_error_description: "invalid M key name",
-                            value_error_label: "dielectric M value",
-                            value_error_description: "invalid M attribute value",
-                        }
-                    )
-                },
-                |input: &mut &str| {
-                    extract_unquoted_string_entry(
-                        input,
-                        "M",
-                        ')',
-                        ExtractEntryErrorMessages {
-                            key_error_label: "dielectric M key",
-                            key_error_description: "invalid M key name",
-                            value_error_label: "dielectric M value",
-                            value_error_description: "invalid M attribute value",
-                        }
-                    )
-                },
-        )
-        ).parse_next(input)?;
+        let m = alt((
+            |input: &mut &str| {
+                extract_quoted_string_entry(
+                    input,
+                    "M",
+                    ExtractEntryErrorMessages {
+                        key_error_label: "dielectric M key",
+                        key_error_description: "invalid M key name",
+                        value_error_label: "dielectric M value",
+                        value_error_description: "invalid M attribute value",
+                    },
+                )
+            },
+            |input: &mut &str| {
+                extract_unquoted_string_entry(
+                    input,
+                    "M",
+                    ')',
+                    ExtractEntryErrorMessages {
+                        key_error_label: "dielectric M key",
+                        key_error_description: "invalid M key name",
+                        value_error_label: "dielectric M value",
+                        value_error_description: "invalid M attribute value",
+                    },
+                )
+            },
+        ))
+        .parse_next(input)?;
 
         match m.as_str() {
             "Solder Mask" => LayerMaterial::SolderMask,
@@ -140,7 +150,17 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
 }
 
 fn signal(input: &mut &str) -> ModalResult<Layer> {
-    row_open(input, "SIGNAL")?;
+    match row_open(input, "SIGNAL") {
+        Ok(_) => {}
+        Err(_) => {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("layer row name"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "dielectric/signal key name",
+            )));
+            return Err(ErrMode::Cut(err));
+        }
+    };
 
     let thickness = extract_float_entry(
         input,
@@ -190,35 +210,34 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     )?;
 
     let material = {
-        let m = alt(
-            (
-                |input: &mut &str| {
-                    extract_quoted_string_entry(
-                        input,
-                        "M",
-                        ExtractEntryErrorMessages {
-                            key_error_label: "signal M key",
-                            key_error_description: "invalid M key name",
-                            value_error_label: "signal M value",
-                            value_error_description: "invalid M attribute value",
-                        }
-                    )
-                },
-                |input: &mut &str| {
-                    extract_unquoted_string_entry(
-                        input,
-                        "M",
-                        ')',
-                        ExtractEntryErrorMessages {
-                            key_error_label: "signal M key",
-                            key_error_description: "invalid M key name",
-                            value_error_label: "signal M value",
-                            value_error_description: "invalid M attribute value",
-                        }
-                    )
-                },
-        )
-        ).parse_next(input)?;
+        let m = alt((
+            |input: &mut &str| {
+                extract_quoted_string_entry(
+                    input,
+                    "M",
+                    ExtractEntryErrorMessages {
+                        key_error_label: "signal M key",
+                        key_error_description: "invalid M key name",
+                        value_error_label: "signal M value",
+                        value_error_description: "invalid M attribute value",
+                    },
+                )
+            },
+            |input: &mut &str| {
+                extract_unquoted_string_entry(
+                    input,
+                    "M",
+                    ')',
+                    ExtractEntryErrorMessages {
+                        key_error_label: "signal M key",
+                        key_error_description: "invalid M key name",
+                        value_error_label: "signal M value",
+                        value_error_description: "invalid M attribute value",
+                    },
+                )
+            },
+        ))
+        .parse_next(input)?;
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
@@ -267,10 +286,16 @@ fn parse_layer(input: &mut &str) -> ModalResult<Layer> {
     }
 }
 
+fn parse_layer_row_with_err(input: &mut &str) -> ModalResult<Layer> {
+    peek((multispace0, "(")).parse_next(input)?;
+
+    cut_err(parse_layer).parse_next(input)
+}
+
 pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
     open_block(input, "STACKUP")?;
 
-    let layers: Vec<Layer> = repeat(0.., parse_layer).parse_next(input)?;
+    let layers: Vec<Layer> = repeat(0.., parse_layer_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
@@ -278,10 +303,9 @@ pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
 }
 
 #[cfg(test)]
-mod tests {
+mod stackup_block_parser_tests {
     use super::*;
     use test_case::test_case;
-    use winnow::error::ErrMode;
 
     #[test_case(
         r#"(DIELECTRIC T=0.0594488 C=4.5 L="F.Cu" M="FR4")"#,
@@ -387,39 +411,39 @@ mod tests {
 
     #[test_case(
         r#"xyz(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
-        StrContext::Label("opening row"),
-        StrContext::Expected(StrContextValue::Description("("))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     // row name malformations
     #[test_case(
         r#"(xyzDIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
-        StrContext::Label("row name"),
-        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     #[test_case(
         r#"(DIELExyzCTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
-        StrContext::Label("row name"),
-        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     #[test_case(
         r#"(DIELECTRICxyz T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")"#,
-        StrContext::Label("row name boundary"),
-        StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     #[test_case(
         r#"(xyzSIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
-        StrContext::Label("row name"),
-        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     #[test_case(
         r#"(SIGxyzNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
-        StrContext::Label("row name"),
-        StrContext::Expected(StrContextValue::Description("SIGNAL"))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     #[test_case(
         r#"(SIGNALxyz T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
-        StrContext::Label("row name boundary"),
-        StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        StrContext::Label("layer row name"),
+        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
     )]
     // T attribute malformation
     #[test_case(
