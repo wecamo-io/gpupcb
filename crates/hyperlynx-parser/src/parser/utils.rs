@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::{dec_int, dec_uint, multispace0};
-use winnow::combinator::{alt, backtrack_err, delimited, peek};
+use winnow::combinator::{alt, backtrack_err, cut_err, delimited, peek};
 use winnow::error::{StrContext, StrContextValue};
 use winnow::token::{literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
@@ -54,7 +54,7 @@ pub fn open_block<'a>(input: &mut &'a str, lit: &'static str) -> ModalResult<()>
 }
 
 pub fn close_block(input: &mut &str) -> ModalResult<()> {
-    backtrack_err((multispace0, "}", multispace0))
+    cut_err((multispace0, "}", multispace0))
         .context(StrContext::Label("closing block"))
         .context(StrContext::Expected(StrContextValue::Description("}")))
         .parse_next(input)?;
