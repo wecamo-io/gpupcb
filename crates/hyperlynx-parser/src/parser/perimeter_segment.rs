@@ -69,7 +69,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
     Ok(PerimeterSegment { x1, y1, x2, y2 })
 }
 
-fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
+pub fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
     open_block(input, "BOARD")?;
 
     multispace0(input)?;

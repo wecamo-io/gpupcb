@@ -7,7 +7,7 @@ use winnow::{ModalResult, Parser};
 
 use crate::model::{Arc, Net, Pin, Polygon, Polyvoid, Segment, Via};
 use crate::parser::net::{pin::parse_pin_row, via::parse_via_row, seg::parse_seg_row, arc::parse_arc_row, polygon::{parse_polygon_block, parse_polyvoid_block}};
-use crate::parser::utils::{ExtractEntryErrorMessages, extract_quoted_string_entry, open_block};
+use crate::parser::utils::{ExtractEntryErrorMessages, extract_quoted_string_entry, open_block, close_block};
 
 pub mod arc;
 pub mod pin;
@@ -69,6 +69,8 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
             NetElement::Polyvoid(polyvoid) => polyvoids.push(polyvoid),
         }
     }
+
+    close_block(input)?;
 
     Ok(Net {
         name: String::from(name),

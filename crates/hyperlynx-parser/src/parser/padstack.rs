@@ -117,7 +117,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
     })
 }
 
-fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
+pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
     open_block(input, "")?;
 
     let id = extract_unsigned_integer_entry(
