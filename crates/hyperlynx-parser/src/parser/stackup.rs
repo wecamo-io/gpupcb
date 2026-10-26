@@ -722,4 +722,102 @@ mod stackup_block_parser_tests {
         assert_eq!(*errors.0, expected_label);
         assert_eq!(*errors.1, expected_description);
     }
+
+    // opening block
+    #[test_case(
+        "xyz{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
+        )
+    )]
+    // block name
+    #[test_case(
+        "{xyzSTACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("STACKUP"))
+        )
+    )]
+    #[test_case(
+        "{STACKUPxyz\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        )
+    )]
+    // row malversation
+    #[test_case(
+        "{STACKUP\n  (xyzDIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("layer row name"),
+            StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        )
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRICxyz T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("layer row name"),
+            StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        )
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC xyzT=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("dielectric T key"),
+            StrContext::Expected(StrContextValue::Description("invalid T key name"))
+        )
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC Txyz=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("dielectric T key"),
+            StrContext::Expected(StrContextValue::Description("invalid T key name"))
+        )
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC T=xyz0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("dielectric T value"),
+            StrContext::Expected(StrContextValue::Description("invalid T attribute value"))
+        )
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.xyz3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("dielectric C value"),
+            StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
+        )
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=F.Cu\" M=COPPER)\n}",
+        (
+            StrContext::Label("signal L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        )
+    )]
+    // closing bracket
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\nxyz}",
+        (
+            StrContext::Label("closing block"),
+            StrContext::Expected(StrContextValue::Description("}"))
+        )
+    )]
+    fn rejects_malformed_stackup_block(mut input: &str, expected_errors: (StrContext, StrContext)) {
+        let err = parse_stackup_block.parse_next(&mut input).unwrap_err();
+
+        let errors = match err {
+            ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
+                let mut iter = err.context().into_iter();
+                let errors = (iter.next().unwrap(), iter.next().unwrap());
+
+                errors
+            }
+            ErrMode::Incomplete(_) => todo!(),
+        };
+
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
+    }
 }
