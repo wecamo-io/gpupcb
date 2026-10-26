@@ -2,12 +2,14 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::combinator::repeat;
+use winnow::ascii::multispace0;
+use winnow::combinator::{cut_err, peek, repeat};
 use winnow::{ModalResult, Parser};
 
 use crate::model::Device;
 use crate::parser::utils::{
-    close_block, close_row, extract_quoted_string_entry, open_block, row_open, ExtractEntryErrorMessages,
+    close_block, close_row, extract_quoted_string_entry, open_block, row_open,
+    ExtractEntryErrorMessages,
 };
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
@@ -40,10 +42,16 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     Ok(Device { reference, layer })
 }
 
+fn parse_device_row_with_err(input: &mut &str) -> ModalResult<Device> {
+    peek((multispace0, "(")).parse_next(input)?;
+
+    cut_err(parse_device_row).parse_next(input)
+}
+
 pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
     open_block(input, "DEVICES")?;
 
-    let devices: Vec<Device> = repeat(0.., parse_device_row).parse_next(input)?;
+    let devices: Vec<Device> = repeat(0.., parse_device_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
@@ -51,7 +59,7 @@ pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
 }
 
 #[cfg(test)]
-mod tests {
+mod device_block_parser_tests {
     use super::*;
     use test_case::test_case;
     use winnow::error::{ErrMode, StrContext, StrContextValue};
@@ -234,32 +242,70 @@ mod tests {
         assert_eq!(*errors.1, expected_errors.1);
     }
 
+    // opening block
     #[test_case(
         r#"xyz{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}"#,
         (
-        StrContext::Label("opening block"),
-        StrContext::Expected(StrContextValue::Description("{"))
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
         )
     )]
     #[test_case(
         r#"{xyzDEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}"#,
         (
-        StrContext::Label("block name"),
-        StrContext::Expected(StrContextValue::Description("DEVICES"))
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("DEVICES"))
+        )
+    )]
+    // row malversations
+    #[test_case(
+        "{DEVICES\n  (? xyzREF=\"R3\" L=\"F.Cu\")\n}",
+        (
+            StrContext::Label("device REF key"),
+            StrContext::Expected(StrContextValue::Description("invalid REF key name"))
         )
     )]
     #[test_case(
+        "{DEVICES\n  (? REFxyz=\"R3\" L=\"F.Cu\")\n}",
+        (
+            StrContext::Label("device REF key"),
+            StrContext::Expected(StrContextValue::Description("invalid REF key name"))
+        )
+    )]
+    #[test_case(
+        "{DEVICES\n  (? REF=R3\" L=\"F.Cu\")\n}",
+        (
+            StrContext::Label("device REF value"),
+            StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
+        )
+    )]
+    #[test_case(
+        "{DEVICES\n  (? REF=\"R3\" xyzL=\"F.Cu\")\n}",
+        (
+            StrContext::Label("device L key"),
+            StrContext::Expected(StrContextValue::Description("invalid L key name"))
+        )
+    )]
+    #[test_case(
+        "{DEVICES\n  (? REF=\"R3\" L=F.Cu\")\n}",
+        (
+            StrContext::Label("device L value"),
+            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
+        )
+    )]
+    // closing block
+    #[test_case(
         r#"{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\nxyz}"#,
         (
-        StrContext::Label("block name boundary"),
-        StrContext::Expected(StrContextValue::Description("valid character after block name"))
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
         )
     )]
     #[test_case(
         r#"{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}xyz"#,
         (
-        StrContext::Label("block name boundary"),
-        StrContext::Expected(StrContextValue::Description("valid character after block name"))
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
         )
     )]
     fn rejects_malformed_devices_block(mut input: &str, expected_errors: (StrContext, StrContext)) {
