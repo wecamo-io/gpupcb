@@ -145,12 +145,13 @@ pub struct Net {
     pub polyvoids: Vec<Polyvoid>,
 }
 
-struct Board {
-    version: String,
-    units: Units,
-    outline: Vec<PerimeterSegment>,
-    stackup: Vec<Layer>,
-    nets: Vec<Net>,
-    devices: Vec<Device>,
-    padstacks: Vec<Padstack>,
+#[derive(Debug, PartialEq)]
+pub struct Board {
+    pub version: String,
+    pub units: Units,
+    pub outline: Vec<PerimeterSegment>,
+    pub stackup: Vec<Layer>,
+    pub nets: Vec<Net>,
+    pub devices: Vec<Device>,
+    pub padstacks: Vec<Padstack>,
 }
