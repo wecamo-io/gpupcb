@@ -115,7 +115,7 @@ pub fn extract_float_value(
     till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<f64> {
-    let value: f64 = backtrack_err(
+    let value: f64 = cut_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
         take_while(1.., |c: char| !c.is_whitespace() && c != till_literal).parse_to(),
     )
@@ -166,7 +166,7 @@ pub fn extract_unsigned_integer_value(
     till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<u32> {
-    let value = backtrack_err(dec_uint)
+    let value = cut_err(dec_uint)
         .context(StrContext::Label(error_messages.value_error_label))
         .context(StrContext::Expected(StrContextValue::Description(
             error_messages.value_error_description,
@@ -181,7 +181,7 @@ pub fn extract_signed_integer_value(
     till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<i32> {
-    let value = backtrack_err(dec_int)
+    let value = cut_err(dec_int)
         .context(StrContext::Label(error_messages.value_error_label))
         .context(StrContext::Expected(StrContextValue::Description(
             error_messages.value_error_description,
