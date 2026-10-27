@@ -51,12 +51,12 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
         },
     )?;
 
-    let mut pins: Vec<Pin> = vec![];
-    let mut vias: Vec<Via> = vec![];
-    let mut segments: Vec<Segment> = vec![];
-    let mut arcs: Vec<Arc> = vec![];
-    let mut polygons: Vec<Polygon> = vec![];
-    let mut polyvoids: Vec<Polyvoid> = vec![];
+    let mut pins: Vec<Pin> = Vec::new();
+    let mut vias: Vec<Via> = Vec::new();
+    let mut segments: Vec<Segment> = Vec::new();
+    let mut arcs: Vec<Arc> = Vec::new();
+    let mut polygons: Vec<Polygon> = Vec::new();
+    let mut polyvoids: Vec<Polyvoid> = Vec::new();
 
     let elements: Vec<NetElement> = repeat(0.., parse_net_element).parse_next(input)?;
 
