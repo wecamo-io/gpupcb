@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
+use winnow::combinator::{cut_err, peek};
 use winnow::{ModalResult, Parser};
 
 use crate::model::Segment;
@@ -91,6 +93,12 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         width,
         layer: String::from(layer),
     })
+}
+
+pub fn parse_seg_row_with_err(input: &mut &str) -> ModalResult<Segment> {
+    peek((multispace0, "(SEG")).parse_next(input)?;
+
+    cut_err(parse_seg_row).parse_next(input)
 }
 
 #[cfg(test)]

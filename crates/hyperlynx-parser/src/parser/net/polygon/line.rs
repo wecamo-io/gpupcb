@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
+use winnow::combinator::{cut_err, peek};
 use winnow::{ModalResult, Parser};
 
 use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, row_open};
@@ -36,6 +38,12 @@ pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
     close_row(input)?;
 
     Ok((x, y))
+}
+
+pub fn parse_line_row_with_err(input: &mut &str) -> ModalResult<(f64, f64)> {
+    peek((multispace0, "(LINE")).parse_next(input)?;
+
+    cut_err(parse_line_row).parse_next(input)
 }
 
 #[cfg(test)]

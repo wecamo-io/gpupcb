@@ -6,7 +6,7 @@ use winnow::combinator::{alt, repeat};
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Arc, Net, Pin, Polygon, Polyvoid, Segment, Via};
-use crate::parser::net::{pin::parse_pin_row, via::parse_via_row, seg::parse_seg_row, arc::parse_arc_row, polygon::{parse_polygon_block, parse_polyvoid_block}};
+use crate::parser::net::{pin::parse_pin_row_with_err, via::parse_via_row_with_err, seg::parse_seg_row_with_err, arc::parse_arc_row_with_err, polygon::{parse_polygon_block_with_err, parse_polyvoid_block_with_err}};
 use crate::parser::utils::{ExtractEntryErrorMessages, extract_quoted_string_entry, open_block, close_block};
 
 pub mod arc;
@@ -15,6 +15,7 @@ pub mod polygon;
 pub mod seg;
 pub mod via;
 
+#[derive(Debug)]
 enum NetElement {
     Pin(Pin),
     Via(Via),
@@ -26,12 +27,12 @@ enum NetElement {
 
 fn parse_net_element(input: &mut &str) -> ModalResult<NetElement> {
     alt((
-        parse_pin_row.map(NetElement::Pin),
-        parse_via_row.map(NetElement::Via),
-        parse_seg_row.map(NetElement::Segment),
-        parse_arc_row.map(NetElement::Arc),
-        parse_polygon_block.map(NetElement::Polygon),
-        parse_polyvoid_block.map(NetElement::Polyvoid),
+        parse_pin_row_with_err.map(NetElement::Pin),
+        parse_via_row_with_err.map(NetElement::Via),
+        parse_seg_row_with_err.map(NetElement::Segment),
+        parse_arc_row_with_err.map(NetElement::Arc),
+        parse_polygon_block_with_err.map(NetElement::Polygon),
+        parse_polyvoid_block_with_err.map(NetElement::Polyvoid),
     ))
     .parse_next(input)
 }

@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
+use winnow::combinator::{cut_err, peek};
 use winnow::{ModalResult, Parser};
 
 use crate::model::Arc;
@@ -131,6 +133,13 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
         layer: String::from(layer),
     })
 }
+
+pub fn parse_arc_row_with_err(input: &mut &str) -> ModalResult<Arc> {
+    peek((multispace0, "(ARC")).parse_next(input)?;
+
+    cut_err(parse_arc_row).parse_next(input)
+}
+
 
 #[cfg(test)]
 mod arc_row_parser_tests {

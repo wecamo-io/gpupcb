@@ -2,12 +2,13 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
+use winnow::combinator::{alt, cut_err, repeat, peek};
 use winnow::{ModalResult, Parser};
-use winnow::combinator::{alt, repeat};
 use winnow::error::{ErrMode, ContextError, StrContext, StrContextValue};
 
 use crate::model::{Polygon, PolygonType, Polyvoid};
-use crate::parser::net::polygon::line::parse_line_row;
+use crate::parser::net::polygon::line::parse_line_row_with_err;
 use crate::parser::utils::{ExtractEntryErrorMessages, close_block, extract_float_entry, extract_quoted_string_entry, extract_unquoted_string_entry, extract_unsigned_integer_entry, open_block};
 
 mod line;
@@ -51,7 +52,7 @@ pub fn parse_polyvoid_block(input: &mut &str) -> ModalResult<Polyvoid> {
         }
     )?;
 
-    let outline: Vec<(f64, f64)> = repeat(0.., parse_line_row).parse_next(input)?;
+    let outline: Vec<(f64, f64)> = repeat(0.., parse_line_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
@@ -158,7 +159,7 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         }
     )?;
 
-    let outline: Vec<(f64, f64)> = repeat(0.., parse_line_row).parse_next(input)?;
+    let outline: Vec<(f64, f64)> = repeat(0.., parse_line_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
@@ -170,6 +171,18 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         y,
         outline,
     })
+}
+
+pub fn parse_polyvoid_block_with_err(input: &mut &str) -> ModalResult<Polyvoid> {
+    peek((multispace0, "{POLYVOID")).parse_next(input)?;
+
+    cut_err(parse_polyvoid_block).parse_next(input)
+}
+
+pub fn parse_polygon_block_with_err(input: &mut &str) -> ModalResult<Polygon> {
+    peek((multispace0, "{POLYGON")).parse_next(input)?;
+
+    cut_err(parse_polygon_block).parse_next(input)
 }
 
 #[cfg(test)]

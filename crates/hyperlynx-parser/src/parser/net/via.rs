@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
+use winnow::combinator::{cut_err, peek};
 use winnow::{ModalResult, Parser};
 
 use crate::model::Via;
@@ -53,6 +55,12 @@ pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
         y,
         padstack_id
     })
+}
+
+pub fn parse_via_row_with_err(input: &mut &str) -> ModalResult<Via> {
+    peek((multispace0, "(VIA")).parse_next(input)?;
+
+    cut_err(parse_via_row).parse_next(input)
 }
 
 #[cfg(test)]

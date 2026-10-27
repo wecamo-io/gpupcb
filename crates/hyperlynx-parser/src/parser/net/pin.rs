@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::ascii::multispace0;
+use winnow::combinator::{cut_err, peek};
 use winnow::{ModalResult, Parser};
 
 use crate::model::Pin;
@@ -65,6 +67,12 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
         component_reference: String::from(component_reference),
         padstack_id,
     })
+}
+
+pub fn parse_pin_row_with_err(input: &mut &str) -> ModalResult<Pin> {
+    peek((multispace0, "(PIN")).parse_next(input)?;
+
+    cut_err(parse_pin_row).parse_next(input)
 }
 
 #[cfg(test)]
