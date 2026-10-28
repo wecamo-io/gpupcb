@@ -2,19 +2,22 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, delimited, repeat, peek};
+use winnow::ascii::{line_ending, multispace0};
+use winnow::combinator::{alt, cut_err, delimited, peek, repeat};
 use winnow::error::{StrContext, StrContextValue};
-use winnow::token::take_until;
+use winnow::token::{literal, take_until};
 use winnow::{ModalResult, Parser};
 
 use crate::parser::utils::{
-    close_block, close_row, extract_float_entry, open_block, ExtractEntryErrorMessages,
+    close_block, close_row, double_line_ending, extract_float_entry, line_ending_with_two_spaces,
+    open_block, single_line_ending, single_space, ExtractEntryErrorMessages,
 };
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
 fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment> {
     row_open(input, "PERIMETER_SEGMENT")?;
+
+    single_space(input)?;
 
     let x1 = extract_float_entry(
         input,
@@ -28,6 +31,8 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         },
     )?;
 
+    single_space(input)?;
+
     let y1 = extract_float_entry(
         input,
         "Y1",
@@ -40,6 +45,8 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
         },
     )?;
 
+    single_space(input)?;
+
     let x2 = extract_float_entry(
         input,
         "X2",
@@ -51,6 +58,8 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
             value_error_description: "invalid X2 attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let y2 = extract_float_entry(
         input,
@@ -66,6 +75,8 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
 
     close_row(input)?;
 
+    alt((single_line_ending, line_ending_with_two_spaces)).parse_next(input)?;
+
     Ok(PerimeterSegment { x1, y1, x2, y2 })
 }
 
@@ -78,18 +89,18 @@ fn parse_perimeter_segment_row_with_err(input: &mut &str) -> ModalResult<Perimet
 pub fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>> {
     open_block(input, "BOARD")?;
 
-    multispace0(input)?;
+    single_space.parse_next(input)?;
 
     delimited('"', take_until(0.., '"'), '"').parse_next(input)?;
 
-    multispace0(input)?;
+    line_ending_with_two_spaces(input)?;
 
     let perimeter_segments: Vec<PerimeterSegment> =
         repeat(0.., parse_perimeter_segment_row_with_err).parse_next(input)?;
 
-    multispace0(input)?;
-
     close_block(input)?;
+
+    double_line_ending(input)?;
 
     Ok(perimeter_segments)
 }
@@ -101,13 +112,13 @@ mod board_block_parser_tests {
     use winnow::error::ErrMode;
 
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  {...}",
         PerimeterSegment {
             x1: 8.415354331,
             y1: -5.334321614,
             x2: 8.251181102,
             y2: -5.334321614,
-        }; "no whitespaces"
+        }
     )]
     fn parses_single_perimeter_segment(input: &str, expected: PerimeterSegment) {
         let mut input = input;
@@ -119,65 +130,65 @@ mod board_block_parser_tests {
 
     // X1 malformed cases
     #[test_case(
-        "(PERIMETER_SEGMENT X1=xyz8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=xyz8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment X1 value"),
         StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.4153xyz54331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.4153xyz54331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment X1 value"),
         StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331xyz Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331xyz Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment X1 value"),
         StrContext::Expected(StrContextValue::Description("invalid X1 attribute value"))
     )]
     // Y1 malformed cases
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=xyz-5.334321614 X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=xyz-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment Y1 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.3343xyz21614 X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.3343xyz21614 X2=8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment Y1 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614xyz X2=8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614xyz X2=8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment Y1 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y1 attribute value"))
     )]
     // X2 malformed cases
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=xyz8.251181102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=xyz8.251181102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment X2 value"),
         StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.2511xyz81102 Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.2511xyz81102 Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment X2 value"),
         StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102xyz Y2=-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102xyz Y2=-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment X2 value"),
         StrContext::Expected(StrContextValue::Description("invalid X2 attribute value"))
     )]
     // Y2 malformed cases
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=xyz-5.334321614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=xyz-5.334321614)\n  {...}",
         StrContext::Label("perimeter segment Y2 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.3343xyz21614)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.3343xyz21614)\n  {...}",
         StrContext::Label("perimeter segment Y2 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
     )]
     #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614xyz)",
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614xyz)\n  ",
         StrContext::Label("perimeter segment Y2 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
     )]
@@ -205,7 +216,7 @@ mod board_block_parser_tests {
 
     #[test]
     fn parses_board_block() {
-        let mut input = "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}";
+        let mut input = "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}";
         let expected_length: usize = 8;
 
         let perimeter_segments = parse_board_block.parse_next(&mut input).unwrap();
@@ -215,7 +226,7 @@ mod board_block_parser_tests {
 
     // opening block
     #[test_case(
-        "xyz{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}",
+        "xyz{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
         (
             StrContext::Label("opening block"),
             StrContext::Expected(StrContextValue::Description("{"))
@@ -223,22 +234,45 @@ mod board_block_parser_tests {
     )]
     // block name
     #[test_case(
-        "{xyzBOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}",
+        "{xyzBOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
         (
             StrContext::Label("block name"),
             StrContext::Expected(StrContextValue::Description("BOARD"))
         )
     )]
     #[test_case(
-        "{BOARDxyz \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}",
+        "{BOARDxyz \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
         (
             StrContext::Label("block name boundary"),
             StrContext::Expected(StrContextValue::Description("valid character after block name"))
         )
     )]
+    // new line malversations
+    #[test_case(
+        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n{...}",
+        (
+            StrContext::Label("double line ending"),
+            StrContext::Expected(StrContextValue::Description("invalid line ending, should be two new lines"))
+        )
+    )]
+    // // TODO:
+    // #[test_case(
+    //     "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n(PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
+    //     (
+    //         StrContext::Label("line ending with indentation"),
+    //         StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces"))
+    //     ); "non-last row new line"
+    // )]
+    #[test_case(
+        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n }\n\n{...}",
+        (
+            StrContext::Label("line ending with indentation"),
+            StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces"))
+        ); "last row new line"
+    )]
     // closing block
     #[test_case(
-        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n xyz}",
+        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\nxyz}\n\n{...}",
         (
             StrContext::Label("closing block"),
             StrContext::Expected(StrContextValue::Description("}"))
@@ -246,30 +280,27 @@ mod board_block_parser_tests {
     )]
     // row malversations
     #[test_case(
-        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (xyzPERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}",
+    "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (xyzPERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
         (
             StrContext::Label("row name"),
             StrContext::Expected(StrContextValue::Description("PERIMETER_SEGMENT"))
         )
     )]
     #[test_case(
-        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENTxyz X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}",
+    "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENTxyz X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
         (
             StrContext::Label("row name boundary"),
             StrContext::Expected(StrContextValue::Description("valid character after row name"))
         )
     )]
     #[test_case(
-        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT xyzX1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}",
+    "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT xyzX1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}\n\n{...}",
         (
             StrContext::Label("perimeter segment X1 key"),
             StrContext::Expected(StrContextValue::Description("invalid X1 key name"))
         )
     )]
-    fn rejects_malformed_board_block(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_board_block(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let mut input = input;
         let err = parse_board_block(&mut input).unwrap_err();
 
