@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{digit1, multispace0};
+use winnow::ascii::{digit1, multispace0, line_ending};
 use winnow::combinator::{backtrack_err, cut_err, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::literal;
@@ -149,7 +149,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
         },
     )?;
 
-    backtrack_err(literal("\n  "))
+    backtrack_err((line_ending, "  "))
         .context(StrContext::Label("padstack new line"))
         .context(StrContext::Expected(StrContextValue::Description(
             "invalid padstack new line",
