@@ -5,7 +5,6 @@
 #[derive(Debug, PartialEq)]
 pub enum Units {
     English,
-    WrongUnit(String),
 }
 
 #[derive(Debug, PartialEq)]
