@@ -205,10 +205,8 @@ pub fn extract_float_entry(
             key_error_description: error_messages.key_error_description,
         },
     )?;
-    multispace0(input)?;
 
     literal('=').parse_next(input)?;
-    multispace0(input)?;
 
     let value: f64 = extract_float_value(
         input,
@@ -236,10 +234,8 @@ pub fn extract_quoted_string_entry(
             key_error_description: error_messages.key_error_description,
         },
     )?;
-    multispace0(input)?;
 
     literal('=').parse_next(input)?;
-    multispace0(input)?;
 
     let value = extract_quoted_string_value(
         input,
@@ -267,10 +263,8 @@ pub fn extract_unquoted_string_entry(
             key_error_description: error_messages.key_error_description,
         },
     )?;
-    multispace0(input)?;
 
     literal('=').parse_next(input)?;
-    multispace0(input)?;
 
     let value = extract_unquoted_string_value(
         input,
@@ -299,10 +293,8 @@ pub fn extract_unsigned_integer_entry(
             key_error_description: error_messages.key_error_description,
         },
     )?;
-    multispace0(input)?;
 
     literal('=').parse_next(input)?;
-    multispace0(input)?;
 
     let value = extract_unsigned_integer_value(
         input,
@@ -331,10 +323,8 @@ pub fn extract_signed_integer_entry(
             key_error_description: error_messages.key_error_description,
         },
     )?;
-    multispace0(input)?;
 
     literal('=').parse_next(input)?;
-    multispace0(input)?;
 
     let value = extract_signed_integer_value(
         input,
