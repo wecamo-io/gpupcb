@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{dec_int, dec_uint, multispace0};
-use winnow::combinator::{alt, backtrack_err, cut_err, delimited, peek};
-use winnow::error::{StrContext, StrContextValue};
-use winnow::token::{literal, one_of, take_till, take_until, take_while};
+use winnow::ascii::{dec_int, dec_uint, line_ending};
+use winnow::combinator::{alt, backtrack_err, cut_err, delimited, empty, not, peek, repeat};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::token::{any, literal, one_of, take, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
 
 pub struct ExtractKeyErrorMessages {
@@ -27,7 +27,7 @@ pub struct ExtractEntryErrorMessages {
 }
 
 pub fn open_block<'a>(input: &mut &'a str, lit: &'static str) -> ModalResult<()> {
-    backtrack_err((multispace0, "{", multispace0))
+    backtrack_err('{')
         .context(StrContext::Label("opening block"))
         .context(StrContext::Expected(StrContextValue::Description("{")))
         .parse_next(input)?;
@@ -48,13 +48,11 @@ pub fn open_block<'a>(input: &mut &'a str, lit: &'static str) -> ModalResult<()>
             .parse_next(input)?;
     }
 
-    multispace0.parse_next(input)?;
-
     Ok(())
 }
 
 pub fn close_block(input: &mut &str) -> ModalResult<()> {
-    cut_err((multispace0, "}", multispace0))
+    cut_err('}')
         .context(StrContext::Label("closing block"))
         .context(StrContext::Expected(StrContextValue::Description("}")))
         .parse_next(input)?;
@@ -63,7 +61,7 @@ pub fn close_block(input: &mut &str) -> ModalResult<()> {
 }
 
 pub fn row_open<'a>(input: &mut &str, lit: &'static str) -> ModalResult<()> {
-    backtrack_err((multispace0, "(", multispace0))
+    backtrack_err('(')
         .context(StrContext::Label("opening row"))
         .context(StrContext::Expected(StrContextValue::Description("(")))
         .parse_next(input)?;
@@ -82,15 +80,80 @@ pub fn row_open<'a>(input: &mut &str, lit: &'static str) -> ModalResult<()> {
             .parse_next(input)?;
     }
 
-    multispace0.parse_next(input)?;
-
     Ok(())
 }
 
 pub fn close_row(input: &mut &str) -> ModalResult<()> {
-    backtrack_err((multispace0, ")", multispace0))
+    backtrack_err(')')
         .context(StrContext::Label("closing row"))
         .context(StrContext::Expected(StrContextValue::Description(")")))
+        .parse_next(input)?;
+
+    Ok(())
+}
+
+pub fn single_space(input: &mut &str) -> ModalResult<()> {
+    (' ', peek(any).verify(|c: &char| !c.is_whitespace()))
+        .context(StrContext::Label("single space"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "invalid indentation, needs single space",
+        )))
+        .parse_next(input)?;
+
+    Ok(())
+}
+
+// parses '\n' or '\r\n'
+pub fn single_line_ending(input: &mut &str) -> ModalResult<()> {
+    (line_ending, peek(any).verify(|c: &char| !c.is_whitespace()))
+        .context(StrContext::Label("single line ending"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "invalid line ending, should be one new line",
+        )))
+        .parse_next(input)?;
+
+    Ok(())
+}
+
+// parses '\n\n' or '\r\n\r\n'
+pub fn double_line_ending(input: &mut &str) -> ModalResult<()> {
+    (
+        line_ending,
+        line_ending,
+        peek(any).verify(|c: &char| !c.is_whitespace()),
+    )
+        .context(StrContext::Label("double line ending"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "invalid line ending, should be two new lines",
+        )))
+        .parse_next(input)?;
+
+    Ok(())
+}
+
+// parses '\n' or '\r\n  '
+pub fn line_ending_with_two_spaces(input: &mut &str) -> ModalResult<()> {
+    (
+        line_ending,
+        "  ",
+        peek(any).verify(|c: &char| !c.is_whitespace()),
+    )
+        .context(StrContext::Label("line ending with indentation"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "expected one new line with 2 spaces",
+        )))
+        .parse_next(input)?;
+
+    Ok(())
+}
+
+// parses '\n    ' or '\r\n    '
+pub fn line_ending_with_four_spaces(input: &mut &str, next_literal: char) -> ModalResult<()> {
+    (line_ending, "    ", peek(any).verify(|c: &char| !c.is_whitespace()))
+        .context(StrContext::Label("line ending with indentation"))
+        .context(StrContext::Expected(StrContextValue::Description(
+            "expected one new line with 4 spaces",
+        )))
         .parse_next(input)?;
 
     Ok(())
@@ -132,14 +195,12 @@ pub fn extract_quoted_string_value(
     input: &mut &str,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<String> {
-    let value: &str = backtrack_err(
-        delimited('"', take_until(0.., '"'), '"'),
-    )
-    .context(StrContext::Label(error_messages.value_error_label))
-    .context(StrContext::Expected(StrContextValue::Description(
-        error_messages.value_error_description,
-    )))
-    .parse_next(input)?;
+    let value: &str = backtrack_err(delimited('"', take_until(0.., '"'), '"'))
+        .context(StrContext::Label(error_messages.value_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(
+            error_messages.value_error_description,
+        )))
+        .parse_next(input)?;
 
     Ok(String::from(value))
 }
@@ -149,14 +210,12 @@ pub fn extract_unquoted_string_value(
     till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<String> {
-    let value: &str = backtrack_err(
-        take_till(1.., |c: char| c == till_literal),
-    )
-    .context(StrContext::Label(error_messages.value_error_label))
-    .context(StrContext::Expected(StrContextValue::Description(
-        error_messages.value_error_description,
-    )))
-    .parse_next(input)?;
+    let value: &str = backtrack_err(take_till(1.., |c: char| c == till_literal))
+        .context(StrContext::Label(error_messages.value_error_label))
+        .context(StrContext::Expected(StrContextValue::Description(
+            error_messages.value_error_description,
+        )))
+        .parse_next(input)?;
 
     Ok(String::from(value))
 }
@@ -216,7 +275,6 @@ pub fn extract_float_entry(
             value_error_description: error_messages.value_error_description,
         },
     )?;
-    multispace0(input)?;
 
     Ok(value)
 }
@@ -244,7 +302,6 @@ pub fn extract_quoted_string_entry(
             value_error_description: error_messages.value_error_description,
         },
     )?;
-    multispace0(input)?;
 
     Ok(value)
 }
@@ -274,7 +331,6 @@ pub fn extract_unquoted_string_entry(
             value_error_description: error_messages.value_error_description,
         },
     )?;
-    multispace0(input)?;
 
     Ok(value)
 }
@@ -304,7 +360,6 @@ pub fn extract_unsigned_integer_entry(
             value_error_description: error_messages.value_error_description,
         },
     )?;
-    multispace0(input)?;
 
     Ok(value)
 }
@@ -334,7 +389,6 @@ pub fn extract_signed_integer_entry(
             value_error_description: error_messages.value_error_description,
         },
     )?;
-    multispace0(input)?;
 
     Ok(value)
 }
