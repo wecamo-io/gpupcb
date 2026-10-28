@@ -3,55 +3,63 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use crate::model::Units;
-use crate::parser::utils::{close_block, open_block};
+use crate::parser::utils::{
+    close_block, extract_unquoted_string_entry, open_block, ExtractEntryErrorMessages,
+};
 use winnow::ascii::multispace0;
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::{literal, take_till};
 use winnow::{ModalResult, Parser};
 
 pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
-    open_block(input, "UNITS")?;
+    open_block(input, "")?;
 
-    literal('=').parse_next(input)?;
-    multispace0(input)?;
+    let units = {
+        let u = extract_unquoted_string_entry(
+            input,
+            "UNITS",
+            '}',
+            ExtractEntryErrorMessages {
+                key_error_label: "units UNITS key",
+                key_error_description: "invalid UNITS key name",
+                value_error_label: "units UNITS value",
+                value_error_description: "invalid UNITS attribute value",
+            },
+        )?;
 
-    let units = take_till(0.., '}').parse_next(input)?;
+        match u.as_str() {
+            "ENGLISH LENGTH" => Units::English,
+            _ => {
+                let mut err = ContextError::new();
+                err.push(StrContext::Label("units UNITS value"));
+                err.push(StrContext::Expected(StrContextValue::Description(
+                    "invalid UNITS attribute value",
+                )));
+
+                Err(ErrMode::Backtrack(err))
+            }?,
+        }
+    };
 
     close_block(input)?;
 
-    match units {
-        "ENGLISH LENGTH" => Ok(Units::English),
-        other => Ok(Units::WrongUnit(other.to_string())),
-    }
+    Ok(units)
 }
 
 #[cfg(test)]
-mod tests {
+mod units_block_parsertests {
     use super::*;
-    use crate::model::Units;
     use test_case::test_case;
-    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case("{UNITS=ENGLISH LENGTH}", Units::English)]
-    #[test_case(
-        "{UNITS=FRENCH LENGTH}",
-        Units::WrongUnit(String::from("FRENCH LENGTH"))
-    )]
-    fn parses_units_block(input: &str, expected: Units) {
-        let mut input = input;
-
+    fn parses_units_block(mut input: &str, expected: Units) {
         let units = parse_units_block.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
     }
 
-    #[test_case(
-        "{UNITS=ENGLISH LENGTH}\n{VERSION=2.14}",
-        "{VERSION=2.14}",
-        Units::English
-    )]
-    fn leaves_content_for_the_next_parser(input: &str, content_left: &str, expected: Units) {
-        let mut input = input;
-
+    #[test_case("{UNITS=ENGLISH LENGTH}\n{...}", "{...}", Units::English)]
+    fn leaves_content_for_the_next_parser(mut input: &str, content_left: &str, expected: Units) {
         let units = parse_units_block.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
@@ -60,34 +68,40 @@ mod tests {
 
     #[test_case(
         "xyz{UNITS=ENGLISH LENGTH}",
-        StrContext::Label("opening block"),
-        StrContext::Expected(StrContextValue::Description("{"));
-        "opening block corruption"
+        (
+            StrContext::Label("opening block"),
+            StrContext::Expected(StrContextValue::Description("{"))
+        ); "opening block corruption"
     )]
     #[test_case(
         "{UNITxyzS=ENGLISH LENGTH}",
-        StrContext::Label("block name"),
-        StrContext::Expected(StrContextValue::Description("UNITS"));
-        "block name corruption"
+        (
+            StrContext::Label("units UNITS key"),
+            StrContext::Expected(StrContextValue::Description("invalid UNITS key name"))
+        ); "block name corruption"
     )]
     #[test_case(
         "{UNITSxyz=ENGLISH LENGTH}",
-        StrContext::Label("block name boundary"),
-        StrContext::Expected(StrContextValue::Description("valid character after block name"));
-        "block name boundary corruption"
+        (
+            StrContext::Label("units UNITS key"),
+            StrContext::Expected(StrContextValue::Description("invalid UNITS key name"))
+        ); "block name boundary corruption"
     )]
     #[test_case(
         "{UNITS=ENGLISH LENGTH",
-        StrContext::Label("closing block"),
-        StrContext::Expected(StrContextValue::Description("}"));
-        "closing block corruption"
+        (
+            StrContext::Label("closing block"),
+            StrContext::Expected(StrContextValue::Description("}"))
+        ); "closing block corruption"
     )]
-    fn rejects_malformed_units_blocks(
-        input: &str,
-        expected_label: StrContext,
-        expected_description: StrContext,
-    ) {
-        let mut input = input;
+    #[test_case(
+        "{UNITS=FRENCH LENGTH",
+        (
+            StrContext::Label("units UNITS value"),
+            StrContext::Expected(StrContextValue::Description("invalid UNITS attribute value"))
+        ); "value corruption"
+    )]
+    fn rejects_malformed_units_blocks(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_units_block.parse_next(&mut input).unwrap_err();
 
         let errors = match err {
@@ -100,7 +114,7 @@ mod tests {
             ErrMode::Incomplete(_) => todo!(),
         };
 
-        assert_eq!(*errors.0, expected_label);
-        assert_eq!(*errors.1, expected_description);
+        assert_eq!(*errors.0, expected_errors.0);
+        assert_eq!(*errors.1, expected_errors.1);
     }
 }
