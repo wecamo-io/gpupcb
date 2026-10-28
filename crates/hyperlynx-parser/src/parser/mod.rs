@@ -4,7 +4,7 @@
 
 use winnow::{ModalResult, Parser};
 use winnow::combinator::alt;
-use winnow::error::{ContextError, ParseError};
+use winnow::error::ContextError;
 
 use crate::model::{Board, Device, Layer, Net, Padstack, PerimeterSegment, Units};
 
@@ -25,6 +25,14 @@ enum Section {
     Devices(Vec<Device>),
     Padstack(Padstack),
     Net(Net),
+}
+
+#[derive(Debug)]
+pub struct ReturnParseError {
+    pub line: u32,
+    pub placement: String,
+    pub inner: ContextError,
+    pub offset: usize,
 }
 
 // checks which section type is currently at the beggining of input (VERSION, UNITS, NET etc.)
@@ -92,8 +100,31 @@ fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
     })
 }
 
-pub fn parse(input: &str) -> Result<Board, ParseError<&str, ContextError>> {
+pub fn parse(input: &str) -> Result<Board, ReturnParseError> {
     let mut remaining = input;
 
-    parse_hyperlynx.parse(&mut remaining).map_err(|err| err)
+    parse_hyperlynx.parse(&mut remaining).map_err(|err| {
+        let index: usize = err.offset();
+        let s: &str = err.input();
+
+        let space: usize = 16;
+        let mut start: usize = index.saturating_sub(space);
+        while !s.is_char_boundary(start) {
+            start += 1;
+        }
+        let mut end: usize = index.saturating_add(space).min(s.len());
+        while !s.is_char_boundary(end) {
+            end += 1;
+        }
+
+        let placement: String = format!("...{}...", s[start..end].to_string());
+        let line: u32 = s[..index].matches('\n').count() as u32 + 1;
+
+        ReturnParseError {
+            line,
+            placement,
+            inner: err.inner().clone(),
+            offset: err.offset(),
+        }
+    })
 }
