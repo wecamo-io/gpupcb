@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::{dec_int, dec_uint, line_ending};
-use winnow::combinator::{alt, backtrack_err, cut_err, delimited, empty, not, peek, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
-use winnow::token::{any, literal, one_of, take, take_till, take_until, take_while};
+use winnow::combinator::{backtrack_err, cut_err, delimited, peek};
+use winnow::error::{StrContext, StrContextValue};
+use winnow::token::{any, literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
 
 pub struct ExtractKeyErrorMessages {
@@ -148,8 +148,12 @@ pub fn line_ending_with_two_spaces(input: &mut &str) -> ModalResult<()> {
 }
 
 // parses '\n    ' or '\r\n    '
-pub fn line_ending_with_four_spaces(input: &mut &str, next_literal: char) -> ModalResult<()> {
-    (line_ending, "    ", peek(any).verify(|c: &char| !c.is_whitespace()))
+pub fn line_ending_with_four_spaces(input: &mut &str) -> ModalResult<()> {
+    (
+        line_ending,
+        "    ",
+        peek(any).verify(|c: &char| !c.is_whitespace()),
+    )
         .context(StrContext::Label("line ending with indentation"))
         .context(StrContext::Expected(StrContextValue::Description(
             "expected one new line with 4 spaces",
