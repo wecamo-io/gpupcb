@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{dec_int, dec_uint, line_ending};
+use winnow::ascii::{dec_uint, line_ending};
 use winnow::combinator::{backtrack_err, cut_err, delimited, peek};
 use winnow::error::{StrContext, StrContextValue};
 use winnow::token::{any, literal, one_of, take_till, take_until, take_while};
@@ -226,25 +226,9 @@ pub fn extract_unquoted_string_value(
 
 pub fn extract_unsigned_integer_value(
     input: &mut &str,
-    till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<u32> {
     let value = cut_err(dec_uint)
-        .context(StrContext::Label(error_messages.value_error_label))
-        .context(StrContext::Expected(StrContextValue::Description(
-            error_messages.value_error_description,
-        )))
-        .parse_next(input)?;
-
-    Ok(value)
-}
-
-pub fn extract_signed_integer_value(
-    input: &mut &str,
-    till_literal: char,
-    error_messages: ExtractValueErrorMessages,
-) -> ModalResult<i32> {
-    let value = cut_err(dec_int)
         .context(StrContext::Label(error_messages.value_error_label))
         .context(StrContext::Expected(StrContextValue::Description(
             error_messages.value_error_description,
@@ -342,7 +326,6 @@ pub fn extract_unquoted_string_entry(
 pub fn extract_unsigned_integer_entry(
     input: &mut &str,
     key: &str,
-    till_literal: char,
     error_messages: ExtractEntryErrorMessages,
 ) -> ModalResult<u32> {
     extract_key(
@@ -358,36 +341,6 @@ pub fn extract_unsigned_integer_entry(
 
     let value = extract_unsigned_integer_value(
         input,
-        till_literal,
-        ExtractValueErrorMessages {
-            value_error_label: error_messages.value_error_label,
-            value_error_description: error_messages.value_error_description,
-        },
-    )?;
-
-    Ok(value)
-}
-
-pub fn extract_signed_integer_entry(
-    input: &mut &str,
-    key: &str,
-    till_literal: char,
-    error_messages: ExtractEntryErrorMessages,
-) -> ModalResult<i32> {
-    extract_key(
-        input,
-        key,
-        ExtractKeyErrorMessages {
-            key_error_label: error_messages.key_error_label,
-            key_error_description: error_messages.key_error_description,
-        },
-    )?;
-
-    literal('=').parse_next(input)?;
-
-    let value = extract_signed_integer_value(
-        input,
-        till_literal,
         ExtractValueErrorMessages {
             value_error_label: error_messages.value_error_label,
             value_error_description: error_messages.value_error_description,

@@ -25,7 +25,6 @@ pub fn parse_polyvoid_block(input: &mut &str) -> ModalResult<Polyvoid> {
     let id = extract_unsigned_integer_entry(
         input,
         "ID",
-        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "polyvoid ID key",
             key_error_description: "invalid ID key name",
@@ -149,7 +148,6 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
     let id = extract_unsigned_integer_entry(
         input,
         "ID",
-        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "polygon ID key",
             key_error_description: "invalid ID key name",

@@ -142,7 +142,6 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
     let id = extract_unsigned_integer_entry(
         input,
         "PADSTACK",
-        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "padstack PADSTACK key",
             key_error_description: "invalid PADSTACK key name",

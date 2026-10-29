@@ -63,7 +63,6 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     let padstack_id = extract_unsigned_integer_entry(
         input,
         "P",
-        ')',
         ExtractEntryErrorMessages {
             key_error_label: "pin P key",
             key_error_description: "invalid P key name",

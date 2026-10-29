@@ -49,7 +49,6 @@ pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
     let padstack_id = extract_unsigned_integer_entry(
         input,
         "P",
-        ')',
         ExtractEntryErrorMessages {
             key_error_label: "via P key",
             key_error_description: "invalid P key name",
