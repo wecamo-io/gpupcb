@@ -3,14 +3,20 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, peek};
-use winnow::{ModalResult, Parser};
+use winnow::combinator::{alt, cut_err, peek};
+use winnow::error::{ContextError, StrContext, StrContextValue};
+use winnow::prelude::*;
 
 use crate::model::Arc;
-use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry, row_open};
+use crate::parser::utils::{
+    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
+    line_ending_with_two_spaces, row_open, single_line_ending, single_space,
+};
 
 pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
     row_open(input, "ARC")?;
+
+    single_space(input)?;
 
     let x1 = extract_float_entry(
         input,
@@ -24,6 +30,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
         },
     )?;
 
+    single_space(input)?;
+
     let y1 = extract_float_entry(
         input,
         "Y1",
@@ -35,6 +43,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
             value_error_description: "invalid Y1 attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let x2 = extract_float_entry(
         input,
@@ -48,6 +58,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
         },
     )?;
 
+    single_space(input)?;
+
     let y2 = extract_float_entry(
         input,
         "Y2",
@@ -59,6 +71,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
             value_error_description: "invalid Y2 attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let xc = extract_float_entry(
         input,
@@ -72,6 +86,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
         },
     )?;
 
+    single_space(input)?;
+
     let yc = extract_float_entry(
         input,
         "YC",
@@ -83,6 +99,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
             value_error_description: "invalid YC attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let radius = extract_float_entry(
         input,
@@ -96,6 +114,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
         },
     )?;
 
+    single_space(input)?;
+
     let width = extract_float_entry(
         input,
         "W",
@@ -107,6 +127,8 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
             value_error_description: "invalid W attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let layer = extract_quoted_string_entry(
         input,
@@ -120,6 +142,17 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
     )?;
 
     close_row(input)?;
+
+    alt((single_line_ending, line_ending_with_two_spaces))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single line ending or new line with 2 spaces after",
+            )));
+            return winnow::error::ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
 
     Ok(Arc {
         x1,
@@ -140,7 +173,6 @@ pub fn parse_arc_row_with_err(input: &mut &str) -> ModalResult<Arc> {
     cut_err(parse_arc_row).parse_next(input)
 }
 
-
 #[cfg(test)]
 mod arc_row_parser_tests {
     use super::*;
@@ -148,7 +180,7 @@ mod arc_row_parser_tests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
-        r#"(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L="F.Cu")"#,
+        "(ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  (...)",
         Arc {
             x1: 8.2480314961,
             y1: -4.8854330709,
@@ -564,10 +596,7 @@ mod arc_row_parser_tests {
             StrContext::Expected(StrContextValue::Description(")"))
         ); "after L value"
     )]
-    fn rejects_malformed_arc_row(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_arc_row(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_arc_row(&mut input).unwrap_err();
 
         let errors = match err {

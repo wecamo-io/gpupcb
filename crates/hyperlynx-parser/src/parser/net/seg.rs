@@ -3,14 +3,20 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, peek};
-use winnow::{ModalResult, Parser};
+use winnow::combinator::{alt, cut_err, peek};
+use winnow::error::{ContextError, StrContext, StrContextValue};
+use winnow::prelude::*;
 
 use crate::model::Segment;
-use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry, row_open};
+use crate::parser::utils::{
+    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
+    line_ending_with_two_spaces, row_open, single_line_ending, single_space,
+};
 
 pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
     row_open(input, "SEG")?;
+
+    single_space(input)?;
 
     let x1 = extract_float_entry(
         input,
@@ -24,6 +30,8 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         },
     )?;
 
+    single_space(input)?;
+
     let y1 = extract_float_entry(
         input,
         "Y1",
@@ -35,6 +43,8 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
             value_error_description: "invalid Y1 attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let x2 = extract_float_entry(
         input,
@@ -48,6 +58,8 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         },
     )?;
 
+    single_space(input)?;
+
     let y2 = extract_float_entry(
         input,
         "Y2",
@@ -59,6 +71,8 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
             value_error_description: "invalid Y2 attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let width = extract_float_entry(
         input,
@@ -72,6 +86,8 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
         },
     )?;
 
+    single_space(input)?;
+
     let layer = extract_quoted_string_entry(
         input,
         "L",
@@ -84,6 +100,17 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
     )?;
 
     close_row(input)?;
+
+    alt((single_line_ending, line_ending_with_two_spaces))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single line ending or new line with 2 spaces after",
+            )));
+            return winnow::error::ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
 
     Ok(Segment {
         x1,
@@ -108,7 +135,7 @@ mod seg_row_parser_tests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
-        r#"(SEG X1=8.2024606299 Y1=-5.0408464567 X2=8.2495078740 Y2=-5.0408464567 W=0.0196850394 L="F.Cu")"#,
+        "(SEG X1=8.2024606299 Y1=-5.0408464567 X2=8.2495078740 Y2=-5.0408464567 W=0.0196850394 L=\"F.Cu\")\n  (...)",
         Segment {
             x1: 8.2024606299,
             y1: -5.0408464567,
@@ -399,10 +426,7 @@ mod seg_row_parser_tests {
             StrContext::Expected(StrContextValue::Description(")"))
         )
     )]
-    fn rejects_malformed_seg_row(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_seg_row(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_seg_row(&mut input).unwrap_err();
 
         let errors = match err {
@@ -418,5 +442,4 @@ mod seg_row_parser_tests {
         assert_eq!(*errors.0, expected_errors.0);
         assert_eq!(*errors.1, expected_errors.1);
     }
-
 }

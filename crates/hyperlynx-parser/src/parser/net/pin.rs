@@ -3,14 +3,21 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, peek};
-use winnow::{ModalResult, Parser};
+use winnow::combinator::{alt, cut_err, peek};
+use winnow::error::{ContextError, StrContext};
+use winnow::prelude::*;
 
 use crate::model::Pin;
-use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry, extract_unsigned_integer_entry, row_open};
+use crate::parser::utils::{
+    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
+    extract_unsigned_integer_entry, line_ending_with_two_spaces, row_open, single_line_ending,
+    single_space,
+};
 
 pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     row_open(input, "PIN")?;
+
+    single_space(input)?;
 
     let x = extract_float_entry(
         input,
@@ -24,6 +31,8 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
         },
     )?;
 
+    single_space(input)?;
+
     let y = extract_float_entry(
         input,
         "Y",
@@ -36,6 +45,8 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
         },
     )?;
 
+    single_space(input)?;
+
     let component_reference = extract_quoted_string_entry(
         input,
         "R",
@@ -46,6 +57,8 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
             value_error_description: "invalid R attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let padstack_id = extract_unsigned_integer_entry(
         input,
@@ -60,6 +73,19 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     )?;
 
     close_row(input)?;
+
+    alt((single_line_ending, line_ending_with_two_spaces))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(
+                winnow::error::StrContextValue::Description(
+                    "expected single line ending or new line with 2 spaces after",
+                ),
+            ));
+            return winnow::error::ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
 
     Ok(Pin {
         x,
@@ -82,7 +108,7 @@ mod pin_row_parser_tests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
-        r#"(PIN X=8.2480314961 Y=-4.8622047244 R="R3.1" P=0)"#,
+        "(PIN X=8.2480314961 Y=-4.8622047244 R=\"R3.1\" P=0)\n  (...)",
         Pin {
             x: 8.2480314961,
             y: -4.8622047244,
@@ -91,7 +117,7 @@ mod pin_row_parser_tests {
         }
     )]
     #[test_case(
-        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2" P=12)"#,
+        "(PIN X=8.3572834646 Y=-4.5978346457 R=\"U2.2\" P=12)\n  (...)",
         Pin {
             x: 8.3572834646,
             y: -4.5978346457,
@@ -280,10 +306,7 @@ mod pin_row_parser_tests {
             StrContext::Expected(StrContextValue::Description(")"))
         )
     )]
-    fn rejects_malformed_pin_row(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext),
-    ) {
+    fn rejects_malformed_pin_row(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_pin_row(&mut input).unwrap_err();
 
         let errors = match err {

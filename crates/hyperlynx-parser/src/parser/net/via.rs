@@ -3,14 +3,20 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, peek};
+use winnow::combinator::{alt, cut_err, peek};
+use winnow::error::{ContextError, StrContext, StrContextValue};
 use winnow::{ModalResult, Parser};
 
 use crate::model::Via;
-use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, extract_unsigned_integer_entry, row_open};
+use crate::parser::utils::{
+    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_unsigned_integer_entry,
+    line_ending_with_two_spaces, row_open, single_line_ending, single_space,
+};
 
 pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
     row_open(input, "VIA")?;
+
+    single_space(input)?;
 
     let x = extract_float_entry(
         input,
@@ -21,8 +27,10 @@ pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
             key_error_description: "invalid X key name",
             value_error_label: "via X value",
             value_error_description: "invalid X attribute value",
-        }
+        },
     )?;
+
+    single_space(input)?;
 
     let y = extract_float_entry(
         input,
@@ -33,8 +41,10 @@ pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
             key_error_description: "invalid Y key name",
             value_error_label: "via Y value",
             value_error_description: "invalid Y attribute value",
-        }
+        },
     )?;
+
+    single_space(input)?;
 
     let padstack_id = extract_unsigned_integer_entry(
         input,
@@ -45,16 +55,23 @@ pub fn parse_via_row(input: &mut &str) -> ModalResult<Via> {
             key_error_description: "invalid P key name",
             value_error_label: "via P value",
             value_error_description: "invalid P attribute value",
-        }
+        },
     )?;
 
     close_row(input)?;
 
-    Ok(Via {
-        x,
-        y,
-        padstack_id
-    })
+    alt((single_line_ending, line_ending_with_two_spaces))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single line ending or new line with 2 spaces after",
+            )));
+            return winnow::error::ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
+
+    Ok(Via { x, y, padstack_id })
 }
 
 pub fn parse_via_row_with_err(input: &mut &str) -> ModalResult<Via> {
@@ -70,7 +87,7 @@ mod via_row_parser_tests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
-        r#"(VIA X=8.1917322835 Y=-5.0476377953 P=18)"#,
+        "(VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (...)",
         Via {
             x: 8.1917322835,
             y: -5.0476377953,
@@ -221,10 +238,7 @@ mod via_row_parser_tests {
             StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
         ); "inside P value"
     )]
-    fn rejects_malformed_via_row(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_via_row(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_via_row(&mut input).unwrap_err();
 
         let errors = match err {
@@ -238,6 +252,6 @@ mod via_row_parser_tests {
         };
 
         assert_eq!(*errors.0, expected_errors.0);
-        assert_eq!(*errors.1, expected_errors.1); 
+        assert_eq!(*errors.1, expected_errors.1);
     }
 }
