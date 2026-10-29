@@ -4,11 +4,10 @@
 
 use crate::model::Units;
 use crate::parser::utils::{
-    close_block, double_line_ending, extract_unquoted_string_entry, open_block,
-    ExtractEntryErrorMessages,
+    ExtractEntryErrorMessages, close_block, extract_unquoted_string_entry, open_block,
 };
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
-use winnow::{ModalResult, Parser};
+use winnow::prelude::*;
 
 pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
     open_block(input, "")?;
@@ -42,8 +41,6 @@ pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
 
     close_block(input)?;
 
-    double_line_ending(input)?;
-
     Ok(units)
 }
 
@@ -52,14 +49,14 @@ mod units_block_parsertests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case("{UNITS=ENGLISH LENGTH}\n\n{...}", Units::English)]
+    #[test_case("{UNITS=ENGLISH LENGTH}", Units::English)]
     fn parses_units_block(mut input: &str, expected: Units) {
         let units = parse_units_block.parse_next(&mut input).unwrap();
 
         assert_eq!(units, expected);
     }
 
-    #[test_case("{UNITS=ENGLISH LENGTH}\n\n{...}", "{...}", Units::English)]
+    #[test_case("{UNITS=ENGLISH LENGTH}\n\n{...}", "\n\n{...}", Units::English)]
     fn leaves_content_for_the_next_parser(mut input: &str, content_left: &str, expected: Units) {
         let units = parse_units_block.parse_next(&mut input).unwrap();
 
@@ -68,35 +65,35 @@ mod units_block_parsertests {
     }
 
     #[test_case(
-        "xyz{UNITS=ENGLISH LENGTH}\n\n{...}",
+        "xyz{UNITS=ENGLISH LENGTH}",
         (
             StrContext::Label("opening block"),
             StrContext::Expected(StrContextValue::Description("{"))
         ); "opening block corruption"
     )]
     #[test_case(
-        "{UNITxyzS=ENGLISH LENGTH}\n\n{...}",
+        "{UNITxyzS=ENGLISH LENGTH}",
         (
             StrContext::Label("units UNITS key"),
             StrContext::Expected(StrContextValue::Description("invalid UNITS key name"))
         ); "block name corruption"
     )]
     #[test_case(
-        "{UNITSxyz=ENGLISH LENGTH}\n\n{...}",
+        "{UNITSxyz=ENGLISH LENGTH}",
         (
             StrContext::Label("units UNITS key"),
             StrContext::Expected(StrContextValue::Description("invalid UNITS key name"))
         ); "block name boundary corruption"
     )]
     #[test_case(
-        "{UNITS=ENGLISH LENGTH\n\n{...}",
+        "{UNITS=ENGLISH LENGTH",
         (
-            StrContext::Label("units UNITS value"),
-            StrContext::Expected(StrContextValue::Description("invalid UNITS attribute value"))
+            StrContext::Label("closing block"),
+            StrContext::Expected(StrContextValue::Description("}"))
         ); "missing closing bracket"
     )]
     #[test_case(
-        "{UNITS=FRENCH LENGTH\n\n{...}",
+        "{UNITS=FRENCH LENGTH",
         (
             StrContext::Label("units UNITS value"),
             StrContext::Expected(StrContextValue::Description("invalid UNITS attribute value"))
@@ -104,7 +101,7 @@ mod units_block_parsertests {
     )]
     // invalid new lines -
     #[test_case(
-        "{UNITS=FRENCH LENGTH\n\n{...}",
+        "{UNITS=FRENCH LENGTH",
         (
             StrContext::Label("units UNITS value"),
             StrContext::Expected(StrContextValue::Description("invalid UNITS attribute value"))
