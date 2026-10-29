@@ -3,11 +3,20 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::combinator::{alt, repeat};
-use winnow::{ModalResult, Parser};
+use winnow::prelude::*;
 
 use crate::model::{Arc, Net, Pin, Polygon, Polyvoid, Segment, Via};
-use crate::parser::net::{pin::parse_pin_row_with_err, via::parse_via_row_with_err, seg::parse_seg_row_with_err, arc::parse_arc_row_with_err, polygon::{parse_polygon_block_with_err, parse_polyvoid_block_with_err}};
-use crate::parser::utils::{ExtractEntryErrorMessages, extract_quoted_string_entry, open_block, close_block};
+use crate::parser::net::{
+    arc::parse_arc_row_with_err,
+    pin::parse_pin_row_with_err,
+    polygon::{parse_polygon_block_with_err, parse_polyvoid_block_with_err},
+    seg::parse_seg_row_with_err,
+    via::parse_via_row_with_err,
+};
+use crate::parser::utils::{
+    ExtractEntryErrorMessages, close_block, extract_quoted_string_entry,
+    line_ending_with_two_spaces, open_block,
+};
 
 pub mod arc;
 pub mod pin;
@@ -22,7 +31,7 @@ enum NetElement {
     Segment(Segment),
     Arc(Arc),
     Polygon(Polygon),
-    Polyvoid(Polyvoid)
+    Polyvoid(Polyvoid),
 }
 
 fn parse_net_element(input: &mut &str) -> ModalResult<NetElement> {
@@ -50,6 +59,8 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
             value_error_description: "invalid NET attribute value",
         },
     )?;
+
+    line_ending_with_two_spaces(input)?;
 
     let mut pins: Vec<Pin> = Vec::new();
     let mut vias: Vec<Via> = Vec::new();
@@ -295,10 +306,7 @@ mod net_block_parser_tests {
             StrContext::Expected(StrContextValue::Description("invalid Y attribute value"))
         ); "polygon line Y value"
     )]
-    fn rejects_malformed_net_block(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_net_block(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_net_block(&mut input).unwrap_err();
 
         let errors = match err {
