@@ -10,8 +10,7 @@ use winnow::{ModalResult, Parser};
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
-    close_block, close_row, extract_float_entry, extract_quoted_string_entry,
-    extract_unquoted_string_entry, open_block, row_open, ExtractEntryErrorMessages,
+    ExtractEntryErrorMessages, close_block, close_row, double_line_ending, extract_float_entry, extract_quoted_string_entry, extract_unquoted_string_entry, line_ending_with_two_spaces, open_block, row_open, single_line_ending, single_space,
 };
 
 fn parse_m_attribute_quoted(input: &mut &str, layer: &str) -> ModalResult<String> {
@@ -54,6 +53,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         }
     };
 
+    single_space(input)?;
+
     let thickness = extract_float_entry(
         input,
         "T",
@@ -65,6 +66,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             value_error_description: "invalid T attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let dielectric_constant = extract_float_entry(
         input,
@@ -78,6 +81,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         },
     )?;
 
+    single_space(input)?;
+
     let layer_name = extract_quoted_string_entry(
         input,
         "L",
@@ -88,6 +93,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             value_error_description: "invalid L attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let material = {
         let m = alt((
@@ -138,6 +145,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     };
 
     close_row(input)?;
+    
+    alt((line_ending_with_two_spaces, single_line_ending)).parse_next(input)?;
 
     Ok(Layer {
         layer_type: LayerType::Dielectric {
@@ -162,6 +171,8 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         }
     };
 
+    single_space(input)?;
+
     let thickness = extract_float_entry(
         input,
         "T",
@@ -173,6 +184,8 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             value_error_description: "invalid T attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let plating_thickness = extract_float_entry(
         input,
@@ -186,6 +199,8 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         },
     )?;
 
+    single_space(input)?;
+
     let resistivity = extract_float_entry(
         input,
         "C",
@@ -198,6 +213,8 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         },
     )?;
 
+    single_space(input)?;
+
     let layer_name = extract_quoted_string_entry(
         input,
         "L",
@@ -208,6 +225,8 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
             value_error_description: "invalid L attribute value",
         },
     )?;
+
+    single_space(input)?;
 
     let material = {
         let m = alt((
@@ -255,6 +274,8 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
     close_row(input)?;
 
+    line_ending_with_two_spaces(input)?;
+
     Ok(Layer {
         layer_type: LayerType::Signal {
             resistivity,
@@ -295,9 +316,13 @@ fn parse_layer_row_with_err(input: &mut &str) -> ModalResult<Layer> {
 pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
     open_block(input, "STACKUP")?;
 
+    line_ending_with_two_spaces(input)?;
+
     let layers: Vec<Layer> = repeat(0.., parse_layer_row_with_err).parse_next(input)?;
 
     close_block(input)?;
+
+    double_line_ending(input)?;
 
     Ok(layers)
 }
@@ -308,7 +333,7 @@ mod stackup_block_parser_tests {
     use test_case::test_case;
 
     #[test_case(
-        r#"(DIELECTRIC T=0.0594488 C=4.5 L="F.Cu" M="FR4")"#,
+        "(DIELECTRIC T=0.0594488 C=4.5 L=\"F.Cu\" M=\"FR4\")\n  (...)",
         Layer {
             layer_type: LayerType::Dielectric { dielectric_constant: 4.5 },
             thickness: 0.0594488,
@@ -317,7 +342,7 @@ mod stackup_block_parser_tests {
         }
     )]
     #[test_case(
-        r#"(DIELECTRIC T=0.000393701 C=3.3 L="B.Mask" M="Solder Mask")"#,
+        "(DIELECTRIC T=0.000393701 C=3.3 L=\"B.Mask\" M=\"Solder Mask\")\n  (...)",
         Layer {
             layer_type: LayerType::Dielectric { dielectric_constant: 3.3 },
             thickness: 0.000393701,
@@ -326,7 +351,7 @@ mod stackup_block_parser_tests {
         }
     )]
     #[test_case(
-        r#"(DIELECTRIC T=0.002992126 C=4.2 L="PR1080" M=PR1080)"#,
+        r#"(DIELECTRIC T=0.002992126 C=4.2 L="PR1080" M=PR1080)\n"#,
         Layer {
             layer_type: LayerType::Dielectric { dielectric_constant: 4.2 },
             thickness: 0.002992126,
@@ -335,7 +360,7 @@ mod stackup_block_parser_tests {
         }
     )]
     #[test_case(
-        r#"(DIELECTRIC T=0.00480315 C=4.0 L="PR2116" M=PR2116)"#,
+        r#"(DIELECTRIC T=0.00480315 C=4.0 L="PR2116" M=PR2116)\n"#,
         Layer {
             layer_type: LayerType::Dielectric { dielectric_constant: 4.0 },
             thickness: 0.00480315,
@@ -343,16 +368,14 @@ mod stackup_block_parser_tests {
             material: LayerMaterial::PR2116
         }
     )]
-    fn parses_dielectric_layer(input: &str, expected: Layer) {
-        let mut input = input;
-
+    fn parses_dielectric_layer(mut input: &str, expected: Layer) {
         let dielectric_layer = dielectric.parse_next(&mut input).unwrap();
 
         assert_eq!(dielectric_layer, expected);
     }
 
     #[test_case(
-        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)"#,
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)\n  "#,
         Layer {
             layer_type: LayerType::Signal { resistivity: 1.724e-08, plating_thickness: 0.0 },
             thickness: 0.00137795,
@@ -361,7 +384,7 @@ mod stackup_block_parser_tests {
         }
     )]
     #[test_case(
-        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="B.Cu" M=COPPER)"#,
+        r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L="B.Cu" M=COPPER)\n  "#,
         Layer {
             layer_type: LayerType::Signal { resistivity: 1.724e-08, plating_thickness: 0.0 },
             thickness: 0.00137795,
@@ -379,13 +402,7 @@ mod stackup_block_parser_tests {
 
     #[test]
     fn parses_stackup_block() {
-        let mut input = r#"{STACKUP
-  (DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")
-  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)
-  (DIELECTRIC T=0.0594488 C=4.5 L="DE_F.Cu" M="FR4")
-  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="B.Cu" M=COPPER)
-  (DIELECTRIC T=0.000393701 C=3.3 L="B.Mask" M="Solder Mask")
-} some_further_input"#;
+        let mut input = r#"{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L="F.Mask" M="Solder Mask")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)\n  (DIELECTRIC T=0.0594488 C=4.5 L="DE_F.Cu" M="FR4")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="B.Cu" M=COPPER)\n  (DIELECTRIC T=0.000393701 C=3.3 L="B.Mask" M="Solder Mask")\n}\n\n{...}"#;
         let expected_signals_length: usize = 2;
         let expected_dielectrics_length: usize = 3;
         let expected_further_input = "some_further_input";
@@ -615,8 +632,8 @@ mod stackup_block_parser_tests {
     )]
     #[test_case(
         r#"(DIELECTRIC T=0.000393701 C=3.3 L="F.Mask M="Solder Mask")"#,
-        StrContext::Label("dielectric M key"),
-        StrContext::Expected(StrContextValue::Description("invalid M key name"))
+        StrContext::Label("single space"),
+        StrContext::Expected(StrContextValue::Description("invalid indentation, needs single space"))
     )]
     #[test_case(
         r#"(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=xyz"F.Cu" M=COPPER)"#,
