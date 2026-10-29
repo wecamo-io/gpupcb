@@ -3,13 +3,19 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, peek};
-use winnow::{ModalResult, Parser};
+use winnow::combinator::{alt, cut_err, peek};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::prelude::*;
 
-use crate::parser::utils::{ExtractEntryErrorMessages, close_row, extract_float_entry, row_open};
+use crate::parser::utils::{
+    ExtractEntryErrorMessages, close_row, extract_float_entry, line_ending_with_four_spaces,
+    line_ending_with_two_spaces, row_open, single_space,
+};
 
 pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
     row_open(input, "LINE")?;
+
+    single_space(input)?;
 
     let x = extract_float_entry(
         input,
@@ -20,8 +26,10 @@ pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
             key_error_description: "invalid X key name",
             value_error_label: "line X value",
             value_error_description: "invalid X attribute value",
-        }
+        },
     )?;
+
+    single_space(input)?;
 
     let y = extract_float_entry(
         input,
@@ -32,10 +40,21 @@ pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
             key_error_description: "invalid Y key name",
             value_error_label: "line Y value",
             value_error_description: "invalid Y attribute value",
-        }
+        },
     )?;
 
     close_row(input)?;
+
+    alt((line_ending_with_four_spaces, line_ending_with_two_spaces))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected line ending with 2 or 4 spaces after",
+            )));
+            return ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
 
     Ok((x, y))
 }
@@ -53,7 +72,7 @@ mod line_row_parser_tests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
-        r#"(LINE X=7.9166411024 Y=-4.5833994094)"#,
+        "(LINE X=7.9166411024 Y=-4.5833994094)\n  (...)",
         (7.9166411024, -4.5833994094)
     )]
     fn parses_line_row(mut input: &str, expected: (f64, f64)) {
@@ -193,10 +212,7 @@ mod line_row_parser_tests {
             StrContext::Expected(StrContextValue::Description(")"))
         )
     )]
-    fn rejects_malformed_line_row(
-        mut input: &str,
-        expected_errors: (StrContext, StrContext)
-    ) {
+    fn rejects_malformed_line_row(mut input: &str, expected_errors: (StrContext, StrContext)) {
         let err = parse_line_row(&mut input).unwrap_err();
 
         let errors = match err {
