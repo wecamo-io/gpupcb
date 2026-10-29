@@ -2,15 +2,17 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{digit1, multispace0, line_ending};
-use winnow::combinator::{backtrack_err, cut_err, peek, repeat};
+use winnow::ascii::{digit1, multispace0};
+use winnow::combinator::{alt, backtrack_err, cut_err, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::prelude::*;
 use winnow::token::literal;
-use winnow::{ModalResult, Parser};
 
 use crate::model::{Pad, PadShape, Padstack};
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row, extract_float_value, extract_quoted_string_value, extract_unsigned_integer_entry, open_block, row_open,
+    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
+    extract_float_value, extract_quoted_string_value, extract_unsigned_integer_entry,
+    line_ending_with_two_spaces, open_block, row_open, single_line_ending,
 };
 
 fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<()> {
@@ -42,7 +44,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         ExtractValueErrorMessages {
             value_error_label: "pad layer value",
             value_error_description: "invalid layer value",
-        }
+        },
     )?;
 
     parse_pad_arguments_separator(input)?;
@@ -108,6 +110,17 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
 
     close_row(input)?;
 
+    alt((single_line_ending, line_ending_with_two_spaces))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single line ending or new line with 2 spaces after",
+            )));
+            return winnow::error::ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
+
     Ok(Pad {
         layer: String::from(layer),
         shape,
@@ -149,12 +162,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
         },
     )?;
 
-    backtrack_err((line_ending, "  "))
-        .context(StrContext::Label("padstack new line"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid padstack new line",
-        )))
-        .parse_next(input)?;
+    line_ending_with_two_spaces(input)?;
 
     let pads: Vec<Pad> = repeat(0.., parse_pad_row_with_err).parse_next(input)?;
 
@@ -169,7 +177,7 @@ mod padstack_block_parser_tests {
     use test_case::test_case;
 
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110, 90.0, M)\n  (...)",
         Pad {
             layer: String::from("F.Cu"),
             shape: PadShape::Rectangle,
@@ -179,7 +187,7 @@ mod padstack_block_parser_tests {
         }
     )]
     #[test_case(
-        r#"("B.Cu", 0, 0.047244094, 0.055118110, 180.0, M)"#,
+        "(\"B.Cu\", 0, 0.047244094, 0.055118110, 180.0, M)\n(...)",
         Pad {
             layer: String::from("B.Cu"),
             shape: PadShape::Oval,
@@ -189,7 +197,7 @@ mod padstack_block_parser_tests {
         }
     )]
     #[test_case(
-        r#"("F.Cu", 1, 0.047244094, 0.055118110, 270.0, M)"#,
+        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 270.0, M)\n  (...)",
         Pad {
             layer: String::from("F.Cu"),
             shape: PadShape::Roundrect,
@@ -357,28 +365,28 @@ mod padstack_block_parser_tests {
 
     // layer name value lacks double quotes
     #[test_case(
-        r#"(xyz"F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(xyz\"F.Cu\", 2, 0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad layer value"),
             StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     #[test_case(
-        r#"(F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(F.Cu\", 2, 0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad layer value"),
             StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad layer value"),
             StrContext::Expected(StrContextValue::Description("invalid layer value"))
         )
     )]
     #[test_case(
-        r#"(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad layer value"),
             StrContext::Expected(StrContextValue::Description("invalid layer value"))
@@ -386,14 +394,14 @@ mod padstack_block_parser_tests {
     )]
     // shape value malversation
     #[test_case(
-        r#"("F.Cu", xyz2, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", xyz2, 0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad shape value"),
             StrContext::Expected(StrContextValue::Description("invalid shape value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 3, 0.047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 3, 0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad shape value"),
             StrContext::Expected(StrContextValue::Description("invalid pad shape value, should be 0-2"))
@@ -401,28 +409,28 @@ mod padstack_block_parser_tests {
     )]
     // size_x value malversation
     #[test_case(
-        r#"("F.Cu", 2, xyz0.047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, xyz0.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad size_x value"),
             StrContext::Expected(StrContextValue::Description("invalid size_x value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0xyz.047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0xyz.047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad size_x value"),
             StrContext::Expected(StrContextValue::Description("invalid size_x value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.xyz047244094, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.xyz047244094, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad size_x value"),
             StrContext::Expected(StrContextValue::Description("invalid size_x value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094xyz, 0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094xyz, 0.055118110, 90.0, M)",
         (
             StrContext::Label("pad size_x value"),
             StrContext::Expected(StrContextValue::Description("invalid size_x value"))
@@ -430,28 +438,28 @@ mod padstack_block_parser_tests {
     )]
     // size_y value malversation
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, xyz0.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, xyz0.055118110, 90.0, M)",
         (
             StrContext::Label("pad size_y value"),
             StrContext::Expected(StrContextValue::Description("invalid size_y value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0xyz.055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0xyz.055118110, 90.0, M)",
         (
             StrContext::Label("pad size_y value"),
             StrContext::Expected(StrContextValue::Description("invalid size_y value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.xyz055118110, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.xyz055118110, 90.0, M)",
         (
             StrContext::Label("pad size_y value"),
             StrContext::Expected(StrContextValue::Description("invalid size_y value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110xyz, 90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110xyz, 90.0, M)",
         (
             StrContext::Label("pad size_y value"),
             StrContext::Expected(StrContextValue::Description("invalid size_y value"))
@@ -459,35 +467,35 @@ mod padstack_block_parser_tests {
     )]
     // angle value malversation
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, xyz90.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110, xyz90.0, M)",
         (
             StrContext::Label("pad angle value"),
             StrContext::Expected(StrContextValue::Description("invalid angle value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 9xyz0.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110, 9xyz0.0, M)",
         (
             StrContext::Label("pad angle value"),
             StrContext::Expected(StrContextValue::Description("invalid angle value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90xyz.0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110, 90xyz.0, M)",
         (
             StrContext::Label("pad angle value"),
             StrContext::Expected(StrContextValue::Description("invalid angle value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.xyz0, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110, 90.xyz0, M)",
         (
             StrContext::Label("pad angle value"),
             StrContext::Expected(StrContextValue::Description("invalid angle value"))
         )
     )]
     #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0xyz, M)"#,
+        "(\"F.Cu\", 2, 0.047244094, 0.055118110, 90.0xyz, M)",
         (
             StrContext::Label("pad angle value"),
             StrContext::Expected(StrContextValue::Description("invalid angle value"))
@@ -656,7 +664,6 @@ mod padstack_block_parser_tests {
         mut input: &str,
         expected_errors: (StrContext, StrContext),
     ) {
-        let mut input = input;
         let err = parse_padstack_block.parse_next(&mut input).unwrap_err();
 
         let errors = match err {
@@ -675,7 +682,7 @@ mod padstack_block_parser_tests {
 
     #[test]
     fn leaves_further_input_after_block_parsing_finish() {
-        let mut input ="{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}further input";
+        let mut input = "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}further input";
         let expected = "further input";
 
         let _padstack = parse_padstack_block(&mut input).unwrap();
