@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::{ModalResult, Parser};
+use winnow::ascii::multispace0;
 use winnow::combinator::alt;
-use winnow::error::ContextError;
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::{ModalResult, Parser};
 
 use crate::model::{Board, Device, Layer, Net, Padstack, PerimeterSegment, Units};
+use crate::parser::utils::{double_line_ending, single_line_ending};
 
 mod devices;
 mod net;
@@ -17,16 +19,6 @@ mod units;
 mod utils;
 mod version;
 
-enum Section {
-    Version(String),
-    Units(Units),
-    PerimeterSegment(Vec<PerimeterSegment>),
-    Stackup(Vec<Layer>),
-    Devices(Vec<Device>),
-    Padstack(Padstack),
-    Net(Net),
-}
-
 #[derive(Debug)]
 pub struct ReturnParseError {
     pub line: u32,
@@ -35,68 +27,109 @@ pub struct ReturnParseError {
     pub offset: usize,
 }
 
-// checks which section type is currently at the beggining of input (VERSION, UNITS, NET etc.)
-fn section(input: &mut &str) -> ModalResult<Section> {
-    alt((
-        version::parse_version_block.map(Section::Version),
-        units::parse_units_block.map(Section::Units),
-        perimeter_segment::parse_board_block.map(Section::PerimeterSegment),
-        stackup::parse_stackup_block.map(Section::Stackup),
-        devices::parse_devices_block.map(Section::Devices),
-        padstack::parse_padstack_block.map(Section::Padstack),
-        net::parse_net_block.map(Section::Net),
-    ))
-    .parse_next(input)
+fn parse_single_or_double_line_ending(input: &mut &str) -> ModalResult<()> {
+    alt((single_line_ending, double_line_ending))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single or double line ending",
+            )));
+            return ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
+
+    Ok(())
 }
 
 fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
-    let mut version = String::new();
-    let mut units = Units::English;
-    let mut outline = Vec::new();
-    let mut stackup = Vec::new();
-    let mut devices = Vec::new();
-    let mut padstacks = Vec::new();
-    let mut nets = Vec::new();
+    // {VERSION}
+    let version: String = version::parse_version_block(input)?;
 
+    parse_single_or_double_line_ending(input)?;
+
+    // {UNITS}
+    let units: Units = units::parse_units_block(input)?;
+
+    double_line_ending(input)?;
+
+    // {BOARD}
+    let outline: Vec<PerimeterSegment> = perimeter_segment::parse_board_block(input)?;
+
+    double_line_ending(input)?;
+
+    // {STACKUP}
+    let stackup: Vec<Layer> = stackup::parse_stackup_block(input)?;
+
+    double_line_ending(input)?;
+
+    // {DEVICES}
+    let devices: Vec<Device> = devices::parse_devices_block(input)?;
+
+    double_line_ending(input)?;
+
+    // {PADSTACK}
+    let mut padstacks: Vec<Padstack> = Vec::new();
+    loop {
+        // solves the issue with first NET block after PADSTACKs
+        // throwing block name - PADSTACK error context
+        if input.is_empty() || input.starts_with("{N") {
+            break;
+        }
+
+        if !input.starts_with("{PADSTACK=") {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("block name"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "PADSTACK",
+            )));
+
+            return Err(ErrMode::Backtrack(err));
+        }
+
+        let (padstack, _): (Padstack, _) = (
+            padstack::parse_padstack_block,
+            parse_single_or_double_line_ending,
+        )
+            .parse_next(input)?;
+
+        padstacks.push(padstack);
+    }
+
+    // double_line_ending between last PADSTACK and first NET is not required
+    // because last iteration in parse_padstack_block loop already handles that
+
+    // {NET}
+    let mut nets: Vec<Net> = Vec::new();
     loop {
         if input.is_empty() {
             break;
         }
 
-        match section.parse_next(input) {
-            Ok(Section::Version(v)) => {
-                version = v;
-            }
-            Ok(Section::Units(u)) => {
-                units = u;
-            }
-            Ok(Section::PerimeterSegment(pr)) => {
-                outline = pr;
-            }
-            Ok(Section::Stackup(st)) => {
-                stackup = st;
-            }
-            Ok(Section::Devices(ds)) => {
-                devices = ds;
-            }
-            Ok(Section::Padstack(ps)) => {
-                padstacks.push(ps);
-            }
-            Ok(Section::Net(n)) => {
-                nets.push(n);
-            }
-            Err(err) => return Err(err),
+        if !input.starts_with("{NET=") {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("block name"));
+            err.push(StrContext::Expected(StrContextValue::Description("NET")));
+
+            return Err(ErrMode::Backtrack(err));
         }
+
+        let (net, _): (Net, _) = (net::parse_net_block, multispace0).parse_next(input)?;
+
+        nets.push(net);
     }
+
+    // clear rest of the input
+    *input = "";
 
     Ok(Board {
         version,
         units,
         outline,
         stackup,
-        nets,
         devices,
         padstacks,
+        nets,
     })
 }
 
