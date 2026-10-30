@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::{digit1, multispace0};
-use winnow::combinator::{alt, backtrack_err, cut_err, peek, repeat};
+use winnow::combinator::{backtrack_err, cut_err, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
 use winnow::token::literal;
@@ -12,7 +12,8 @@ use crate::model::{Pad, PadShape, Padstack};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
     extract_float_value, extract_quoted_string_value, extract_unsigned_integer_entry,
-    line_ending_with_two_spaces, open_block, row_open, single_line_ending,
+    line_ending_with_two_spaces, open_block, parse_either_line_ending, row_open,
+    single_line_ending,
 };
 
 fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<()> {
@@ -110,16 +111,15 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
 
     close_row(input)?;
 
-    alt((single_line_ending, line_ending_with_two_spaces))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return winnow::error::ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Pad {
         layer: String::from(layer),
