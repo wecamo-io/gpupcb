@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, peek, repeat};
+use winnow::combinator::{cut_err, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
 
@@ -11,8 +11,9 @@ use crate::model::{Polygon, PolygonType, Polyvoid};
 use crate::parser::net::polygon::line::parse_line_row_with_err;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_block, extract_float_entry, extract_quoted_string_entry,
-    extract_unquoted_string_entry, extract_unsigned_integer_entry, line_ending_with_four_spaces,
-    line_ending_with_two_spaces, open_block, single_line_ending, single_space,
+    extract_string_entry, extract_unsigned_integer_entry, line_ending_with_four_spaces,
+    line_ending_with_two_spaces, open_block, parse_either_line_ending, single_line_ending,
+    single_space,
 };
 
 mod line;
@@ -67,16 +68,15 @@ pub fn parse_polyvoid_block(input: &mut &str) -> ModalResult<Polyvoid> {
 
     close_block(input)?;
 
-    alt((line_ending_with_two_spaces, single_line_ending))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Polyvoid { id, x, y, outline })
 }
@@ -87,34 +87,17 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
     single_space(input)?;
 
     let polygon_type = {
-        let t = alt((
-            |input: &mut &str| {
-                extract_quoted_string_entry(
-                    input,
-                    "T",
-                    ExtractEntryErrorMessages {
-                        key_error_label: "polygon T key",
-                        key_error_description: "invalid T key name",
-                        value_error_label: "polygon T value",
-                        value_error_description: "invalid T attribute value",
-                    },
-                )
+        let t = extract_string_entry(
+            input,
+            "T",
+            ' ',
+            ExtractEntryErrorMessages {
+                key_error_label: "polygon T key",
+                key_error_description: "invalid T key name",
+                value_error_label: "polygon T value",
+                value_error_description: "invalid T attribute value",
             },
-            |input: &mut &str| {
-                extract_unquoted_string_entry(
-                    input,
-                    "T",
-                    ' ',
-                    ExtractEntryErrorMessages {
-                        key_error_label: "polygon T key",
-                        key_error_description: "invalid T key name",
-                        value_error_label: "polygon T value",
-                        value_error_description: "invalid T attribute value",
-                    },
-                )
-            },
-        ))
-        .parse_next(input)?;
+        )?;
 
         match t.as_str() {
             "POUR" => PolygonType::Pour,
@@ -190,16 +173,15 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
 
     close_block(input)?;
 
-    alt((line_ending_with_two_spaces, single_line_ending))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Polygon {
         polygon_type,

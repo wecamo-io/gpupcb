@@ -3,13 +3,12 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, peek};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::combinator::{cut_err, peek};
 use winnow::prelude::*;
 
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_row, extract_float_entry, line_ending_with_four_spaces,
-    line_ending_with_two_spaces, row_open, single_space,
+    line_ending_with_two_spaces, parse_either_line_ending, row_open, single_space,
 };
 
 pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
@@ -45,16 +44,15 @@ pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
 
     close_row(input)?;
 
-    alt((line_ending_with_four_spaces, line_ending_with_two_spaces))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected line ending with 2 or 4 spaces after",
-            )));
-            return ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_four_spaces,
+        line_ending_with_two_spaces,
+        (
+            "line ending",
+            "expected line ending with 2 or 4 spaces after",
+        ),
+    )?;
 
     Ok((x, y))
 }
