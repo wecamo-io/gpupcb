@@ -4,7 +4,7 @@
 
 use winnow::ascii::{dec_uint, line_ending};
 use winnow::combinator::{alt, backtrack_err, cut_err, delimited, peek};
-use winnow::error::{StrContext, StrContextValue};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::{any, literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
 
@@ -162,6 +162,26 @@ pub fn line_ending_with_four_spaces(input: &mut &str) -> ModalResult<()> {
         .parse_next(input)?;
 
     Ok(())
+}
+
+pub fn parse_either_line_ending<'i, O, P1, P2>(
+    input: &mut &'i str,
+    parser1: P1,
+    parser2: P2,
+    errors: (&'static str, &'static str),
+) -> ModalResult<O>
+where
+    P1: Parser<&'i str, O, ErrMode<ContextError<StrContext>>>,
+    P2: Parser<&'i str, O, ErrMode<ContextError<StrContext>>>,
+{
+    alt((parser1, parser2))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label(errors.0));
+            err.push(StrContext::Expected(StrContextValue::Description(errors.1)));
+            winnow::error::ErrMode::Cut(err)
+        })
+        .parse_next(input)
 }
 
 fn extract_key(
