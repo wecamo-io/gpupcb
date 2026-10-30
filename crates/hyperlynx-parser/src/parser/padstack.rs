@@ -342,6 +342,21 @@ mod padstack_block_parser_tests {
             StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
         )
     )]
+    // line ending
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)\n "#,
+        (
+            StrContext::Label("line ending"),
+            StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
+        ); "one space after new line"
+    )]
+    #[test_case(
+        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
+        (
+            StrContext::Label("line ending"),
+            StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
+        ); "no line ending"
+    )]
     fn rejects_malformed_pad_row_separators_and_parenthesis(
         mut input: &str,
         expected_errors: (StrContext, StrContext),
