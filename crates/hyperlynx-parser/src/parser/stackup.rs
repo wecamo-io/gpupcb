@@ -11,8 +11,8 @@ use winnow::token::literal;
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_block, close_row, extract_float_entry,
-    extract_quoted_string_entry, extract_unquoted_string_entry, line_ending_with_two_spaces,
-    open_block, row_open, single_line_ending, single_space,
+    extract_quoted_string_entry, extract_string_entry, line_ending_with_two_spaces, open_block,
+    row_open, single_line_ending, single_space,
 };
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
@@ -72,34 +72,17 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     single_space(input)?;
 
     let material = {
-        let m = alt((
-            |input: &mut &str| {
-                extract_quoted_string_entry(
-                    input,
-                    "M",
-                    ExtractEntryErrorMessages {
-                        key_error_label: "dielectric M key",
-                        key_error_description: "invalid M key name",
-                        value_error_label: "dielectric M value",
-                        value_error_description: "invalid M attribute value",
-                    },
-                )
+        let m = extract_string_entry(
+            input,
+            "M",
+            ')',
+            ExtractEntryErrorMessages {
+                key_error_label: "dielectric M key",
+                key_error_description: "invalid M key name",
+                value_error_label: "dielectric M value",
+                value_error_description: "invalid M attribute value",
             },
-            |input: &mut &str| {
-                extract_unquoted_string_entry(
-                    input,
-                    "M",
-                    ')',
-                    ExtractEntryErrorMessages {
-                        key_error_label: "dielectric M key",
-                        key_error_description: "invalid M key name",
-                        value_error_label: "dielectric M value",
-                        value_error_description: "invalid M attribute value",
-                    },
-                )
-            },
-        ))
-        .parse_next(input)?;
+        )?;
 
         match m.as_str() {
             "Solder Mask" => LayerMaterial::SolderMask,
@@ -213,34 +196,17 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     single_space(input)?;
 
     let material = {
-        let m = alt((
-            |input: &mut &str| {
-                extract_quoted_string_entry(
-                    input,
-                    "M",
-                    ExtractEntryErrorMessages {
-                        key_error_label: "signal M key",
-                        key_error_description: "invalid M key name",
-                        value_error_label: "signal M value",
-                        value_error_description: "invalid M attribute value",
-                    },
-                )
+        let m = extract_string_entry(
+            input,
+            "M",
+            ')',
+            ExtractEntryErrorMessages {
+                key_error_label: "signal M key",
+                key_error_description: "invalid M key name",
+                value_error_label: "signal M value",
+                value_error_description: "invalid M attribute value",
             },
-            |input: &mut &str| {
-                extract_unquoted_string_entry(
-                    input,
-                    "M",
-                    ')',
-                    ExtractEntryErrorMessages {
-                        key_error_label: "signal M key",
-                        key_error_description: "invalid M key name",
-                        value_error_label: "signal M value",
-                        value_error_description: "invalid M attribute value",
-                    },
-                )
-            },
-        ))
-        .parse_next(input)?;
+        )?;
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
