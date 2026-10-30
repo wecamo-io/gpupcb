@@ -3,40 +3,45 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, peek, repeat};
+use winnow::combinator::{alt, cut_err, delimited, peek, repeat};
 use winnow::prelude::*;
-use winnow::token::take_until;
+use winnow::token::{literal, take_till, take_until};
 
 use crate::model::Device;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, close_row, extract_quoted_string_entry,
-    extract_string_entry, line_ending_with_two_spaces, open_block, parse_either_line_ending,
+    ExtractEntryErrorMessages, ExtractKeyErrorMessages, close_block, close_row, extract_key,
+    extract_quoted_string_entry, line_ending_with_two_spaces, open_block, parse_either_line_ending,
     row_open, single_line_ending, single_space,
 };
+
+fn extract_ref_entry(input: &mut &str) -> ModalResult<String> {
+    extract_key(
+        input,
+        "REF",
+        ExtractKeyErrorMessages {
+            key_error_label: "device REF key",
+            key_error_description: "invalid REF key name",
+        },
+    )?;
+
+    literal('=').parse_next(input)?;
+
+    let value: &str = alt((
+        delimited('"', take_until(0.., '"'), '"'),
+        take_till(1.., |c: char| c.is_whitespace()),
+        " ",
+    ))
+    .parse_next(input)?;
+
+    Ok(String::from(value))
+}
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     row_open(input, "?")?;
 
     single_space(input)?;
 
-    let reference: String = alt((
-        |input: &mut &str| {
-            extract_string_entry(
-                input,
-                "REF",
-                ' ',
-                ExtractEntryErrorMessages {
-                    key_error_label: "device REF key",
-                    key_error_description: "invalid REF key name",
-                    value_error_label: "device REF value",
-                    value_error_description: "invalid REF attribute value",
-                },
-            )
-        },
-        // if REF is empty like 'REF= '
-        multispace0.map(|_| String::new()),
-    ))
-    .parse_next(input)?;
+    let reference: String = extract_ref_entry(input)?;
 
     // omit unnecessary NAME entry that appears in some exporterts
     take_until(0.., "L=").parse_next(input)?;
@@ -107,6 +112,15 @@ mod device_block_parser_tests {
         "(? REF=\"SW1\" L=\"F.Cu\")\n(...)",
         Device { reference: String::from("SW1"), layer: String::from("F.Cu") }
     )]
+    #[test_case(
+        "(? REF=SW1 L=\"F.Cu\")\n(...)",
+        Device { reference: String::from("SW1"), layer: String::from("F.Cu") }
+    )]
+    #[test_case(
+        "(? REF=  NAME=xyz L=\"F.Cu\")\n(...)",
+        Device { reference: String::from(" "), layer: String::from("F.Cu") };
+        "Altium Deisgner export case"
+    )]
     fn parses_device(input: &str, expected: Device) {
         let mut input = input;
 
@@ -169,6 +183,21 @@ mod device_block_parser_tests {
         (
         StrContext::Label("row name boundary"),
         StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        )
+    )]
+    // REF attribute malversations
+    #[test_case(
+        "(? xyzREF=\"R3\" L=\"F.Cu\")\n  (...)",
+        (
+        StrContext::Label("device REF key"),
+        StrContext::Expected(StrContextValue::Description("invalid REF key name"))
+        )
+    )]
+    #[test_case(
+        "(? REFxyz=\"R3\" L=\"F.Cu\")\n  (...)",
+        (
+        StrContext::Label("device REF key"),
+        StrContext::Expected(StrContextValue::Description("invalid REF key name"))
         )
     )]
     // // TODO: should throw invalid REF value context
@@ -280,20 +309,6 @@ mod device_block_parser_tests {
         )
     )]
     #[test_case(
-        "{DEVICES\n  (? REF=R3\" L=\"F.Cu\")\n}",
-        (
-            StrContext::Label("device REF value"),
-            StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
-        )
-    )]
-    #[test_case(
-        "{DEVICES\n  (? REF=\"R3\" xyzL=\"F.Cu\")\n}",
-        (
-            StrContext::Label("device L key"),
-            StrContext::Expected(StrContextValue::Description("invalid L key name"))
-        )
-    )]
-    #[test_case(
         "{DEVICES\n  (? REF=\"R3\" L=F.Cu\")\n}",
         (
             StrContext::Label("device L value"),
@@ -309,7 +324,7 @@ mod device_block_parser_tests {
         )
     )]
     #[test_case(
-        "{DEVICES\\n  (? REF=\\\"R3\\\" L=\\\"F.Cu\\\")\\n}xyz",
+        "{DEVICESxyz\n  (? REF=\"R3\" L=\"F.Cu\")\n}xyz",
         (
             StrContext::Label("block name boundary"),
             StrContext::Expected(StrContextValue::Description("valid character after block name"))
