@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, delimited, peek, repeat};
-use winnow::error::{ContextError, StrContext, StrContextValue};
+use winnow::combinator::{alt, cut_err, peek, repeat};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
-use winnow::token::take_until;
 
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, close_row, extract_float_entry,
+    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
+    extract_float_entry, extract_quoted_string_value, extract_unquoted_string_value,
     line_ending_with_two_spaces, open_block, single_line_ending, single_space,
 };
 use crate::{model::PerimeterSegment, parser::utils::row_open};
@@ -100,9 +100,40 @@ pub fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>>
 
     single_space.parse_next(input)?;
 
-    delimited('"', take_until(0.., '"'), '"').parse_next(input)?;
+    alt((
+        |input: &mut &str| {
+            extract_quoted_string_value(
+                input,
+                ExtractValueErrorMessages {
+                    value_error_label: "",
+                    value_error_description: "",
+                },
+            )
+        },
+        |input: &mut &str| {
+            extract_unquoted_string_value(
+                input,
+                '\n',
+                ExtractValueErrorMessages {
+                    value_error_label: "",
+                    value_error_description: "",
+                },
+            )
+        },
+    ))
+    .parse_next(input)?;
 
-    line_ending_with_two_spaces(input)?;
+    // due to possible lack of PERIMETER_SEGMENT rows inside BOARD block
+    alt((line_ending_with_two_spaces, single_line_ending))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single line ending or new line with 2 spaces after",
+            )));
+            return ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
 
     let perimeter_segments: Vec<PerimeterSegment> =
         repeat(0.., parse_perimeter_segment_row_with_err).parse_next(input)?;
@@ -234,14 +265,24 @@ mod board_block_parser_tests {
         assert_eq!(*errors.1, expected_description);
     }
 
-    #[test]
-    fn parses_board_block() {
-        let mut input = "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n}";
-        let expected_length: usize = 8;
-
+    #[test_case(
+        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n}",
+        vec![
+            PerimeterSegment { x1: 8.415354331, y1: -5.334321614, x2: 8.251181102, y2: -5.334321614 },
+            PerimeterSegment { x1: 8.251181102, x2: 8.251181102, y1: -5.334321614, y2: -5.846132638 }
+        ]; "path double quotes present"
+    )]
+    #[test_case(
+        "{BOARD /path/to/file/another example.kicad_pcb\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n}",
+        vec![
+            PerimeterSegment { x1: 8.415354331, y1: -5.334321614, x2: 8.251181102, y2: -5.334321614 },
+            PerimeterSegment { x1: 8.251181102, x2: 8.251181102, y1: -5.334321614, y2: -5.846132638 }
+        ]; "path double quotes present"
+    )]
+    fn parses_board_block(mut input: &str, expected: Vec<PerimeterSegment>) {
         let perimeter_segments = parse_board_block.parse_next(&mut input).unwrap();
 
-        assert_eq!(perimeter_segments.len(), expected_length);
+        assert_eq!(perimeter_segments, expected);
     }
 
     // opening block
