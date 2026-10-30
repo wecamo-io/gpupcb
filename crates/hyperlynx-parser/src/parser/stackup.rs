@@ -12,7 +12,7 @@ use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_block, close_row, extract_float_entry,
     extract_quoted_string_entry, extract_string_entry, line_ending_with_two_spaces, open_block,
-    row_open, single_line_ending, single_space,
+    parse_either_line_ending, row_open, single_line_ending, single_space,
 };
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
@@ -104,16 +104,15 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
 
     close_row(input)?;
 
-    alt((line_ending_with_two_spaces, single_line_ending))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return winnow::error::ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Layer {
         layer_type: LayerType::Dielectric {
@@ -224,16 +223,15 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
     close_row(input)?;
 
-    alt((line_ending_with_two_spaces, single_line_ending))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return winnow::error::ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Layer {
         layer_type: LayerType::Signal {
