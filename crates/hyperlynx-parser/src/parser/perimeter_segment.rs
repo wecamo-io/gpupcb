@@ -197,6 +197,21 @@ mod board_block_parser_tests {
         StrContext::Label("perimeter segment Y2 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
     )]
+    // line ending
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n (...)",
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description(
+            "expected single line ending or new line with 2 spaces after"
+        )); "one space after line ending"
+    )]
+    #[test_case(
+        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)(...)",
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description(
+            "expected single line ending or new line with 2 spaces after"
+        )); "no line ending"
+    )]
     fn rejects_malformed_perimeter_row(
         input: &str,
         expected_label: StrContext,
