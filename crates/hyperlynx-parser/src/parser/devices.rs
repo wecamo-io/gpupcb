@@ -142,21 +142,21 @@ mod device_block_parser_tests {
     }
 
     #[test_case(
-        r#"xyz(? REF="R3" L="F.Cu")"#,
+        "xyz(? REF=\"R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("opening row"),
         StrContext::Expected(StrContextValue::Description("("))
         )
     )]
     #[test_case(
-        r#"(xyz? REF="R3" L="F.Cu")"#,
+        "(xyz? REF=\"R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("row name"),
         StrContext::Expected(StrContextValue::Description("?"))
         )
     )]
     #[test_case(
-        r#"(?xyz REF="R3" L="F.Cu")"#,
+        "(?xyz REF=\"R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("row name boundary"),
         StrContext::Expected(StrContextValue::Description("valid character after row name"))
@@ -164,28 +164,28 @@ mod device_block_parser_tests {
     )]
     // REF attribute malversations
     #[test_case(
-        r#"(? xyzREF="R3" L="F.Cu")"#,
+        "(? xyzREF=\"R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device REF key"),
         StrContext::Expected(StrContextValue::Description("invalid REF key name"))
         )
     )]
     #[test_case(
-        r#"(? REFxyz="R3" L="F.Cu")"#,
+        "(? REFxyz=\"R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device REF key"),
         StrContext::Expected(StrContextValue::Description("invalid REF key name"))
         )
     )]
     #[test_case(
-        r#"(? REF=xyz"R3" L="F.Cu")"#,
+        "(? REF=xyz\"R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device REF value"),
         StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
         )
     )]
     #[test_case(
-        r#"(? REF=R3" L="F.Cu")"#,
+        "(? REF=R3\" L=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device REF value"),
         StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
@@ -193,7 +193,7 @@ mod device_block_parser_tests {
     )]
     // // TODO: should throw invalid REF value context
     // #[test_case(
-    //     r#"(? REF="R3 L="F.Cu")"#,
+    //     "(? REF=\"R3 L=\"F.Cu\")\n  (...)",
     //     (
     //     StrContext::Label("device L key"),
     //     StrContext::Expected(StrContextValue::Description("invalid L key name"))
@@ -201,35 +201,35 @@ mod device_block_parser_tests {
     // )]
     // L attribute malversations
     #[test_case(
-        r#"(? REF="R3" xyzL="F.Cu")"#,
+        "(? REF=\"R3\" xyzL=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device L key"),
         StrContext::Expected(StrContextValue::Description("invalid L key name"))
         )
     )]
     #[test_case(
-        r#"(? REF="R3" Lxyz="F.Cu")"#,
+        "(? REF=\"R3\" Lxyz=\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device L key"),
         StrContext::Expected(StrContextValue::Description("invalid L key name"))
         )
     )]
     #[test_case(
-        r#"(? REF="R3" L=xyz"F.Cu")"#,
+        "(? REF=\"R3\" L=xyz\"F.Cu\")\n  (...)",
         (
         StrContext::Label("device L value"),
         StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
         )
     )]
     #[test_case(
-        r#"(? REF="R3" L=F.Cu")"#,
+        "(? REF=\"R3\" L=F.Cu\")\n  (...)",
         (
         StrContext::Label("device L value"),
         StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
         )
     )]
     #[test_case(
-        r#"(? REF="R3" L="F.Cu)"#,
+        "(? REF=\"R3\" L=\"F.Cu)\n  (...)",
         (
         StrContext::Label("device L value"),
         StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
@@ -237,7 +237,7 @@ mod device_block_parser_tests {
     )]
     // closing row
     #[test_case(
-        r#"(? REF="R3" L="F.Cu" xyz)"#,
+        "(? REF=\"R3\" L=\"F.Cu\" xyz)\n  (...)",
         (
         StrContext::Label("closing row"),
         StrContext::Expected(StrContextValue::Description(")"))
@@ -263,14 +263,14 @@ mod device_block_parser_tests {
 
     // opening block
     #[test_case(
-        r#"xyz{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}"#,
+        "xyz{DEVICES\\n  (? REF=\\\"R3\\\" L=\\\"F.Cu\\\")\\n}",
         (
             StrContext::Label("opening block"),
             StrContext::Expected(StrContextValue::Description("{"))
         )
     )]
     #[test_case(
-        r#"{xyzDEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n}"#,
+        "{xyzDEVICES\\n  (? REF=\\\"R3\\\" L=\\\"F.Cu\\\")\\n}",
         (
             StrContext::Label("block name"),
             StrContext::Expected(StrContextValue::Description("DEVICES"))
