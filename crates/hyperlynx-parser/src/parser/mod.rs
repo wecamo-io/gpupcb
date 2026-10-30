@@ -3,12 +3,11 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::alt;
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Board, Device, Layer, Net, Padstack, PerimeterSegment, Units};
-use crate::parser::utils::{double_line_ending, single_line_ending};
+use crate::parser::utils::{double_line_ending, parse_either_line_ending, single_line_ending};
 
 mod devices;
 mod net;
@@ -28,16 +27,12 @@ pub struct ReturnParseError {
 }
 
 fn parse_single_or_double_line_ending(input: &mut &str) -> ModalResult<()> {
-    alt((single_line_ending, double_line_ending))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single or double line ending",
-            )));
-            return ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        single_line_ending,
+        double_line_ending,
+        ("line ending", "expected single or double line ending"),
+    )?;
 
     Ok(())
 }
