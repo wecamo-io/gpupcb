@@ -35,6 +35,12 @@ pub enum PadShape {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum PadType {
+    M,
+    A,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum PolygonType {
     Pour,
 }
@@ -68,6 +74,7 @@ pub struct Pad {
     pub size_x: f64,
     pub size_y: f64,
     pub angle: f64,
+    pub r#type: PadType,
 }
 
 #[derive(Debug, PartialEq)]
