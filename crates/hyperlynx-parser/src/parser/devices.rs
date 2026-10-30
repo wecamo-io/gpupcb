@@ -235,6 +235,28 @@ mod device_block_parser_tests {
         StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
         )
     )]
+    // line ending
+    #[test_case(
+        "(? REF=\"R3\" L=\"F.Cu\")\n (...)",
+        (
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
+        ); "one space after new line"
+    )]
+    #[test_case(
+        "(? REF=\"R3\" L=\"F.Cu\")\n (...)",
+        (
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
+        ); "one space after new line"
+    )]
+    #[test_case(
+        "(? REF=\"R3\" L=\"F.Cu\")(...)",
+        (
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
+        ); "no line ending"
+    )]
     // closing row
     #[test_case(
         "(? REF=\"R3\" L=\"F.Cu\" xyz)\n  (...)",
