@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::{dec_uint, line_ending};
-use winnow::combinator::{backtrack_err, cut_err, delimited, peek};
+use winnow::combinator::{alt, backtrack_err, cut_err, delimited, peek};
 use winnow::error::{StrContext, StrContextValue};
 use winnow::token::{any, literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
@@ -13,6 +13,7 @@ pub struct ExtractKeyErrorMessages {
     pub key_error_description: &'static str,
 }
 
+#[derive(Clone)]
 pub struct ExtractValueErrorMessages {
     pub value_error_label: &'static str,
     pub value_error_description: &'static str,
@@ -224,6 +225,23 @@ pub fn extract_unquoted_string_value(
     Ok(String::from(value))
 }
 
+// quoted or unquoted
+pub fn extract_string_value(
+    input: &mut &str,
+    till_literal: char,
+    error_messages: ExtractValueErrorMessages,
+) -> ModalResult<String> {
+    let value: &str = &backtrack_err(alt((
+        |input: &mut &str| extract_quoted_string_value(input, error_messages.clone()),
+        |input: &mut &str| {
+            extract_unquoted_string_value(input, till_literal, error_messages.clone())
+        },
+    )))
+    .parse_next(input)?;
+
+    Ok(String::from(value))
+}
+
 pub fn extract_unsigned_integer_value(
     input: &mut &str,
     error_messages: ExtractValueErrorMessages,
@@ -312,6 +330,35 @@ pub fn extract_unquoted_string_entry(
     literal('=').parse_next(input)?;
 
     let value = extract_unquoted_string_value(
+        input,
+        till_literal,
+        ExtractValueErrorMessages {
+            value_error_label: error_messages.value_error_label,
+            value_error_description: error_messages.value_error_description,
+        },
+    )?;
+
+    Ok(value)
+}
+
+pub fn extract_string_entry(
+    input: &mut &str,
+    key: &str,
+    till_literal: char,
+    error_messages: ExtractEntryErrorMessages,
+) -> ModalResult<String> {
+    extract_key(
+        input,
+        key,
+        ExtractKeyErrorMessages {
+            key_error_label: error_messages.key_error_label,
+            key_error_description: error_messages.key_error_description,
+        },
+    )?;
+
+    literal('=').parse_next(input)?;
+
+    let value = extract_string_value(
         input,
         till_literal,
         ExtractValueErrorMessages {
