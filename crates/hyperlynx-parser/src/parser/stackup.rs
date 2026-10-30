@@ -104,7 +104,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         match m.as_str() {
             "Solder Mask" => LayerMaterial::SolderMask,
             "COPPER" => LayerMaterial::COPPER,
-            "FR4" => LayerMaterial::FR4,
+            "FR4" | "FR-4" => LayerMaterial::FR4,
             "PR1080" => LayerMaterial::PR1080,
             "PR2116" => LayerMaterial::PR2116,
             _ => {
@@ -258,7 +258,16 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
     close_row(input)?;
 
-    line_ending_with_two_spaces(input)?;
+    alt((line_ending_with_two_spaces, single_line_ending))
+        .map_err(|_| {
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("line ending"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "expected single line ending or new line with 2 spaces after",
+            )));
+            return winnow::error::ErrMode::Cut(err);
+        })
+        .parse_next(input)?;
 
     Ok(Layer {
         layer_type: LayerType::Signal {
@@ -316,6 +325,15 @@ mod stackup_block_parser_tests {
 
     #[test_case(
         "(DIELECTRIC T=0.0594488 C=4.5 L=\"F.Cu\" M=\"FR4\")\n(...)",
+        Layer {
+            layer_type: LayerType::Dielectric { dielectric_constant: 4.5 },
+            thickness: 0.0594488,
+            layer_name: String::from("F.Cu"),
+            material: LayerMaterial::FR4
+        }
+    )]
+    #[test_case(
+        "(DIELECTRIC T=0.0594488 C=4.5 L=\"F.Cu\" M=FR-4)\n(...)",
         Layer {
             layer_type: LayerType::Dielectric { dielectric_constant: 4.5 },
             thickness: 0.0594488,
@@ -706,20 +724,14 @@ mod stackup_block_parser_tests {
     )]
     #[test_case(
         "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n (...)",
-        StrContext::Label("line ending with indentation"),
-        StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces")
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
         ); "one space after line ending"
     )]
     #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n(...)",
-        StrContext::Label("line ending with indentation"),
-        StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces")
-        ); "no spaces after line ending"
-    )]
-    #[test_case(
         "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)(...)",
-        StrContext::Label("line ending with indentation"),
-        StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces")
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
         ); "no line ending"
     )]
     // closing parenthesis ')'
