@@ -4,13 +4,14 @@
 
 use winnow::ascii::multispace0;
 use winnow::combinator::{alt, cut_err, peek, repeat};
-use winnow::error::{ContextError, StrContext, StrContextValue};
 use winnow::prelude::*;
+use winnow::token::take_until;
 
 use crate::model::Device;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_block, close_row, extract_quoted_string_entry,
-    line_ending_with_two_spaces, open_block, row_open, single_line_ending, single_space,
+    extract_string_entry, line_ending_with_two_spaces, open_block, parse_either_line_ending,
+    row_open, single_line_ending, single_space,
 };
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
@@ -18,18 +19,27 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
 
     single_space(input)?;
 
-    let reference = extract_quoted_string_entry(
-        input,
-        "REF",
-        ExtractEntryErrorMessages {
-            key_error_label: "device REF key",
-            key_error_description: "invalid REF key name",
-            value_error_label: "device REF value",
-            value_error_description: "invalid REF attribute value",
+    let reference: String = alt((
+        |input: &mut &str| {
+            extract_string_entry(
+                input,
+                "REF",
+                ' ',
+                ExtractEntryErrorMessages {
+                    key_error_label: "device REF key",
+                    key_error_description: "invalid REF key name",
+                    value_error_label: "device REF value",
+                    value_error_description: "invalid REF attribute value",
+                },
+            )
         },
-    )?;
+        // if REF is empty like 'REF= '
+        multispace0.map(|_| String::new()),
+    ))
+    .parse_next(input)?;
 
-    single_space(input)?;
+    // omit unnecessary NAME entry that appears in some exporterts
+    take_until(0.., "L=").parse_next(input)?;
 
     let layer = extract_quoted_string_entry(
         input,
@@ -44,16 +54,15 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
 
     close_row(input)?;
 
-    alt((single_line_ending, line_ending_with_two_spaces))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return winnow::error::ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Device { reference, layer })
 }
@@ -162,35 +171,6 @@ mod device_block_parser_tests {
         StrContext::Expected(StrContextValue::Description("valid character after row name"))
         )
     )]
-    // REF attribute malversations
-    #[test_case(
-        "(? xyzREF=\"R3\" L=\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device REF key"),
-        StrContext::Expected(StrContextValue::Description("invalid REF key name"))
-        )
-    )]
-    #[test_case(
-        "(? REFxyz=\"R3\" L=\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device REF key"),
-        StrContext::Expected(StrContextValue::Description("invalid REF key name"))
-        )
-    )]
-    #[test_case(
-        "(? REF=xyz\"R3\" L=\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device REF value"),
-        StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
-        )
-    )]
-    #[test_case(
-        "(? REF=R3\" L=\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device REF value"),
-        StrContext::Expected(StrContextValue::Description("invalid REF attribute value"))
-        )
-    )]
     // // TODO: should throw invalid REF value context
     // #[test_case(
     //     "(? REF=\"R3 L=\"F.Cu\")\n  (...)",
@@ -200,20 +180,6 @@ mod device_block_parser_tests {
     //     )
     // )]
     // L attribute malversations
-    #[test_case(
-        "(? REF=\"R3\" xyzL=\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device L key"),
-        StrContext::Expected(StrContextValue::Description("invalid L key name"))
-        )
-    )]
-    #[test_case(
-        "(? REF=\"R3\" Lxyz=\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device L key"),
-        StrContext::Expected(StrContextValue::Description("invalid L key name"))
-        )
-    )]
     #[test_case(
         "(? REF=\"R3\" L=xyz\"F.Cu\")\n  (...)",
         (

@@ -4,13 +4,13 @@
 
 use winnow::ascii::multispace0;
 use winnow::combinator::{alt, cut_err, peek, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::error::{ContextError, StrContext, StrContextValue};
 use winnow::prelude::*;
 
 use crate::parser::utils::{
     ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
-    extract_float_entry, extract_quoted_string_value, extract_unquoted_string_value,
-    line_ending_with_two_spaces, open_block, single_line_ending, single_space,
+    extract_float_entry, extract_string_value, line_ending_with_two_spaces, open_block,
+    parse_either_line_ending, single_line_ending, single_space,
 };
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
@@ -100,40 +100,25 @@ pub fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>>
 
     single_space.parse_next(input)?;
 
-    alt((
-        |input: &mut &str| {
-            extract_quoted_string_value(
-                input,
-                ExtractValueErrorMessages {
-                    value_error_label: "",
-                    value_error_description: "",
-                },
-            )
+    extract_string_value(
+        input,
+        '\n',
+        ExtractValueErrorMessages {
+            value_error_label: "",
+            value_error_description: "",
         },
-        |input: &mut &str| {
-            extract_unquoted_string_value(
-                input,
-                '\n',
-                ExtractValueErrorMessages {
-                    value_error_label: "",
-                    value_error_description: "",
-                },
-            )
-        },
-    ))
-    .parse_next(input)?;
+    )?;
 
     // due to possible lack of PERIMETER_SEGMENT rows inside BOARD block
-    alt((line_ending_with_two_spaces, single_line_ending))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "expected single line ending or new line with 2 spaces after",
-            )));
-            return ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     let perimeter_segments: Vec<PerimeterSegment> =
         repeat(0.., parse_perimeter_segment_row_with_err).parse_next(input)?;
