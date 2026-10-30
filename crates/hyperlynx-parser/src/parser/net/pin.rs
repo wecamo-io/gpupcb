@@ -3,15 +3,14 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, peek};
-use winnow::error::{ContextError, StrContext};
+use winnow::combinator::{cut_err, peek};
 use winnow::prelude::*;
 
 use crate::model::Pin;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
-    extract_unsigned_integer_entry, line_ending_with_two_spaces, row_open, single_line_ending,
-    single_space,
+    extract_unsigned_integer_entry, line_ending_with_two_spaces, parse_either_line_ending,
+    row_open, single_line_ending, single_space,
 };
 
 pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
@@ -73,18 +72,15 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
 
     close_row(input)?;
 
-    alt((single_line_ending, line_ending_with_two_spaces))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(
-                winnow::error::StrContextValue::Description(
-                    "expected single line ending or new line with 2 spaces after",
-                ),
-            ));
-            return winnow::error::ErrMode::Cut(err);
-        })
-        .parse_next(input)?;
+    parse_either_line_ending(
+        input,
+        line_ending_with_two_spaces,
+        single_line_ending,
+        (
+            "line ending",
+            "expected single line ending or new line with 2 spaces after",
+        ),
+    )?;
 
     Ok(Pin {
         x,
