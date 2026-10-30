@@ -691,6 +691,37 @@ mod stackup_block_parser_tests {
         StrContext::Label("signal P value"),
         StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
     )]
+    // line ending
+    #[test_case(
+        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n (...)",
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
+        ); "one space after line ending"
+    )]
+    #[test_case(
+        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")(...)",
+        StrContext::Label("line ending"),
+        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
+        ); "no line ending"
+    )]
+    #[test_case(
+        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n (...)",
+        StrContext::Label("line ending with indentation"),
+        StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces")
+        ); "one space after line ending"
+    )]
+    #[test_case(
+        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n(...)",
+        StrContext::Label("line ending with indentation"),
+        StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces")
+        ); "no spaces after line ending"
+    )]
+    #[test_case(
+        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)(...)",
+        StrContext::Label("line ending with indentation"),
+        StrContext::Expected(StrContextValue::Description("expected one new line with 2 spaces")
+        ); "no line ending"
+    )]
     // closing parenthesis ')'
     #[test_case(
         "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\"",
