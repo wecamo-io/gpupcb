@@ -184,7 +184,7 @@ where
         .parse_next(input)
 }
 
-fn extract_key(
+pub fn extract_key(
     input: &mut &str,
     key: &str,
     error_messages: ExtractKeyErrorMessages,
