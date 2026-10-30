@@ -3,15 +3,38 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{cut_err, peek};
+use winnow::combinator::{alt, cut_err, delimited, peek};
 use winnow::prelude::*;
+use winnow::token::{literal, take_till, take_until};
 
 use crate::model::Pin;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
-    extract_unsigned_integer_entry, line_ending_with_two_spaces, parse_either_line_ending,
-    row_open, single_line_ending, single_space,
+    ExtractEntryErrorMessages, ExtractKeyErrorMessages, close_row, extract_float_entry,
+    extract_key, extract_unsigned_integer_entry, line_ending_with_two_spaces,
+    parse_either_line_ending, row_open, single_line_ending, single_space,
 };
+
+fn extract_ref_entry(input: &mut &str) -> ModalResult<String> {
+    extract_key(
+        input,
+        "R",
+        ExtractKeyErrorMessages {
+            key_error_label: "pin R key",
+            key_error_description: "invalid R key name",
+        },
+    )?;
+
+    literal('=').parse_next(input)?;
+
+    let value: &str = alt((
+        delimited('"', take_until(0.., '"'), '"'),
+        take_till(1.., |c: char| c.is_whitespace()),
+        " ",
+    ))
+    .parse_next(input)?;
+
+    Ok(String::from(value))
+}
 
 pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     row_open(input, "PIN")?;
@@ -46,16 +69,9 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
 
     single_space(input)?;
 
-    let component_reference = extract_quoted_string_entry(
-        input,
-        "R",
-        ExtractEntryErrorMessages {
-            key_error_label: "pin R key",
-            key_error_description: "invalid R key name",
-            value_error_label: "pin R value",
-            value_error_description: "invalid R attribute value",
-        },
-    )?;
+    let ref_extracted = (extract_ref_entry, take_until(0.., " P=")).parse_next(input)?;
+    let (s1, s2) = ref_extracted;
+    let component_reference = s1 + s2;
 
     single_space(input)?;
 

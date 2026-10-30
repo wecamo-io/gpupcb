@@ -97,7 +97,7 @@ fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
     // {NET}
     let mut nets: Vec<Net> = Vec::new();
     loop {
-        if input.is_empty() {
+        if input.is_empty() || input.starts_with("{END}") {
             break;
         }
 
@@ -105,16 +105,14 @@ fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
             let mut err = ContextError::new();
             err.push(StrContext::Label("block name"));
             err.push(StrContext::Expected(StrContextValue::Description("NET")));
-
             return Err(ErrMode::Backtrack(err));
         }
 
         let (net, _): (Net, _) = (net::parse_net_block, multispace0).parse_next(input)?;
-
         nets.push(net);
     }
 
-    // clear rest of the input
+    // {END} and {KEY=...} are ignored
     *input = "";
 
     Ok(Board {
