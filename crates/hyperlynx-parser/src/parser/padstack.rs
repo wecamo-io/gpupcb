@@ -8,20 +8,16 @@ use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
 use winnow::token::literal;
 
-use crate::model::{Pad, PadShape, Padstack};
+use crate::model::{Pad, PadShape, PadType, Padstack};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
-    extract_float_value, extract_quoted_string_value, extract_unsigned_integer_entry,
-    line_ending_with_two_spaces, open_block, parse_either_line_ending, row_open,
-    single_line_ending,
+    extract_float_value, extract_string_value, extract_unquoted_string_value,
+    extract_unsigned_integer_entry, line_ending_with_two_spaces, open_block,
+    parse_either_line_ending, row_open, single_line_ending,
 };
 
-fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<()> {
-    let (separator, label, desc) = if closing {
-        (", M", "pad ', M' separator", "invalid ', M' separator")
-    } else {
-        (", ", "pad ', ' separator", "invalid ', ' separator")
-    };
+fn parse_pad_separator(input: &mut &str) -> ModalResult<()> {
+    let (separator, label, desc) = (", ", "pad ', ' separator", "invalid ', ' separator");
 
     backtrack_err(literal(separator))
         .context(StrContext::Label(label))
@@ -31,24 +27,19 @@ fn parse_pad_closing_separator(input: &mut &str, closing: bool) -> ModalResult<(
     Ok(())
 }
 
-fn parse_pad_arguments_separator(input: &mut &str) -> ModalResult<()> {
-    parse_pad_closing_separator(input, false)?;
-
-    Ok(())
-}
-
 fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
     row_open(input, "")?;
 
-    let layer = extract_quoted_string_value(
+    let layer = extract_string_value(
         input,
+        ',',
         ExtractValueErrorMessages {
             value_error_label: "pad layer value",
             value_error_description: "invalid layer value",
         },
     )?;
 
-    parse_pad_arguments_separator(input)?;
+    parse_pad_separator(input)?;
 
     let shape = {
         let value = backtrack_err(digit1)
@@ -74,7 +65,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         }
     };
 
-    parse_pad_arguments_separator(input)?;
+    parse_pad_separator(input)?;
 
     let size_x = extract_float_value(
         input,
@@ -85,7 +76,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         },
     )?;
 
-    parse_pad_arguments_separator(input)?;
+    parse_pad_separator(input)?;
 
     let size_y = extract_float_value(
         input,
@@ -96,7 +87,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         },
     )?;
 
-    parse_pad_arguments_separator(input)?;
+    parse_pad_separator(input)?;
 
     let angle = extract_float_value(
         input,
@@ -107,7 +98,32 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         },
     )?;
 
-    parse_pad_closing_separator(input, true)?;
+    parse_pad_separator(input)?;
+
+    let r#type = {
+        let value = extract_unquoted_string_value(
+            input,
+            ')',
+            ExtractValueErrorMessages {
+                value_error_label: "pad type value",
+                value_error_description: "invalid type value",
+            },
+        )?;
+
+        match value.as_str() {
+            "M" => PadType::M,
+            "A" => PadType::A,
+            _ => {
+                let mut err = ContextError::new();
+                err.push(StrContext::Label("pad type"));
+                err.push(StrContext::Expected(StrContextValue::Description(
+                    "invalid pad type, should be M or A",
+                )));
+
+                Err(ErrMode::Backtrack(err))
+            }?,
+        }
+    };
 
     close_row(input)?;
 
@@ -127,6 +143,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         size_x,
         size_y,
         angle,
+        r#type,
     })
 }
 
@@ -150,7 +167,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
         },
     )?;
 
-    parse_pad_arguments_separator(input)?;
+    parse_pad_separator(input)?;
 
     let drill = extract_float_value(
         input,
@@ -183,6 +200,7 @@ mod padstack_block_parser_tests {
             size_x: 0.047244094,
             size_y: 0.055118110,
             angle: 90.0,
+            r#type: PadType::M,
         }
     )]
     #[test_case(
@@ -193,17 +211,30 @@ mod padstack_block_parser_tests {
             size_x: 0.047244094,
             size_y: 0.055118110,
             angle: 180.0,
+            r#type: PadType::M,
         }
     )]
     #[test_case(
-        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 270.0, M)\n  (...)",
+        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 270.0, A)\n  (...)",
         Pad {
             layer: String::from("F.Cu"),
             shape: PadShape::Roundrect,
             size_x: 0.047244094,
             size_y: 0.055118110,
             angle: 270.0,
+            r#type: PadType::A,
         }
+    )]
+    #[test_case(
+        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 0, A)\n  (...)",
+        Pad {
+            layer: String::from("F.Cu"),
+            shape: PadShape::Roundrect,
+            size_x: 0.047244094,
+            size_y: 0.055118110,
+            angle: 0.0,
+            r#type: PadType::A,
+        }; "angle being in form of a single digit"
     )]
     fn parses_pad_row(mut input: &str, expected: Pad) {
         let pad = parse_pad_row.parse_next(&mut input).unwrap();
@@ -324,22 +355,22 @@ mod padstack_block_parser_tests {
     #[test_case(
         r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0,z M)"#,
         (
-            StrContext::Label("pad ', M' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
         r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0,M)"#,
         (
-            StrContext::Label("pad ', M' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
         r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0 ,M)"#,
         (
-            StrContext::Label("pad ', M' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     // line ending
@@ -377,35 +408,6 @@ mod padstack_block_parser_tests {
         assert_eq!(*errors.1, expected_errors.1);
     }
 
-    // layer name value lacks double quotes
-    #[test_case(
-        "(xyz\"F.Cu\", 2, 0.047244094, 0.055118110, 90.0, M)",
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer value"))
-        )
-    )]
-    #[test_case(
-        "(F.Cu\", 2, 0.047244094, 0.055118110, 90.0, M)",
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer value"))
-        )
-    )]
-    #[test_case(
-        "(\"F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)",
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer value"))
-        )
-    )]
-    #[test_case(
-        "(F.Cu, 2, 0.047244094, 0.055118110, 90.0, M)",
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer value"))
-        )
-    )]
     // shape value malversation
     #[test_case(
         "(\"F.Cu\", xyz2, 0.047244094, 0.055118110, 90.0, M)",
@@ -548,6 +550,7 @@ mod padstack_block_parser_tests {
                 size_x: 0.023622047,
                 size_y: 0.023622047,
                 angle: 0.0,
+                r#type: PadType::M,
             }],
         };
 
@@ -625,13 +628,6 @@ mod padstack_block_parser_tests {
     )]
     // row malversations
     #[test_case(
-        "{PADSTACK=15, 0.007874016\n  (MDEF\", 0, 0.023622047, 0.023622047, 0.0, M)\n}",
-        (
-            StrContext::Label("pad layer value"),
-            StrContext::Expected(StrContextValue::Description("invalid layer value"))
-        )
-    )]
-    #[test_case(
         "{PADSTACK=15, 0.007874016\n  (\"MDEF\" 0, 0.023622047, 0.023622047, 0.0, M)\n}",
         (
             StrContext::Label("pad ', ' separator"),
@@ -655,15 +651,15 @@ mod padstack_block_parser_tests {
     #[test_case(
         "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0 M)\n}",
         (
-            StrContext::Label("pad ', M' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     #[test_case(
         "{PADSTACK=15, 0.007874016\n  (\"MDEF\", 0, 0.023622047, 0.023622047, 0.0,)\n}",
         (
-            StrContext::Label("pad ', M' separator"),
-            StrContext::Expected(StrContextValue::Description("invalid ', M' separator"))
+            StrContext::Label("pad ', ' separator"),
+            StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
     )]
     // closing brace malversations
