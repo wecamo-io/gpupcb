@@ -18,6 +18,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
+      working-directory: crates/hyperlynx-parser
       run: cargo build --verbose
     - name: Run tests
+      working-directory: crates/hyperlynx-parser
       run: cargo test --verbose
