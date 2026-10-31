@@ -6,7 +6,6 @@ use winnow::ascii::multispace0;
 use winnow::combinator::{alt, cut_err, peek, repeat};
 use winnow::error::{ContextError, StrContext, StrContextValue};
 use winnow::prelude::*;
-use winnow::token::take_till;
 
 use crate::parser::utils::{
     ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
@@ -100,17 +99,14 @@ pub fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>>
     open_block(input, "BOARD")?;
 
     single_space(input)?;
-    let _name: &str = take_till(0.., ['\r', '\n']).parse_next(input)?;
-    //     single_space.parse_next(input)?;
-    //
-    //     extract_string_value(
-    //         input,
-    //         '\r',
-    //         ExtractValueErrorMessages {
-    //             value_error_label: "",
-    //             value_error_description: "",
-    //         },
-    //     )?;
+    let _path = extract_string_value(
+        input,
+        '\r',
+        ExtractValueErrorMessages {
+            value_error_label: "padstack path value",
+            value_error_description: "invalid path attribute value",
+        },
+    )?;
 
     // due to possible lack of PERIMETER_SEGMENT rows inside BOARD block
     parse_either_line_ending(
