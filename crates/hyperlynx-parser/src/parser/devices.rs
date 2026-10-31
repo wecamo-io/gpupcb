@@ -3,45 +3,33 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, delimited, peek, repeat};
+use winnow::combinator::{cut_err, peek, repeat};
 use winnow::prelude::*;
-use winnow::token::{literal, take_till, take_until};
+use winnow::token::take_until;
 
 use crate::model::Device;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, ExtractKeyErrorMessages, close_block, close_row, extract_key,
-    extract_quoted_string_entry, line_ending_with_two_spaces, open_block, parse_either_line_ending,
+    ExtractEntryErrorMessages, close_block, close_row, extract_quoted_string_entry,
+    extract_string_entry, line_ending_with_two_spaces, open_block, parse_either_line_ending,
     row_open, single_line_ending, single_space,
 };
-
-fn extract_ref_entry(input: &mut &str) -> ModalResult<String> {
-    extract_key(
-        input,
-        "REF",
-        ExtractKeyErrorMessages {
-            key_error_label: "device REF key",
-            key_error_description: "invalid REF key name",
-        },
-    )?;
-
-    literal('=').parse_next(input)?;
-
-    let value: &str = alt((
-        delimited('"', take_until(0.., '"'), '"'),
-        take_till(1.., |c: char| c.is_whitespace()),
-        " ",
-    ))
-    .parse_next(input)?;
-
-    Ok(String::from(value))
-}
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     row_open(input, "?")?;
 
     single_space(input)?;
 
-    let reference: String = extract_ref_entry(input)?;
+    let reference: String = extract_string_entry(
+        input,
+        "REF",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "device REF key",
+            key_error_description: "invalid REF key name",
+            value_error_label: "device REF value",
+            value_error_description: "invalid REF attribute value",
+        },
+    )?;
 
     // omit unnecessary NAME entry that appears in some exporterts
     take_until(0.., "L=").parse_next(input)?;
