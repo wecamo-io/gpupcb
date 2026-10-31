@@ -1,0 +1,52 @@
+{VERSION=2.14}
+{UNITS=ENGLISH LENGTH}
+
+{BOARD "path/to/file/kicad.hyp"
+  (PERIMETER_SEGMENT X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0)
+  (PERIMETER_SEGMENT X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0)
+}
+
+{STACKUP
+  (DIELECTRIC T=0.000393701 C=3.3 L="F.Cu" M="Solder Mask")
+  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L="F.Cu" M=COPPER)
+  (DIELECTRIC T=0.0594488 C=4.5 L="F.Cu" M="FR4")
+}
+
+{DEVICES
+  (? REF="R3" L="F.Cu")
+  (? REF="SW1" L="F.Cu")
+}
+
+{PADSTACK=0, 0.000000000
+  ("F.Cu", 2, 0.05, 0.06, 90.0, M)
+}
+
+{PADSTACK=16, 0.007
+  ("MDEF", 0, 0.02, 0.03, 270.0, M)
+}
+
+{NET="GND"
+  (PIN X=1.0 Y=-2.0 R="R3.1" P=1)
+  (PIN X=1.0 Y=-2.0 R="C3.2" P=2)
+  (SEG X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 W=0.02 L="F.Cu")
+  (ARC X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 XC=5.0 YC=-6.0 R=0.016 W=0.0049 L="B.Cu")
+  (VIA X=1.0 Y=2.0 P=12)
+  {POLYGON T=POUR L="F.Cu" ID=1 X=1.0 Y=-2.0
+    (LINE X=1.0 Y=-2.0)
+    (LINE X=1.0 Y=-2.0)
+  }
+  {POLYVOID ID=1 X=1.0 Y=-2.0
+    (LINE X=1.0 Y=-2.0)
+  }
+  {POLYVOID ID=1 X=1.0 Y=-2.0
+    (LINE X=1.0 Y=-2.0)
+  }
+  {POLYGON T=POUR L="B.Cu" ID=2 X=1.0 Y=-2.0
+    (LINE X=1.0 Y=-2.0)
+    (LINE X=1.0 Y=-2.0)
+  }
+}
+
+{NET="unconnected"
+  (PIN X=1.0 Y=2.0 R="R3.1" P=12)
+}
