@@ -5,6 +5,7 @@
 #[derive(Debug, PartialEq)]
 pub enum Units {
     English,
+    Metric,
 }
 
 #[derive(Debug, PartialEq)]

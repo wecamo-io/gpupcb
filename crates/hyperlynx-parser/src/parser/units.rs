@@ -27,6 +27,7 @@ pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
 
         match u.as_str() {
             "ENGLISH LENGTH" => Units::English,
+            "METRIC LENGTH" => Units::Metric,
             _ => {
                 Err(build_parser_backtrack_error((
                     "units UNITS value",
@@ -48,6 +49,7 @@ mod units_block_parsertests {
     use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case("{UNITS=ENGLISH LENGTH}", Units::English)]
+    #[test_case("{UNITS=METRIC LENGTH}", Units::Metric)]
     fn parses_units_block(mut input: &str, expected: Units) {
         let units = parse_units_block.parse_next(&mut input).unwrap();
 
