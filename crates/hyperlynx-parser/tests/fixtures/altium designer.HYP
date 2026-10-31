@@ -1,3 +1,7 @@
+* SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+*
+* SPDX-License-Identifier: GPL 3.0
+*
 {VERSION=2.14}
 
 {UNITS=ENGLISH LENGTH}
@@ -29,22 +33,22 @@
 
 {NET=VCC
   (SEG X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 W=0.011 L="Bottom Layer")
-  (PIN X=3.838583 Y=2.677165 R=R1.1 P=4)
-  (PIN X=3.838583 Y=2.677165 R= .1 P=4)
+  (PIN X=1.0 Y=2.0 R=R1.1 P=4)
+  (PIN X=1.0 Y=2.0 R= .1 P=4)
   (VIA X=1.0 Y=2.0 P=12)
-  (PIN X=4.158268 Y=3.546457 R=U1.16 P=8)
+  (PIN X=1.0 Y=2.0 R=U1.16 P=8)
   (ARC X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 XC=5.0 YC=-6.0 R=0.016 W=0.0049 L="Bottom Layer")
   {POLYGON T=POUR L="Bottom Layer" ID=1 X=1.0 Y=1.0
-    (LINE X=3.6191332 Y=4.1384143)
-    (LINE X=3.6191332 Y=4.0046126)
+    (LINE X=1.0 Y=2.0)
+    (LINE X=1.0 Y=2.0)
   }
-  {POLYVOID ID=1 X=3.9240808 Y=4.0551180
-    (LINE X=3.9240808 Y=4.0551180)
+  {POLYVOID ID=1 X=1.0 Y=2.0
+    (LINE X=1.0 Y=2.0)
   }
-  {POLYVOID ID=1 X=4.5933722 Y=4.0157480
-    (LINE X=4.6033852 Y=4.0130650)
-    (LINE X=4.5933722 Y=4.0157480)
+  {POLYVOID ID=1 X=1.0 Y=2.0
+    (LINE X=1.0 Y=2.0)
+    (LINE X=1.0 Y=2.0)
   }
 }
 {END}
-{KEY=006-C2C5-5C71}
+{KEY=1-1-1}
