@@ -17,9 +17,30 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          crates/hyperlynx-parser/target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('crates/hyperlynx-parser/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Check formatting
+      working-directory: crates/hyperlynx-parser
+      run: cargo fmt --all -- --check
+
+    - name: Run Clippy
+      working-directory: crates/hyperlynx-parser
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
     - name: Build
       working-directory: crates/hyperlynx-parser
       run: cargo build --verbose
+
     - name: Run tests
       working-directory: crates/hyperlynx-parser
       run: cargo test --verbose
