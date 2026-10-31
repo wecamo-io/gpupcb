@@ -111,7 +111,7 @@ mod device_block_parser_tests {
     #[test]
     fn parses_devices_block() {
         let mut input = "{DEVICES\n  (? REF=\"R3\" L=\"F.Cu\")\n  (? REF=\"D1\" L=\"F.Cu\")\n  (? REF=\"C3\" L=\"F.Cu\")\n  (? REF=\"U3\" L=\"F.Cu\")\n  (? REF=\"SW1\" L=\"B.Cu\")\n}";
-        let expected = vec![
+        let expected = [
             Device {
                 reference: String::from("R3"),
                 layer: String::from("F.Cu"),
@@ -223,10 +223,9 @@ mod device_block_parser_tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let mut iter = err.context().into_iter();
-                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                let mut iter = err.context();
 
-                errors
+                (iter.next().unwrap(), iter.next().unwrap())
             }
             ErrMode::Incomplete(_) => todo!(),
         };
@@ -292,10 +291,9 @@ mod device_block_parser_tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let mut iter = err.context().into_iter();
-                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                let mut iter = err.context();
 
-                errors
+                (iter.next().unwrap(), iter.next().unwrap())
             }
             ErrMode::Incomplete(_) => todo!(),
         };

@@ -84,7 +84,7 @@ fn parse_net_row_element(input: &mut &str) -> ModalResult<NetRowElement> {
                         return Err(ErrMode::Backtrack(ContextError::new()));
                     }
 
-                    return Err(build_parser_cut_error(("row name", "PIN, VIA, SEG or ARC")));
+                    Err(build_parser_cut_error(("row name", "PIN, VIA, SEG or ARC")))
                 }
             }
         }
@@ -116,10 +116,10 @@ fn parse_net_block_element(input: &mut &str) -> ModalResult<NetBlockElement> {
                 return Err(ErrMode::Backtrack(ContextError::new()));
             }
 
-            return Err(build_parser_cut_error((
+            Err(build_parser_cut_error((
                 "block name",
                 "POLYGON or POLYVOID",
-            )));
+            )))
         }
     }
 }
@@ -173,7 +173,7 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
     close_block(input)?;
 
     Ok(Net {
-        name: String::from(name),
+        name,
         pins,
         vias,
         segments,
@@ -520,10 +520,9 @@ mod net_block_parser_tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let mut iter = err.context().into_iter();
-                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                let mut iter = err.context();
 
-                errors
+                (iter.next().unwrap(), iter.next().unwrap())
             }
             ErrMode::Incomplete(_) => todo!(),
         };
