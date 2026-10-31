@@ -52,13 +52,13 @@ pub fn build_parser_cut_error(
     ErrMode::Cut(err)
 }
 
-pub fn open_block<'a>(input: &mut &'a str, lit: &'static str) -> ModalResult<()> {
+pub fn open_block(input: &mut &str, lit: &'static str) -> ModalResult<()> {
     backtrack_err('{')
         .context(StrContext::Label("opening block"))
         .context(StrContext::Expected(StrContextValue::Description("{")))
         .parse_next(input)?;
 
-    if lit != "" {
+    if !lit.is_empty() {
         backtrack_err(literal(lit))
             .context(StrContext::Label("block name"))
             .context(StrContext::Expected(StrContextValue::Description(lit)))
@@ -86,13 +86,13 @@ pub fn close_block(input: &mut &str) -> ModalResult<()> {
     Ok(())
 }
 
-pub fn row_open<'a>(input: &mut &str, lit: &'static str) -> ModalResult<()> {
+pub fn row_open(input: &mut &str, lit: &'static str) -> ModalResult<()> {
     backtrack_err('(')
         .context(StrContext::Label("opening row"))
         .context(StrContext::Expected(StrContextValue::Description("(")))
         .parse_next(input)?;
 
-    if lit != "" {
+    if !lit.is_empty() {
         backtrack_err(literal(lit))
             .context(StrContext::Label("row name"))
             .context(StrContext::Expected(StrContextValue::Description(lit)))

@@ -206,10 +206,9 @@ mod line_row_parser_tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let mut iter = err.context().into_iter();
-                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                let mut iter = err.context();
 
-                errors
+                (iter.next().unwrap(), iter.next().unwrap())
             }
             ErrMode::Incomplete(_) => todo!(),
         };

@@ -162,7 +162,7 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
 
     Ok(Polygon {
         polygon_type,
-        layer: String::from(layer),
+        layer,
         id,
         x,
         y,
@@ -367,10 +367,9 @@ mod polyvoid_block_parser_tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let mut iter = err.context().into_iter();
-                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                let mut iter = err.context();
 
-                errors
+                (iter.next().unwrap(), iter.next().unwrap())
             }
             ErrMode::Incomplete(_) => todo!(),
         };
@@ -588,10 +587,9 @@ mod polyvoid_block_parser_tests {
 
         let errors = match err {
             ErrMode::Backtrack(ref err) | ErrMode::Cut(ref err) => {
-                let mut iter = err.context().into_iter();
-                let errors = (iter.next().unwrap(), iter.next().unwrap());
+                let mut iter = err.context();
 
-                errors
+                (iter.next().unwrap(), iter.next().unwrap())
             }
             ErrMode::Incomplete(_) => todo!(),
         };

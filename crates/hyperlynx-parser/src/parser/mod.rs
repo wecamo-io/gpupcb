@@ -105,9 +105,9 @@ fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
 }
 
 pub fn parse_hyperlynx(input: &str) -> Result<Board, ReturnParseError> {
-    let mut remaining = input;
+    let remaining = input;
 
-    parse_file_content.parse(&mut remaining).map_err(|err| {
+    parse_file_content.parse(remaining).map_err(|err| {
         let index: usize = err.offset();
         let s: &str = err.input();
 
@@ -121,7 +121,7 @@ pub fn parse_hyperlynx(input: &str) -> Result<Board, ReturnParseError> {
             end += 1;
         }
 
-        let placement: String = format!("...{}...", s[start..end].to_string());
+        let placement: String = format!("...{}...", &s[start..end]);
         let line: u32 = s[..index].matches('\n').count() as u32 + 1;
 
         ReturnParseError {
