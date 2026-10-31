@@ -119,6 +119,19 @@ pub struct Segment {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct UnroutedSegment {
+    pub x1: f64,
+    pub y1: f64,
+    pub layer1: String,
+    pub x2: f64,
+    pub y2: f64,
+    pub layer2: String,
+    pub z: f64, // characteristic_impedance
+    pub delay: f64,
+    pub resistance: f64,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Arc {
     pub x1: f64,
     pub y1: f64,
@@ -155,6 +168,7 @@ pub struct Net {
     pub pins: Vec<Pin>,
     pub vias: Vec<Via>,
     pub segments: Vec<Segment>,
+    pub unrouted_segments: Vec<UnroutedSegment>,
     pub arcs: Vec<Arc>,
     pub polygons: Vec<Polygon>,
     pub polyvoids: Vec<Polyvoid>,
