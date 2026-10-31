@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use hyperlynx_parser::model::Board;
-use hyperlynx_parser::parser::parse;
+use hyperlynx_parser::parser::parse_hyperlynx;
 
 fn main() {
     let content_kicad =
@@ -13,7 +13,7 @@ fn main() {
             .unwrap();
 
     {
-        let board = match parse(&content_kicad) {
+        let board = match parse_hyperlynx(&content_kicad) {
             Ok(board) => board,
             Err(err) => {
                 eprintln!("Failed to parse HYP file:\n{err:#?}");
@@ -44,7 +44,7 @@ fn main() {
     println!("-------------------------------------------------");
 
     {
-        let board = match parse(&content_altium) {
+        let board = match parse_hyperlynx(&content_altium) {
             Ok(board) => board,
             Err(err) => {
                 eprintln!("Failed to parse HYP file:\n{err:#?}");

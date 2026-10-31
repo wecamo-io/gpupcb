@@ -39,7 +39,7 @@ fn parse_single_or_double_line_ending(input: &mut &str) -> ModalResult<()> {
     Ok(())
 }
 
-fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
+fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
     // {VERSION}
     let version: String = version::parse_version_block(input)?;
 
@@ -119,10 +119,10 @@ fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
     })
 }
 
-pub fn parse(input: &str) -> Result<Board, ReturnParseError> {
+pub fn parse_hyperlynx(input: &str) -> Result<Board, ReturnParseError> {
     let mut remaining = input;
 
-    parse_hyperlynx.parse(&mut remaining).map_err(|err| {
+    parse_file_content.parse(&mut remaining).map_err(|err| {
         let index: usize = err.offset();
         let s: &str = err.input();
 
