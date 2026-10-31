@@ -145,13 +145,25 @@ pub struct Arc {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Curve {
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub xc: f64,
+    pub yc: f64,
+    pub radius: f64,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Polygon {
     pub polygon_type: PolygonType,
     pub layer: String,
     pub id: u32,
     pub x: f64,
     pub y: f64,
-    pub outline: Vec<(f64, f64)>,
+    pub lines: Vec<(f64, f64)>,
+    pub curves: Vec<Curve>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -159,7 +171,19 @@ pub struct Polyvoid {
     pub id: u32,
     pub x: f64,
     pub y: f64,
-    pub outline: Vec<(f64, f64)>,
+    pub lines: Vec<(f64, f64)>,
+    pub curves: Vec<Curve>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Polyline {
+    pub layer: String,
+    pub width: f64,
+    pub id: u32,
+    pub x: f64,
+    pub y: f64,
+    pub lines: Vec<(f64, f64)>,
+    pub curves: Vec<Curve>,
 }
 
 #[derive(Debug, PartialEq)]

@@ -6,8 +6,9 @@
 mod kicad_export_tests {
     use hyperlynx_parser::{
         model::{
-            Arc, Board, Device, Layer, LayerMaterial, LayerType, Pad, PadShape, PadType, Padstack,
-            Perimeter, PerimeterType, Pin, Polygon, PolygonType, Polyvoid, Segment, Units, Via,
+            Arc, Board, Curve, Device, Layer, LayerMaterial, LayerType, Pad, PadShape, PadType,
+            Padstack, Perimeter, PerimeterType, Pin, Polygon, PolygonType, Polyvoid, Segment,
+            Units, Via,
         },
         parser::parse_hyperlynx,
     };
@@ -242,7 +243,8 @@ mod kicad_export_tests {
                 id: 1,
                 x: 1.0,
                 y: -2.0,
-                outline: vec![(1.0, -2.0), (1.0, -2.0)],
+                lines: vec![(1.0, -2.0), (1.0, -2.0)],
+                curves: Vec::new()
             }
         );
 
@@ -254,7 +256,8 @@ mod kicad_export_tests {
                 id: 2,
                 x: 1.0,
                 y: -2.0,
-                outline: vec![(1.0, -2.0), (1.0, -2.0)],
+                lines: vec![(1.0, -2.0), (1.0, -2.0)],
+                curves: Vec::new()
             }
         );
 
@@ -267,7 +270,16 @@ mod kicad_export_tests {
                 id: 1,
                 x: 1.0,
                 y: -2.0,
-                outline: vec![(1.0, -2.0)],
+                lines: vec![(1.0, -2.0)],
+                curves: vec![Curve {
+                    x1: 1.0,
+                    y1: -2.0,
+                    x2: 3.0,
+                    y2: -4.0,
+                    xc: 0.5,
+                    yc: 0.5,
+                    radius: 1.0
+                }]
             }
         );
 
@@ -277,7 +289,8 @@ mod kicad_export_tests {
                 id: 1,
                 x: 1.0,
                 y: -2.0,
-                outline: vec![(1.0, -2.0)],
+                lines: vec![(1.0, -2.0)],
+                curves: Vec::new()
             }
         );
 

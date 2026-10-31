@@ -42,12 +42,16 @@
   }
   {POLYVOID ID=1 X=1.0 Y=-2.0
     (LINE X=1.0 Y=-2.0)
+    (CURVE X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 XC=0.5 YC=0.5 R=1.0)
   }
   {POLYVOID ID=1 X=1.0 Y=-2.0
     (LINE X=1.0 Y=-2.0)
   }
   {POLYGON T=POUR L="B.Cu" ID=2 X=1.0 Y=-2.0
     (LINE X=1.0 Y=-2.0)
+    (LINE X=1.0 Y=-2.0)
+  }
+  {POLYLINE L="B.Cu" W=0.25 ID=3 X=1.0 Y=-2.0
     (LINE X=1.0 Y=-2.0)
   }
 }

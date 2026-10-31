@@ -40,10 +40,14 @@
   (ARC X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 XC=5.0 YC=-6.0 R=0.016 W=0.0049 L="Bottom Layer")
   {POLYGON T=POUR L="Bottom Layer" ID=1 X=1.0 Y=1.0
     (LINE X=1.0 Y=2.0)
+    (CURVE X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 XC=0.5 YC=0.5 R=1.0)
     (LINE X=1.0 Y=2.0)
   }
   {POLYVOID ID=1 X=1.0 Y=2.0
     (LINE X=1.0 Y=2.0)
+  }
+  {POLYLINE L="B.Cu" W=0.25 ID=3 X=8.1200787402 Y=-4.6751968504
+    (LINE X=1.0 Y=-2.0)
   }
   {POLYVOID ID=1 X=1.0 Y=2.0
     (LINE X=1.0 Y=2.0)
