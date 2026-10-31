@@ -110,6 +110,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         match value.as_str() {
             "M" => PadType::M,
             "A" => PadType::A,
+            "T" => PadType::T,
             _ => {
                 Err(build_parser_backtrack_error((
                     "pad type",
@@ -213,15 +214,15 @@ mod padstack_block_parser_tests {
         }
     )]
     #[test_case(
-        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 0, A)\n  (...)",
+        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 0, T)\n  (...)",
         Pad {
             layer: String::from("F.Cu"),
             shape: PadShape::Roundrect,
             size_x: 0.047244094,
             size_y: 0.055118110,
             angle: 0.0,
-            r#type: PadType::A,
-        }; "angle being in form of a single digit"
+            r#type: PadType::T,
+        }; "angle being in form of a single digit and T material"
     )]
     fn parses_pad_row(mut input: &str, expected: Pad) {
         let pad = parse_pad_row.parse_next(&mut input).unwrap();

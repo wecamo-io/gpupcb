@@ -4,8 +4,8 @@
 
 #[derive(Debug, PartialEq)]
 pub enum Units {
-    English,
-    Metric,
+    English, // inches
+    Metric,  // centimeters
 }
 
 #[derive(Debug, PartialEq)]
@@ -37,8 +37,9 @@ pub enum PadShape {
 
 #[derive(Debug, PartialEq)]
 pub enum PadType {
-    M,
-    A,
+    M, // Metal
+    A, // Antipad
+    T, // Thermal relief
 }
 
 #[derive(Debug, PartialEq)]
