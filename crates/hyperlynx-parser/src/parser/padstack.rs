@@ -12,8 +12,8 @@ use crate::model::{Pad, PadShape, PadType, Padstack};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, ExtractValueErrorMessages, build_parser_backtrack_error,
     close_block, close_row, extract_float_value, extract_string_value,
-    extract_unquoted_string_value, extract_unsigned_integer_entry, line_ending_with_two_spaces,
-    open_block, parse_either_line_ending, row_open, single_line_ending,
+    extract_unquoted_string_value, extract_unsigned_integer_entry, open_block, row_open,
+    skip_ignored,
 };
 
 fn parse_pad_separator(input: &mut &str) -> ModalResult<()> {
@@ -121,15 +121,7 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
 
     close_row(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Pad {
         layer: String::from(layer),
@@ -172,7 +164,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
         },
     )?;
 
-    line_ending_with_two_spaces(input)?;
+    skip_ignored(input)?;
 
     let pads: Vec<Pad> = repeat(0.., parse_pad_row_with_err).parse_next(input)?;
 
@@ -367,21 +359,6 @@ mod padstack_block_parser_tests {
             StrContext::Label("pad ', ' separator"),
             StrContext::Expected(StrContextValue::Description("invalid ', ' separator"))
         )
-    )]
-    // line ending
-    #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)\n "#,
-        (
-            StrContext::Label("line ending"),
-            StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
-        ); "one space after new line"
-    )]
-    #[test_case(
-        r#"("F.Cu", 2, 0.047244094, 0.055118110, 90.0, M)"#,
-        (
-            StrContext::Label("line ending"),
-            StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
-        ); "no line ending"
     )]
     fn rejects_malformed_pad_row_separators_and_parenthesis(
         mut input: &str,

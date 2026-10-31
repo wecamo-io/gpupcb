@@ -9,8 +9,7 @@ use winnow::prelude::*;
 use crate::model::Arc;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
-    line_ending_with_two_spaces, parse_either_line_ending, row_open, single_line_ending,
-    single_space,
+    row_open, single_space, skip_ignored,
 };
 
 pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
@@ -143,15 +142,7 @@ pub fn parse_arc_row(input: &mut &str) -> ModalResult<Arc> {
 
     close_row(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Arc {
         x1,

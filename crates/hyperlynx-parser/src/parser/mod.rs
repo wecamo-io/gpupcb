@@ -2,14 +2,11 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::multispace0;
 use winnow::error::ContextError;
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Board, Device, Layer, Net, Padstack, PerimeterSegment, Units};
-use crate::parser::utils::{
-    build_parser_backtrack_error, double_line_ending, parse_either_line_ending, single_line_ending,
-};
+use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
 
 mod devices;
 mod net;
@@ -28,42 +25,33 @@ pub struct ReturnParseError {
     pub offset: usize,
 }
 
-fn parse_single_or_double_line_ending(input: &mut &str) -> ModalResult<()> {
-    parse_either_line_ending(
-        input,
-        single_line_ending,
-        double_line_ending,
-        ("line ending", "expected single or double line ending"),
-    )?;
-
-    Ok(())
-}
-
 fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
+    skip_ignored(input)?;
+
     // {VERSION}
     let version: String = version::parse_version_block(input)?;
 
-    parse_single_or_double_line_ending(input)?;
+    skip_ignored(input)?;
 
     // {UNITS}
     let units: Units = units::parse_units_block(input)?;
 
-    double_line_ending(input)?;
+    skip_ignored(input)?;
 
     // {BOARD}
     let outline: Vec<PerimeterSegment> = perimeter_segment::parse_board_block(input)?;
 
-    double_line_ending(input)?;
+    skip_ignored(input)?;
 
     // {STACKUP}
     let stackup: Vec<Layer> = stackup::parse_stackup_block(input)?;
 
-    double_line_ending(input)?;
+    skip_ignored(input)?;
 
     // {DEVICES}
     let devices: Vec<Device> = devices::parse_devices_block(input)?;
 
-    double_line_ending(input)?;
+    skip_ignored(input)?;
 
     // {PADSTACK}
     let mut padstacks: Vec<Padstack> = Vec::new();
@@ -78,11 +66,8 @@ fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
             return Err(build_parser_backtrack_error(("block name", "PADSTACK")));
         }
 
-        let (padstack, _): (Padstack, _) = (
-            padstack::parse_padstack_block,
-            parse_single_or_double_line_ending,
-        )
-            .parse_next(input)?;
+        let (padstack, _): (Padstack, _) =
+            (padstack::parse_padstack_block, skip_ignored).parse_next(input)?;
 
         padstacks.push(padstack);
     }
@@ -101,7 +86,7 @@ fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
             return Err(build_parser_backtrack_error(("block name", "NET")));
         }
 
-        let (net, _): (Net, _) = (net::parse_net_block, multispace0).parse_next(input)?;
+        let (net, _): (Net, _) = (net::parse_net_block, skip_ignored).parse_next(input)?;
         nets.push(net);
     }
 

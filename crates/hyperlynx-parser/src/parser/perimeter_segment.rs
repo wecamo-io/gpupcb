@@ -3,13 +3,12 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, peek, repeat};
+use winnow::combinator::{cut_err, peek, repeat};
 use winnow::prelude::*;
 
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, ExtractValueErrorMessages, build_parser_cut_error, close_block,
-    close_row, extract_float_entry, extract_string_value, line_ending_with_two_spaces, open_block,
-    parse_either_line_ending, single_line_ending, single_space,
+    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
+    extract_float_entry, extract_string_value, open_block, single_space, skip_ignored,
 };
 use crate::{model::PerimeterSegment, parser::utils::row_open};
 
@@ -74,14 +73,7 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
 
     close_row(input)?;
 
-    alt((single_line_ending, line_ending_with_two_spaces))
-        .map_err(|_| {
-            build_parser_cut_error((
-                "line ending",
-                "expected single line ending or new line with 2 spaces after",
-            ))
-        })
-        .parse_next(input)?;
+    skip_ignored(input)?;
 
     Ok(PerimeterSegment { x1, y1, x2, y2 })
 }
@@ -105,16 +97,7 @@ pub fn parse_board_block(input: &mut &str) -> ModalResult<Vec<PerimeterSegment>>
         },
     )?;
 
-    // due to possible lack of PERIMETER_SEGMENT rows inside BOARD block
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     let perimeter_segments: Vec<PerimeterSegment> =
         repeat(0.., parse_perimeter_segment_row_with_err).parse_next(input)?;
@@ -209,21 +192,6 @@ mod board_block_parser_tests {
         StrContext::Label("perimeter segment Y2 value"),
         StrContext::Expected(StrContextValue::Description("invalid Y2 attribute value"))
     )]
-    // line ending
-    #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n (...)",
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description(
-            "expected single line ending or new line with 2 spaces after"
-        )); "one space after line ending"
-    )]
-    #[test_case(
-        "(PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)(...)",
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description(
-            "expected single line ending or new line with 2 spaces after"
-        )); "no line ending"
-    )]
     fn rejects_malformed_perimeter_row(
         input: &str,
         expected_label: StrContext,
@@ -288,14 +256,6 @@ mod board_block_parser_tests {
             StrContext::Label("block name boundary"),
             StrContext::Expected(StrContextValue::Description("valid character after block name"))
         )
-    )]
-    // new line malversations
-    #[test_case(
-        "{BOARD \"/path/to/file/example.kicad_pcb\"\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-5.334321614 X2=8.251181102 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.334321614 X2=8.251181102 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=8.251181102 Y1=-5.846132638 X2=7.778740157 Y2=-5.846132638)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.846132638 X2=7.778740157 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.778740157 Y1=-5.334321614 X2=7.608267717 Y2=-5.334321614)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-5.334321614 X2=7.608267717 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=7.608267717 Y1=-4.487864921 X2=8.415354331 Y2=-4.487864921)\n  (PERIMETER_SEGMENT X1=8.415354331 Y1=-4.487864921 X2=8.415354331 Y2=-5.334321614)\n }",
-        (
-            StrContext::Label("line ending"),
-            StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
-        ); "last row new line"
     )]
     // closing block
     #[test_case(

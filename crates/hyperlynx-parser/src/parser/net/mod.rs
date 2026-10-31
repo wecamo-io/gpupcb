@@ -18,7 +18,7 @@ use crate::parser::net::{
 };
 use crate::parser::utils::{
     ExtractEntryErrorMessages, build_parser_cut_error, close_block, extract_string_entry,
-    line_ending_with_two_spaces, open_block,
+    open_block, skip_ignored,
 };
 
 pub mod arc;
@@ -139,7 +139,7 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
         },
     )?;
 
-    line_ending_with_two_spaces(input)?;
+    skip_ignored(input)?;
 
     let mut pins: Vec<Pin> = Vec::new();
     let mut vias: Vec<Via> = Vec::new();

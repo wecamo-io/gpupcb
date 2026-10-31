@@ -10,9 +10,8 @@ use crate::model::{Polygon, PolygonType, Polyvoid};
 use crate::parser::net::polygon::line::parse_line_row_with_err;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, build_parser_backtrack_error, close_block, extract_float_entry,
-    extract_quoted_string_entry, extract_string_entry, extract_unsigned_integer_entry,
-    line_ending_with_four_spaces, line_ending_with_two_spaces, open_block,
-    parse_either_line_ending, single_line_ending, single_space,
+    extract_quoted_string_entry, extract_string_entry, extract_unsigned_integer_entry, open_block,
+    single_space, skip_ignored,
 };
 
 mod line;
@@ -61,21 +60,13 @@ pub fn parse_polyvoid_block(input: &mut &str) -> ModalResult<Polyvoid> {
         },
     )?;
 
-    line_ending_with_four_spaces(input)?;
+    skip_ignored(input)?;
 
     let outline: Vec<(f64, f64)> = repeat(1.., parse_line_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Polyvoid { id, x, y, outline })
 }
@@ -161,21 +152,13 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
         },
     )?;
 
-    line_ending_with_four_spaces(input)?;
+    skip_ignored(input)?;
 
     let outline: Vec<(f64, f64)> = repeat(1.., parse_line_row_with_err).parse_next(input)?;
 
     close_block(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Polygon {
         polygon_type,

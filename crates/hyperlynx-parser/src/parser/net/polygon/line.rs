@@ -7,8 +7,7 @@ use winnow::combinator::{cut_err, peek};
 use winnow::prelude::*;
 
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_row, extract_float_entry, line_ending_with_four_spaces,
-    line_ending_with_two_spaces, parse_either_line_ending, row_open, single_space,
+    ExtractEntryErrorMessages, close_row, extract_float_entry, row_open, single_space, skip_ignored,
 };
 
 pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
@@ -44,15 +43,7 @@ pub fn parse_line_row(input: &mut &str) -> ModalResult<(f64, f64)> {
 
     close_row(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_four_spaces,
-        line_ending_with_two_spaces,
-        (
-            "line ending",
-            "expected line ending with 2 or 4 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok((x, y))
 }

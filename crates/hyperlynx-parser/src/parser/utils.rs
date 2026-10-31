@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::ascii::{dec_uint, line_ending};
-use winnow::combinator::{alt, backtrack_err, cut_err, delimited, peek};
+use winnow::ascii::{dec_uint, line_ending, multispace1};
+use winnow::combinator::{alt, backtrack_err, cut_err, delimited, opt, peek, repeat};
 use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::token::{any, literal, one_of, take_till, take_until, take_while};
 use winnow::{ModalResult, Parser};
@@ -118,6 +118,22 @@ pub fn close_row(input: &mut &str) -> ModalResult<()> {
     Ok(())
 }
 
+fn parse_comment(input: &mut &str) -> ModalResult<()> {
+    (
+        '*',
+        take_till(0.., |c| c == '\r' || c == '\n'),
+        opt(line_ending),
+    )
+        .void()
+        .parse_next(input)
+}
+
+pub fn skip_ignored(input: &mut &str) -> ModalResult<()> {
+    let _: () = repeat(0.., alt((multispace1.void(), parse_comment))).parse_next(input)?;
+
+    Ok(())
+}
+
 pub fn single_space(input: &mut &str) -> ModalResult<()> {
     (' ', peek(any).verify(|c: &char| !c.is_whitespace()))
         .context(StrContext::Label("single space"))
@@ -127,81 +143,6 @@ pub fn single_space(input: &mut &str) -> ModalResult<()> {
         .parse_next(input)?;
 
     Ok(())
-}
-
-// parses '\n' or '\r\n'
-pub fn single_line_ending(input: &mut &str) -> ModalResult<()> {
-    (line_ending, peek(any).verify(|c: &char| !c.is_whitespace()))
-        .context(StrContext::Label("single line ending"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid line ending, should be one new line",
-        )))
-        .parse_next(input)?;
-
-    Ok(())
-}
-
-// parses '\n\n' or '\r\n\r\n'
-pub fn double_line_ending(input: &mut &str) -> ModalResult<()> {
-    (
-        line_ending,
-        line_ending,
-        peek(any).verify(|c: &char| !c.is_whitespace()),
-    )
-        .context(StrContext::Label("double line ending"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "invalid line ending, should be two new lines",
-        )))
-        .parse_next(input)?;
-
-    Ok(())
-}
-
-// parses '\n' or '\r\n  '
-pub fn line_ending_with_two_spaces(input: &mut &str) -> ModalResult<()> {
-    (
-        line_ending,
-        "  ",
-        peek(any).verify(|c: &char| !c.is_whitespace()),
-    )
-        .context(StrContext::Label("line ending with indentation"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "expected one new line with 2 spaces",
-        )))
-        .parse_next(input)?;
-
-    Ok(())
-}
-
-// parses '\n    ' or '\r\n    '
-pub fn line_ending_with_four_spaces(input: &mut &str) -> ModalResult<()> {
-    (
-        line_ending,
-        "    ",
-        peek(any).verify(|c: &char| !c.is_whitespace()),
-    )
-        .context(StrContext::Label("line ending with indentation"))
-        .context(StrContext::Expected(StrContextValue::Description(
-            "expected one new line with 4 spaces",
-        )))
-        .parse_next(input)?;
-
-    Ok(())
-}
-
-pub fn parse_either_line_ending<'i, O, P1, P2>(
-    input: &mut &'i str,
-    parser1: P1,
-    parser2: P2,
-    errors: (&'static str, &'static str),
-) -> ModalResult<O>
-where
-    P1: Parser<&'i str, O, ErrMode<ContextError<StrContext>>>,
-    P2: Parser<&'i str, O, ErrMode<ContextError<StrContext>>>,
-{
-    alt((parser1, parser2))
-        .map_err(|_| build_parser_cut_error((errors.0, errors.1)))
-        .parse_next(input)
 }
 
 pub fn extract_key(
@@ -225,7 +166,10 @@ pub fn extract_float_value(
 ) -> ModalResult<f64> {
     let value: f64 = cut_err(
         // for some reason float and terminated(float, multispace0) combinators doesn't work here
-        take_while(1.., |c: char| !c.is_whitespace() && c != till_literal).parse_to(),
+        take_while(1.., |c: char| {
+            !c.is_whitespace() && c != till_literal && c != '*'
+        })
+        .parse_to(),
     )
     .context(StrContext::Label(error_messages.value_error_label))
     .context(StrContext::Expected(StrContextValue::Description(
@@ -262,7 +206,7 @@ pub fn extract_unquoted_string_value(
         // if next char after parsed ' ' is also space then simply return ' '
         // otherwise there is an unquoted value that needs to be parsed
         if !input.starts_with(' ') {
-            let value = take_till(0.., [' ', '\r', '\n']).parse_next(input)?;
+            let value = take_till(0.., [' ', '\r', '\n', '*']).parse_next(input)?;
             return Ok(String::from(value));
         }
 
@@ -270,7 +214,7 @@ pub fn extract_unquoted_string_value(
     }
 
     let value: &str = backtrack_err(take_till(1.., |c: char| {
-        ['\r', '\n', till_literal].contains(&c)
+        ['\r', '\n', '*', till_literal].contains(&c)
     }))
     .context(StrContext::Label(error_messages.value_error_label))
     .context(StrContext::Expected(StrContextValue::Description(

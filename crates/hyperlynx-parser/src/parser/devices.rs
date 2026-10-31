@@ -10,8 +10,7 @@ use winnow::token::take_until;
 use crate::model::Device;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, close_block, close_row, extract_quoted_string_entry,
-    extract_string_entry, line_ending_with_two_spaces, open_block, parse_either_line_ending,
-    row_open, single_line_ending, single_space,
+    extract_string_entry, open_block, row_open, single_space, skip_ignored,
 };
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
@@ -47,15 +46,7 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
 
     close_row(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Device { reference, layer })
 }
@@ -69,7 +60,7 @@ fn parse_device_row_with_err(input: &mut &str) -> ModalResult<Device> {
 pub fn parse_devices_block(input: &mut &str) -> ModalResult<Vec<Device>> {
     open_block(input, "DEVICES")?;
 
-    line_ending_with_two_spaces(input)?;
+    skip_ignored(input)?;
 
     let devices: Vec<Device> = repeat(0.., parse_device_row_with_err).parse_next(input)?;
 
@@ -217,28 +208,6 @@ mod device_block_parser_tests {
         StrContext::Label("device L value"),
         StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
         )
-    )]
-    // line ending
-    #[test_case(
-        "(? REF=\"R3\" L=\"F.Cu\")\n (...)",
-        (
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
-        ); "one space after new line"
-    )]
-    #[test_case(
-        "(? REF=\"R3\" L=\"F.Cu\")\n (...)",
-        (
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
-        ); "one space after new line"
-    )]
-    #[test_case(
-        "(? REF=\"R3\" L=\"F.Cu\")(...)",
-        (
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after"))
-        ); "no line ending"
     )]
     // closing row
     #[test_case(

@@ -10,9 +10,8 @@ use winnow::token::literal;
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, build_parser_backtrack_error, build_parser_cut_error, close_block,
-    close_row, extract_float_entry, extract_quoted_string_entry, extract_string_entry,
-    line_ending_with_two_spaces, open_block, parse_either_line_ending, row_open,
-    single_line_ending, single_space,
+    close_row, extract_float_entry, extract_quoted_string_entry, extract_string_entry, open_block,
+    row_open, single_space, skip_ignored,
 };
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
@@ -99,15 +98,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
 
     close_row(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Layer {
         layer_type: LayerType::Dielectric {
@@ -213,15 +204,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
     close_row(input)?;
 
-    parse_either_line_ending(
-        input,
-        line_ending_with_two_spaces,
-        single_line_ending,
-        (
-            "line ending",
-            "expected single line ending or new line with 2 spaces after",
-        ),
-    )?;
+    skip_ignored(input)?;
 
     Ok(Layer {
         layer_type: LayerType::Signal {
@@ -263,7 +246,7 @@ fn parse_layer_row_with_err(input: &mut &str) -> ModalResult<Layer> {
 pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
     open_block(input, "STACKUP")?;
 
-    line_ending_with_two_spaces(input)?;
+    skip_ignored(input)?;
 
     let layers: Vec<Layer> = repeat(0.., parse_layer_row_with_err).parse_next(input)?;
 
@@ -663,31 +646,6 @@ mod stackup_block_parser_tests {
         "(SIGNAL T=0.00137795 P=0xyz C=1.724e-08 L=\"F.Cu\" M=COPPER)",
         StrContext::Label("signal P value"),
         StrContext::Expected(StrContextValue::Description("invalid P attribute value"))
-    )]
-    // line ending
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n (...)",
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
-        ); "one space after line ending"
-    )]
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")(...)",
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
-        ); "no line ending"
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n (...)",
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
-        ); "one space after line ending"
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)(...)",
-        StrContext::Label("line ending"),
-        StrContext::Expected(StrContextValue::Description("expected single line ending or new line with 2 spaces after")
-        ); "no line ending"
     )]
     // closing parenthesis ')'
     #[test_case(
