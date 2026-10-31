@@ -235,12 +235,28 @@ pub fn extract_unquoted_string_value(
     till_literal: char,
     error_messages: ExtractValueErrorMessages,
 ) -> ModalResult<String> {
-    let value: &str = backtrack_err(take_till(1.., |c: char| c == till_literal))
-        .context(StrContext::Label(error_messages.value_error_label))
-        .context(StrContext::Expected(StrContextValue::Description(
-            error_messages.value_error_description,
-        )))
-        .parse_next(input)?;
+    // if unquoted string starts with empty space then return ' '
+    if input.starts_with(' ') && !input.starts_with(" \"") {
+        ' '.parse_next(input)?;
+
+        // if next char after parsed ' ' is also space then simply return ' '
+        // otherwise there is an unquoted value that needs to be parsed
+        if !input.starts_with(' ') {
+            let value = take_till(0.., [' ', '\r', '\n']).parse_next(input)?;
+            return Ok(String::from(value));
+        }
+
+        return Ok(String::from(" "));
+    }
+
+    let value: &str = backtrack_err(take_till(1.., |c: char| {
+        ['\r', '\n', till_literal].contains(&c)
+    }))
+    .context(StrContext::Label(error_messages.value_error_label))
+    .context(StrContext::Expected(StrContextValue::Description(
+        error_messages.value_error_description,
+    )))
+    .parse_next(input)?;
 
     Ok(String::from(value))
 }
