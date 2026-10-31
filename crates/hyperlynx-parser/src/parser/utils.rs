@@ -27,6 +27,31 @@ pub struct ExtractEntryErrorMessages {
     pub value_error_description: &'static str,
 }
 
+pub fn build_parser_backtrack_error(
+    error_messages: (&'static str, &'static str),
+) -> ErrMode<ContextError> {
+    let mut err = ContextError::new();
+    err.push(StrContext::Label(error_messages.0));
+    err.push(StrContext::Expected(StrContextValue::Description(
+        error_messages.1,
+    )));
+
+    ErrMode::Backtrack(err)
+}
+
+pub fn build_parser_cut_error(
+    error_messages: (&'static str, &'static str),
+) -> ErrMode<ContextError> {
+    let mut err = ContextError::new();
+
+    err.push(StrContext::Label(error_messages.0));
+    err.push(StrContext::Expected(StrContextValue::Description(
+        error_messages.1,
+    )));
+
+    ErrMode::Cut(err)
+}
+
 pub fn open_block<'a>(input: &mut &'a str, lit: &'static str) -> ModalResult<()> {
     backtrack_err('{')
         .context(StrContext::Label("opening block"))
@@ -175,12 +200,7 @@ where
     P2: Parser<&'i str, O, ErrMode<ContextError<StrContext>>>,
 {
     alt((parser1, parser2))
-        .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label(errors.0));
-            err.push(StrContext::Expected(StrContextValue::Description(errors.1)));
-            winnow::error::ErrMode::Cut(err)
-        })
+        .map_err(|_| build_parser_cut_error((errors.0, errors.1)))
         .parse_next(input)
 }
 
