@@ -2,8 +2,11 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use winnow::combinator::{alt, repeat};
+use winnow::ascii::multispace0;
+use winnow::combinator::{alt, cut_err, peek, repeat};
+use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
+use winnow::token::literal;
 
 use crate::model::{Arc, Net, Pin, Polygon, Polyvoid, Segment, Via};
 use crate::parser::net::{
@@ -25,25 +28,109 @@ pub mod seg;
 pub mod via;
 
 #[derive(Debug)]
-enum NetElement {
+enum NetRowElement {
     Pin(Pin),
     Via(Via),
     Segment(Segment),
     Arc(Arc),
+}
+
+#[derive(Debug)]
+enum NetBlockElement {
     Polygon(Polygon),
     Polyvoid(Polyvoid),
 }
 
-fn parse_net_element(input: &mut &str) -> ModalResult<NetElement> {
-    alt((
-        parse_pin_row_with_err.map(NetElement::Pin),
-        parse_via_row_with_err.map(NetElement::Via),
-        parse_seg_row_with_err.map(NetElement::Segment),
-        parse_arc_row_with_err.map(NetElement::Arc),
-        parse_polygon_block_with_err.map(NetElement::Polygon),
-        parse_polyvoid_block_with_err.map(NetElement::Polyvoid),
-    ))
-    .parse_next(input)
+fn is_net_element<'a>(input: &'a mut &str, lit: &str) -> Result<(&'a str, &'a str), ContextError> {
+    peek((multispace0::<_, ContextError>, literal(lit))).parse_next(input)
+}
+
+// refactor candidate
+fn parse_net_row_element(input: &mut &str) -> ModalResult<NetRowElement> {
+    let is_pin = is_net_element(input, "(PIN");
+
+    if is_pin.is_ok() {
+        cut_err(parse_pin_row_with_err)
+            .map(NetRowElement::Pin)
+            .parse_next(input)
+    } else {
+        let is_via = is_net_element(input, "(VIA");
+
+        if is_via.is_ok() {
+            cut_err(parse_via_row_with_err)
+                .map(NetRowElement::Via)
+                .parse_next(input)
+        } else {
+            let is_seg = is_net_element(input, "(SEG");
+
+            if is_seg.is_ok() {
+                cut_err(parse_seg_row_with_err)
+                    .map(NetRowElement::Segment)
+                    .parse_next(input)
+            } else {
+                let is_arc = is_net_element(input, "(ARC");
+
+                if is_arc.is_ok() {
+                    cut_err(parse_arc_row_with_err)
+                        .map(NetRowElement::Arc)
+                        .parse_next(input)
+                } else {
+                    if peek((multispace0::<_, ContextError>, alt(("{", "}"))))
+                        .parse_next(input)
+                        .is_ok()
+                    {
+                        // winnow::combinator::repeat omits the backtrack error
+                        // and ends the repeating for this part
+                        return Err(ErrMode::Backtrack(ContextError::new()));
+                    }
+
+                    let mut err = ContextError::new();
+                    err.push(StrContext::Label("row name"));
+                    err.push(StrContext::Expected(StrContextValue::Description(
+                        "PIN, VIA, SEG or ARC",
+                    )));
+
+                    Err(ErrMode::Cut(err))
+                }
+            }
+        }
+    }
+}
+
+// refactor candidate
+fn parse_net_block_element(input: &mut &str) -> ModalResult<NetBlockElement> {
+    let is_polygon = is_net_element(input, "{POLYGON");
+
+    if is_polygon.is_ok() {
+        cut_err(parse_polygon_block_with_err)
+            .map(NetBlockElement::Polygon)
+            .parse_next(input)
+    } else {
+        let is_polyvoid = is_net_element(input, "{POLYVOID");
+
+        if is_polyvoid.is_ok() {
+            cut_err(parse_polyvoid_block_with_err)
+                .map(NetBlockElement::Polyvoid)
+                .parse_next(input)
+        } else {
+            if peek((multispace0::<_, ContextError>, "}"))
+                .parse_next(input)
+                .is_ok()
+            {
+                // winnow::combinator::repeat omits the backtrack error
+                // and ends the repeating for this part
+                return Err(ErrMode::Backtrack(ContextError::new()));
+            }
+
+            let mut err = ContextError::new();
+            err.push(StrContext::Label("block name"));
+            err.push(StrContext::Expected(StrContextValue::Description(
+                "POLYGON or POLYVOID",
+            )));
+
+            Err(ErrMode::Cut(err))
+        }
+    }
 }
 
 pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
@@ -67,19 +154,28 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
     let mut vias: Vec<Via> = Vec::new();
     let mut segments: Vec<Segment> = Vec::new();
     let mut arcs: Vec<Arc> = Vec::new();
+
+    let row_elements: Vec<NetRowElement> = repeat(0.., parse_net_row_element).parse_next(input)?;
+
+    for row_element in row_elements {
+        match row_element {
+            NetRowElement::Pin(pin) => pins.push(pin),
+            NetRowElement::Via(via) => vias.push(via),
+            NetRowElement::Segment(segment) => segments.push(segment),
+            NetRowElement::Arc(arc) => arcs.push(arc),
+        }
+    }
+
     let mut polygons: Vec<Polygon> = Vec::new();
     let mut polyvoids: Vec<Polyvoid> = Vec::new();
 
-    let elements: Vec<NetElement> = repeat(0.., parse_net_element).parse_next(input)?;
+    let block_elements: Vec<NetBlockElement> =
+        repeat(0.., parse_net_block_element).parse_next(input)?;
 
-    for element in elements {
-        match element {
-            NetElement::Pin(pin) => pins.push(pin),
-            NetElement::Via(via) => vias.push(via),
-            NetElement::Segment(segment) => segments.push(segment),
-            NetElement::Arc(arc) => arcs.push(arc),
-            NetElement::Polygon(polygon) => polygons.push(polygon),
-            NetElement::Polyvoid(polyvoid) => polyvoids.push(polyvoid),
+    for block_element in block_elements {
+        match block_element {
+            NetBlockElement::Polygon(polygon) => polygons.push(polygon),
+            NetBlockElement::Polyvoid(polyvoid) => polyvoids.push(polyvoid),
         }
     }
 
@@ -228,6 +324,134 @@ mod net_block_parser_tests {
             StrContext::Label("net NET key"),
             StrContext::Expected(StrContextValue::Description("invalid NET key name"))
         ); "after NET key"
+    )]
+    // malformed row and block names
+    #[test_case(
+        "{NET=\"GND\"\n  (xyzPIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "PIN row name malversation"
+    )]
+    // malformed row and block names
+    #[test_case(
+        "{NET=\"GND\"\n  (PIxyzN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "PIN row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PINxyz X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        ); "PIN row name boundary"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (xyzVIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "VIA row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIxyzA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "VIA row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIAxyz X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        ); "VIA row name boundary"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (xyzSEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "SEG row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SExyzG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "SEG row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEGxyz X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        ); "SEG row name boundary"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (xyzARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "ARC row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARxyzC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name"),
+            StrContext::Expected(StrContextValue::Description("PIN, VIA, SEG or ARC"))
+        ); "ARC row name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARCxyz X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("row name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after row name"))
+        ); "ARC row name boundary"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {xyzPOLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("POLYGON or POLYVOID"))
+        ); "POLYGON block name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYxyzGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("POLYGON or POLYVOID"))
+        ); "POLYGON block name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGONxyz T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        ); "POLYGON block name boundary"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {xyzPOLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("POLYGON or POLYVOID"))
+        ); "POLYVOID block name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYxyzVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("block name"),
+            StrContext::Expected(StrContextValue::Description("POLYGON or POLYVOID"))
+        ); "POLYVOID block name malversation"
+    )]
+    #[test_case(
+        "{NET=\"GND\"\n  (PIN X=7.9527559055 Y=-4.5472440945 R=\"D1.1\" P=1)\n  (PIN X=8.2677165354 Y=-4.6062992126 R=\"C3.2\" P=2)\n  (VIA X=8.1917322835 Y=-5.0476377953 P=18)\n  (SEG X1=8.1826771654 Y1=-4.9956692913 X2=8.1811023622 Y2=-4.9940944882 W=0.0196850394 L=\"F.Cu\")\n  (ARC X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 XC=0.5 YC=0.5 R=1.0 W=0.0118110236 L=\"F.Cu\")\n  {POLYVOID ID=1 X=8.1712598425 Y=-4.9842519685\n    (LINE X=8.1712598425 Y=-4.9842519685)\n  }\n  {POLYVOID ID=1 X=8.1203307480 Y=-4.7089516535\n    (LINE X=8.1203307480 Y=-4.7089516535)\n  }\n  {POLYVOIDxyz ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {POLYVOID ID=1 X=7.9108462205 Y=-4.5709723228\n    (LINE X=7.9108462205 Y=-4.5709723228)\n  }\n  {POLYGON T=POUR L=\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n  }\n}",
+        (
+            StrContext::Label("block name boundary"),
+            StrContext::Expected(StrContextValue::Description("valid character after block name"))
+        ); "POLYVOID block name boundary"
     )]
     // malformed row data
     #[test_case(
