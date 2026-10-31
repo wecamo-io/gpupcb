@@ -3,38 +3,15 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::combinator::{alt, cut_err, delimited, peek};
+use winnow::combinator::{cut_err, peek};
 use winnow::prelude::*;
-use winnow::token::{literal, take_till, take_until};
 
 use crate::model::Pin;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, ExtractKeyErrorMessages, close_row, extract_float_entry,
-    extract_key, extract_unsigned_integer_entry, line_ending_with_two_spaces,
-    parse_either_line_ending, row_open, single_line_ending, single_space,
+    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_string_entry,
+    extract_unsigned_integer_entry, line_ending_with_two_spaces, parse_either_line_ending,
+    row_open, single_line_ending, single_space,
 };
-
-fn extract_ref_entry(input: &mut &str) -> ModalResult<String> {
-    extract_key(
-        input,
-        "R",
-        ExtractKeyErrorMessages {
-            key_error_label: "pin R key",
-            key_error_description: "invalid R key name",
-        },
-    )?;
-
-    literal('=').parse_next(input)?;
-
-    let value: &str = alt((
-        delimited('"', take_until(0.., '"'), '"'),
-        take_till(1.., |c: char| c.is_whitespace()),
-        " ",
-    ))
-    .parse_next(input)?;
-
-    Ok(String::from(value))
-}
 
 pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
     row_open(input, "PIN")?;
@@ -69,9 +46,17 @@ pub fn parse_pin_row(input: &mut &str) -> ModalResult<Pin> {
 
     single_space(input)?;
 
-    let ref_extracted = (extract_ref_entry, take_until(0.., " P=")).parse_next(input)?;
-    let (s1, s2) = ref_extracted;
-    let component_reference = s1 + s2;
+    let component_reference: String = extract_string_entry(
+        input,
+        "R",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "pin R key",
+            key_error_description: "invalid R key name",
+            value_error_label: "pin R value",
+            value_error_description: "invalid R attribute value",
+        },
+    )?;
 
     single_space(input)?;
 
@@ -128,13 +113,22 @@ mod pin_row_parser_tests {
         }
     )]
     #[test_case(
-        "(PIN X=8.3572834646 Y=-4.5978346457 R=\"U2.2\" P=12)\n  (...)",
+        "(PIN X=8.3572834646 Y=-4.5978346457 R=U2.2 P=12)\n  (...)",
         Pin {
             x: 8.3572834646,
             y: -4.5978346457,
             component_reference: String::from("U2.2"),
             padstack_id: 12,
         }
+    )]
+    #[test_case(
+        "(PIN X=8.3572834646 Y=-4.5978346457 R= .1 P=12)\n  (...)",
+        Pin {
+            x: 8.3572834646,
+            y: -4.5978346457,
+            component_reference: String::from(".1"),
+            padstack_id: 12,
+        }; "R entry with reference being empty"
     )]
     fn parses_pin_row(mut input: &str, expected: Pin) {
         let pin = parse_pin_row(&mut input).unwrap();
@@ -264,27 +258,6 @@ mod pin_row_parser_tests {
         (
             StrContext::Label("pin R key"),
             StrContext::Expected(StrContextValue::Description("invalid R key name"))
-        )
-    )]
-    #[test_case(
-        r#"(PIN X=8.3572834646 Y=-4.5978346457 R=xyz"U2.2" P=12)"#,
-        (
-            StrContext::Label("pin R value"),
-            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
-        )
-    )]
-    #[test_case(
-        r#"(PIN X=8.3572834646 Y=-4.5978346457 R=U2.2" P=12)"#,
-        (
-            StrContext::Label("pin R value"),
-            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
-        )
-    )]
-    #[test_case(
-        r#"(PIN X=8.3572834646 Y=-4.5978346457 R="U2.2 P=12)"#,
-        (
-            StrContext::Label("pin R value"),
-            StrContext::Expected(StrContextValue::Description("invalid R attribute value"))
         )
     )]
     // P entry
