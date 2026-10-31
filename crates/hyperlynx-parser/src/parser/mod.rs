@@ -5,7 +5,7 @@
 use winnow::error::ContextError;
 use winnow::{ModalResult, Parser};
 
-use crate::model::{Board, Device, Layer, Net, Padstack, PerimeterSegment, Units};
+use crate::model::{Board, Device, Layer, Net, Padstack, Perimeter, Units};
 use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
 
 mod devices;
@@ -39,7 +39,7 @@ fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
     skip_ignored(input)?;
 
     // {BOARD}
-    let outline: Vec<PerimeterSegment> = perimeter_segment::parse_board_block(input)?;
+    let outline: Vec<Perimeter> = perimeter_segment::parse_board_block(input)?;
 
     skip_ignored(input)?;
 

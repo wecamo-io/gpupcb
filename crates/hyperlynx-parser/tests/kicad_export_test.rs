@@ -7,7 +7,7 @@ mod kicad_export_tests {
     use hyperlynx_parser::{
         model::{
             Arc, Board, Device, Layer, LayerMaterial, LayerType, Pad, PadShape, PadType, Padstack,
-            PerimeterSegment, Pin, Polygon, PolygonType, Polyvoid, Segment, Units, Via,
+            Perimeter, PerimeterType, Pin, Polygon, PolygonType, Polyvoid, Segment, Units, Via,
         },
         parser::parse_hyperlynx,
     };
@@ -37,21 +37,27 @@ mod kicad_export_tests {
 
         assert_eq!(
             outline[0],
-            PerimeterSegment {
+            Perimeter {
                 x1: 1.0,
                 y1: -2.0,
                 x2: 3.0,
                 y2: -4.0,
+                r#type: PerimeterType::Segment
             }
         );
 
         assert_eq!(
             outline[1],
-            PerimeterSegment {
+            Perimeter {
                 x1: 1.0,
                 y1: -2.0,
                 x2: 3.0,
                 y2: -4.0,
+                r#type: PerimeterType::Arc {
+                    xc: 5.0,
+                    yc: -6.0,
+                    radius: 7.0,
+                }
             }
         );
 

@@ -47,11 +47,18 @@ pub enum PolygonType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct PerimeterSegment {
+pub enum PerimeterType {
+    Segment,
+    Arc { xc: f64, yc: f64, radius: f64 },
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Perimeter {
     pub x1: f64,
     pub x2: f64,
     pub y1: f64,
     pub y2: f64,
+    pub r#type: PerimeterType,
 }
 
 #[derive(Debug, PartialEq)]
@@ -156,7 +163,7 @@ pub struct Net {
 pub struct Board {
     pub version: String,
     pub units: Units,
-    pub outline: Vec<PerimeterSegment>,
+    pub outline: Vec<Perimeter>,
     pub stackup: Vec<Layer>,
     pub nets: Vec<Net>,
     pub devices: Vec<Device>,

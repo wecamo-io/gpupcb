@@ -7,7 +7,7 @@
 
 {BOARD "path/to/file/kicad.hyp"
   (PERIMETER_SEGMENT X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0)
-  (PERIMETER_SEGMENT X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0)
+  (PERIMETER_ARC X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 XC=5.0 YC=-6.0 R=7.0)
 }
 
 {STACKUP
