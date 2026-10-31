@@ -3,11 +3,13 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::multispace0;
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::error::ContextError;
 use winnow::{ModalResult, Parser};
 
 use crate::model::{Board, Device, Layer, Net, Padstack, PerimeterSegment, Units};
-use crate::parser::utils::{double_line_ending, parse_either_line_ending, single_line_ending};
+use crate::parser::utils::{
+    build_parser_backtrack_error, double_line_ending, parse_either_line_ending, single_line_ending,
+};
 
 mod devices;
 mod net;
@@ -73,13 +75,7 @@ fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
         }
 
         if !input.starts_with("{PADSTACK=") {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("block name"));
-            err.push(StrContext::Expected(StrContextValue::Description(
-                "PADSTACK",
-            )));
-
-            return Err(ErrMode::Backtrack(err));
+            return Err(build_parser_backtrack_error(("block name", "PADSTACK")));
         }
 
         let (padstack, _): (Padstack, _) = (
@@ -102,10 +98,7 @@ fn parse_hyperlynx(input: &mut &str) -> ModalResult<Board> {
         }
 
         if !input.starts_with("{NET=") {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("block name"));
-            err.push(StrContext::Expected(StrContextValue::Description("NET")));
-            return Err(ErrMode::Backtrack(err));
+            return Err(build_parser_backtrack_error(("block name", "NET")));
         }
 
         let (net, _): (Net, _) = (net::parse_net_block, multispace0).parse_next(input)?;

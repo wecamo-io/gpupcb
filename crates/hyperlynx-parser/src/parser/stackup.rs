@@ -4,27 +4,25 @@
 
 use winnow::ascii::multispace0;
 use winnow::combinator::{alt, cut_err, peek, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
 use winnow::token::literal;
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, close_row, extract_float_entry,
-    extract_quoted_string_entry, extract_string_entry, line_ending_with_two_spaces, open_block,
-    parse_either_line_ending, row_open, single_line_ending, single_space,
+    ExtractEntryErrorMessages, build_parser_backtrack_error, build_parser_cut_error, close_block,
+    close_row, extract_float_entry, extract_quoted_string_entry, extract_string_entry,
+    line_ending_with_two_spaces, open_block, parse_either_line_ending, row_open,
+    single_line_ending, single_space,
 };
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
     match row_open(input, "DIELECTRIC") {
         Ok(_) => {}
         Err(_) => {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("layer row name"));
-            err.push(StrContext::Expected(StrContextValue::Description(
+            return Err(build_parser_cut_error((
+                "layer row name",
                 "dielectric/signal key name",
             )));
-            return Err(ErrMode::Cut(err));
         }
     };
 
@@ -91,13 +89,10 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             "PR1080" => LayerMaterial::PR1080,
             "PR2116" => LayerMaterial::PR2116,
             _ => {
-                let mut err = ContextError::new();
-                err.push(StrContext::Label("dielectric M value"));
-                err.push(StrContext::Expected(StrContextValue::Description(
+                Err(build_parser_backtrack_error((
+                    "dielectric M value",
                     "invalid M attribute value",
-                )));
-
-                Err(ErrMode::Backtrack(err))
+                )))
             }?,
         }
     };
@@ -128,12 +123,10 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     match row_open(input, "SIGNAL") {
         Ok(_) => {}
         Err(_) => {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("layer row name"));
-            err.push(StrContext::Expected(StrContextValue::Description(
+            return Err(build_parser_cut_error((
+                "layer row name",
                 "dielectric/signal key name",
             )));
-            return Err(ErrMode::Cut(err));
         }
     };
 
@@ -210,13 +203,10 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
             _ => {
-                let mut err = ContextError::new();
-                err.push(StrContext::Label("signal M value"));
-                err.push(StrContext::Expected(StrContextValue::Description(
+                Err(build_parser_backtrack_error((
+                    "signal M value",
                     "invalid M attribute value",
-                )));
-
-                Err(ErrMode::Backtrack(err))
+                )))
             }?,
         }
     };
@@ -286,6 +276,7 @@ pub fn parse_stackup_block(input: &mut &str) -> ModalResult<Vec<Layer>> {
 mod stackup_block_parser_tests {
     use super::*;
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
         "(DIELECTRIC T=0.0594488 C=4.5 L=\"F.Cu\" M=\"FR4\")\n(...)",

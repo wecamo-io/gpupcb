@@ -4,9 +4,9 @@
 
 use crate::model::Units;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, extract_unquoted_string_entry, open_block,
+    ExtractEntryErrorMessages, build_parser_backtrack_error, close_block,
+    extract_unquoted_string_entry, open_block,
 };
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
 
 pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
@@ -28,13 +28,10 @@ pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
         match u.as_str() {
             "ENGLISH LENGTH" => Units::English,
             _ => {
-                let mut err = ContextError::new();
-                err.push(StrContext::Label("units UNITS value"));
-                err.push(StrContext::Expected(StrContextValue::Description(
+                Err(build_parser_backtrack_error((
+                    "units UNITS value",
                     "invalid UNITS attribute value",
-                )));
-
-                Err(ErrMode::Backtrack(err))
+                )))
             }?,
         }
     };
@@ -48,6 +45,7 @@ pub fn parse_units_block(input: &mut &str) -> ModalResult<Units> {
 mod units_block_parsertests {
     use super::*;
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case("{UNITS=ENGLISH LENGTH}", Units::English)]
     fn parses_units_block(mut input: &str, expected: Units) {

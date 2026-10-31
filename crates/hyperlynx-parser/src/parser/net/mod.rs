@@ -4,7 +4,7 @@
 
 use winnow::ascii::multispace0;
 use winnow::combinator::{alt, cut_err, peek, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::error::{ContextError, ErrMode};
 use winnow::prelude::*;
 use winnow::token::literal;
 
@@ -17,8 +17,8 @@ use crate::parser::net::{
     via::parse_via_row_with_err,
 };
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, extract_string_entry, line_ending_with_two_spaces,
-    open_block,
+    ExtractEntryErrorMessages, build_parser_cut_error, close_block, extract_string_entry,
+    line_ending_with_two_spaces, open_block,
 };
 
 pub mod arc;
@@ -84,13 +84,7 @@ fn parse_net_row_element(input: &mut &str) -> ModalResult<NetRowElement> {
                         return Err(ErrMode::Backtrack(ContextError::new()));
                     }
 
-                    let mut err = ContextError::new();
-                    err.push(StrContext::Label("row name"));
-                    err.push(StrContext::Expected(StrContextValue::Description(
-                        "PIN, VIA, SEG or ARC",
-                    )));
-
-                    Err(ErrMode::Cut(err))
+                    return Err(build_parser_cut_error(("row name", "PIN, VIA, SEG or ARC")));
                 }
             }
         }
@@ -122,13 +116,10 @@ fn parse_net_block_element(input: &mut &str) -> ModalResult<NetBlockElement> {
                 return Err(ErrMode::Backtrack(ContextError::new()));
             }
 
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("block name"));
-            err.push(StrContext::Expected(StrContextValue::Description(
+            return Err(build_parser_cut_error((
+                "block name",
                 "POLYGON or POLYVOID",
             )));
-
-            Err(ErrMode::Cut(err))
         }
     }
 }

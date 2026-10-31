@@ -4,12 +4,11 @@
 
 use winnow::ascii::multispace0;
 use winnow::combinator::{alt, cut_err, peek, repeat};
-use winnow::error::{ContextError, StrContext, StrContextValue};
 use winnow::prelude::*;
 
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
-    extract_float_entry, extract_string_value, line_ending_with_two_spaces, open_block,
+    ExtractEntryErrorMessages, ExtractValueErrorMessages, build_parser_cut_error, close_block,
+    close_row, extract_float_entry, extract_string_value, line_ending_with_two_spaces, open_block,
     parse_either_line_ending, single_line_ending, single_space,
 };
 use crate::{model::PerimeterSegment, parser::utils::row_open};
@@ -77,12 +76,10 @@ fn parse_perimeter_segment_row(input: &mut &str) -> ModalResult<PerimeterSegment
 
     alt((single_line_ending, line_ending_with_two_spaces))
         .map_err(|_| {
-            let mut err = ContextError::new();
-            err.push(StrContext::Label("line ending"));
-            err.push(StrContext::Expected(StrContextValue::Description(
+            build_parser_cut_error((
+                "line ending",
                 "expected single line ending or new line with 2 spaces after",
-            )));
-            return winnow::error::ErrMode::Cut(err);
+            ))
         })
         .parse_next(input)?;
 

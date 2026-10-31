@@ -4,16 +4,15 @@
 
 use winnow::ascii::multispace0;
 use winnow::combinator::{cut_err, peek, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
 use winnow::prelude::*;
 
 use crate::model::{Polygon, PolygonType, Polyvoid};
 use crate::parser::net::polygon::line::parse_line_row_with_err;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, extract_float_entry, extract_quoted_string_entry,
-    extract_string_entry, extract_unsigned_integer_entry, line_ending_with_four_spaces,
-    line_ending_with_two_spaces, open_block, parse_either_line_ending, single_line_ending,
-    single_space,
+    ExtractEntryErrorMessages, build_parser_backtrack_error, close_block, extract_float_entry,
+    extract_quoted_string_entry, extract_string_entry, extract_unsigned_integer_entry,
+    line_ending_with_four_spaces, line_ending_with_two_spaces, open_block,
+    parse_either_line_ending, single_line_ending, single_space,
 };
 
 mod line;
@@ -101,15 +100,10 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
 
         match t.as_str() {
             "POUR" => PolygonType::Pour,
-            _ => {
-                let mut err = ContextError::new();
-                err.push(StrContext::Label("polygon T value"));
-                err.push(StrContext::Expected(StrContextValue::Description(
-                    "invalid T attribute value",
-                )));
-
-                Err(ErrMode::Backtrack(err))
-            }?,
+            _ => Err(build_parser_backtrack_error((
+                "polygon T value",
+                "invalid T attribute value",
+            )))?,
         }
     };
 
@@ -209,6 +203,7 @@ pub fn parse_polygon_block_with_err(input: &mut &str) -> ModalResult<Polygon> {
 mod polyvoid_block_parser_tests {
     use super::*;
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
         "{POLYVOID ID=1 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n    (LINE X=8.1200787402 Y=-4.6751968504)\n  }\n  {...}",

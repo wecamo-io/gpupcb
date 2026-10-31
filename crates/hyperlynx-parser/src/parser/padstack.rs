@@ -4,16 +4,16 @@
 
 use winnow::ascii::{digit1, multispace0};
 use winnow::combinator::{backtrack_err, cut_err, peek, repeat};
-use winnow::error::{ContextError, ErrMode, StrContext, StrContextValue};
+use winnow::error::{StrContext, StrContextValue};
 use winnow::prelude::*;
 use winnow::token::literal;
 
 use crate::model::{Pad, PadShape, PadType, Padstack};
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, ExtractValueErrorMessages, close_block, close_row,
-    extract_float_value, extract_string_value, extract_unquoted_string_value,
-    extract_unsigned_integer_entry, line_ending_with_two_spaces, open_block,
-    parse_either_line_ending, row_open, single_line_ending,
+    ExtractEntryErrorMessages, ExtractValueErrorMessages, build_parser_backtrack_error,
+    close_block, close_row, extract_float_value, extract_string_value,
+    extract_unquoted_string_value, extract_unsigned_integer_entry, line_ending_with_two_spaces,
+    open_block, parse_either_line_ending, row_open, single_line_ending,
 };
 
 fn parse_pad_separator(input: &mut &str) -> ModalResult<()> {
@@ -54,13 +54,10 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
             "1" => PadShape::Roundrect,
             "2" => PadShape::Rectangle,
             _ => {
-                let mut err = ContextError::new();
-                err.push(StrContext::Label("pad shape value"));
-                err.push(StrContext::Expected(StrContextValue::Description(
+                Err(build_parser_backtrack_error((
+                    "pad shape value",
                     "invalid pad shape value, should be 0-2",
-                )));
-
-                Err(ErrMode::Backtrack(err))
+                )))
             }?,
         }
     };
@@ -114,13 +111,10 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
             "M" => PadType::M,
             "A" => PadType::A,
             _ => {
-                let mut err = ContextError::new();
-                err.push(StrContext::Label("pad type"));
-                err.push(StrContext::Expected(StrContextValue::Description(
+                Err(build_parser_backtrack_error((
+                    "pad type",
                     "invalid pad type, should be M or A",
-                )));
-
-                Err(ErrMode::Backtrack(err))
+                )))
             }?,
         }
     };
@@ -191,6 +185,7 @@ pub fn parse_padstack_block(input: &mut &str) -> ModalResult<Padstack> {
 mod padstack_block_parser_tests {
     use super::*;
     use test_case::test_case;
+    use winnow::error::{ErrMode, StrContext, StrContextValue};
 
     #[test_case(
         "(\"F.Cu\", 2, 0.047244094, 0.055118110, 90.0, M)\n  (...)",
