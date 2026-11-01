@@ -3,6 +3,7 @@
 * SPDX-License-Identifier: GPL 3.0
 *
 {VERSION=2.14}
+{DATA_MODE=DETAILED}
 {UNITS=ENGLISH LENGTH}
 
 {BOARD "path/to/file/kicad.hyp"

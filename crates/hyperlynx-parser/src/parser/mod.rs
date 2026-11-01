@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use winnow::combinator::opt;
 use winnow::error::ContextError;
-use winnow::{ModalResult, Parser};
+use winnow::prelude::*;
+use winnow::token::take_until;
 
 use crate::model::{Board, Device, Layer, Net, Padstack, Perimeter, Units};
 use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
@@ -25,11 +27,26 @@ pub struct ReturnParseError {
     pub offset: usize,
 }
 
+fn parse_optional_data_mode(input: &mut &str) -> ModalResult<()> {
+    opt((
+        take_until(0.., "{DATA_MODE="),
+        take_until(0.., "}"),
+        take_until(0.., "{UNITS="),
+    ))
+    .void()
+    .parse_next(input)
+}
+
 fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
     skip_ignored(input)?;
 
     // {VERSION}
     let version: String = version::parse_version_block(input)?;
+
+    skip_ignored(input)?;
+
+    // {DATA_MODE} optional
+    parse_optional_data_mode(input)?;
 
     skip_ignored(input)?;
 
