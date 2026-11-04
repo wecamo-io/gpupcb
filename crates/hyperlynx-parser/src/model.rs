@@ -2,13 +2,15 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-#[derive(Debug, PartialEq)]
+use serde::Serialize;
+
+#[derive(Debug, PartialEq, Serialize)]
 pub enum Units {
     English, // inches
     Metric,  // centimeters
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum LayerType {
     Dielectric {
         dielectric_constant: f64,
@@ -19,7 +21,7 @@ pub enum LayerType {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum LayerMaterial {
     SolderMask,
     COPPER,
@@ -28,32 +30,32 @@ pub enum LayerMaterial {
     PR2116,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum PadShape {
     Oval,
     Roundrect,
     Rectangle,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum PadType {
     M, // Metal
     A, // Antipad
     T, // Thermal relief
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum PolygonType {
     Pour,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum PerimeterType {
     Segment,
     Arc { xc: f64, yc: f64, radius: f64 },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Perimeter {
     pub x1: f64,
     pub x2: f64,
@@ -62,7 +64,7 @@ pub struct Perimeter {
     pub r#type: PerimeterType,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Layer {
     pub layer_type: LayerType,
     pub thickness: f64,
@@ -70,13 +72,13 @@ pub struct Layer {
     pub material: LayerMaterial,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Device {
     pub reference: String,
     pub layer: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Pad {
     pub layer: String,
     pub shape: PadShape,
@@ -86,14 +88,14 @@ pub struct Pad {
     pub r#type: PadType,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Padstack {
     pub id: u32,
     pub drill: f64,
     pub pads: Vec<Pad>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Pin {
     pub x: f64,
     pub y: f64,
@@ -101,14 +103,14 @@ pub struct Pin {
     pub padstack_id: u32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Via {
     pub x: f64,
     pub y: f64,
     pub padstack_id: u32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Segment {
     pub x1: f64,
     pub y1: f64,
@@ -118,7 +120,7 @@ pub struct Segment {
     pub layer: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct UnroutedSegment {
     pub x1: f64,
     pub y1: f64,
@@ -131,7 +133,7 @@ pub struct UnroutedSegment {
     pub resistance: f64,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Arc {
     pub x1: f64,
     pub y1: f64,
@@ -144,7 +146,7 @@ pub struct Arc {
     pub layer: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Curve {
     pub x1: f64,
     pub y1: f64,
@@ -155,7 +157,7 @@ pub struct Curve {
     pub radius: f64,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Polygon {
     pub polygon_type: PolygonType,
     pub layer: String,
@@ -166,7 +168,7 @@ pub struct Polygon {
     pub curves: Vec<Curve>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Polyvoid {
     pub id: u32,
     pub x: f64,
@@ -175,7 +177,7 @@ pub struct Polyvoid {
     pub curves: Vec<Curve>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Polyline {
     pub layer: String,
     pub width: f64,
@@ -186,7 +188,7 @@ pub struct Polyline {
     pub curves: Vec<Curve>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Net {
     pub name: String,
     pub pins: Vec<Pin>,
@@ -198,7 +200,7 @@ pub struct Net {
     pub polyvoids: Vec<Polyvoid>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Board {
     pub version: String,
     pub units: Units,
