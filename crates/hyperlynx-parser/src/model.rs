@@ -33,6 +33,8 @@ pub enum LayerMaterial {
     PR2116,
     Core009,
     PP006,
+    PP014,
+    Core018,
     CompositeDielectric,
     Polyimide,
 }

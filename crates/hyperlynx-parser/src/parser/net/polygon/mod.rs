@@ -151,6 +151,7 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
 
         match t.as_str() {
             "POUR" => PolygonType::Pour,
+            "COPPER" => PolygonType::COPPER,
             _ => Err(build_parser_backtrack_error((
                 "polygon T value",
                 "invalid T attribute value",

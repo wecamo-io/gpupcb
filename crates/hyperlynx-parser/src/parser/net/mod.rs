@@ -130,7 +130,7 @@ fn parse_net_block_element(input: &mut &str) -> ModalResult<NetBlockElement> {
                     .map(NetBlockElement::Polyline)
                     .parse_next(input)
             } else {
-                if peek((multispace0::<_, ContextError>, "}"))
+                if peek((multispace0::<_, ContextError>, alt(("}", "("))))
                     .parse_next(input)
                     .is_ok()
                 {
@@ -195,6 +195,20 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
             NetBlockElement::Polygon(polygon) => polygons.push(polygon),
             NetBlockElement::Polyvoid(polyvoid) => polyvoids.push(polyvoid),
             NetBlockElement::Polyline(polyline) => polylines.push(polyline),
+        }
+    }
+
+    // check if there are any further rows starting with '('
+    // for there some exports to HyperLynx format include these
+    let row_elements: Vec<NetRowElement> = repeat(0.., parse_net_row_element).parse_next(input)?;
+
+    for row_element in row_elements {
+        match row_element {
+            NetRowElement::Pin(pin) => pins.push(pin),
+            NetRowElement::Via(via) => vias.push(via),
+            NetRowElement::Segment(segment) => segments.push(segment),
+            NetRowElement::UnroutedSegment(usegment) => unrouted_segments.push(usegment),
+            NetRowElement::Arc(arc) => arcs.push(arc),
         }
     }
 

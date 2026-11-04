@@ -12,6 +12,7 @@
 {STACKUP
   (SIGNAL T=0.003937 P=0.000000 C=1.724e-8 L="Top Layer" M=COPPER)
   (DIELECTRIC T=0.035433 C=4.800000 L="Top Layer" M=FR-4)
+  (PLANE T=0.035433 C=1.724e-8 L="Top Layer" M=COPPER)
   (SIGNAL T=0.003937 P=0.000000 C=1.724e-8 L="Bottom Layer" M=COPPER)
 }
 
@@ -53,6 +54,7 @@
     (LINE X=1.0 Y=2.0)
     (LINE X=1.0 Y=2.0)
   }
+  (SEG X1=1.0 Y1=-2.0 X2=3.0 Y2=-4.0 W=0.011 L="Bottom Layer")
 }
 {END}
 {KEY=1-1-1}

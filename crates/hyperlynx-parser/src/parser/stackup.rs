@@ -90,6 +90,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             "PR2116" => LayerMaterial::PR2116,
             "Core-009" => LayerMaterial::Core009,
             "PP-006" => LayerMaterial::PP006,
+            "PP-014" => LayerMaterial::PP014,
+            "Core-018" => LayerMaterial::Core018,
             "Composite dielectric" => LayerMaterial::CompositeDielectric,
             "Polyimide" => LayerMaterial::Polyimide,
             _ => {
@@ -292,15 +294,7 @@ fn plane(input: &mut &str) -> ModalResult<Layer> {
         )?;
 
         match m.as_str() {
-            "Solder Mask" => LayerMaterial::SolderMask,
             "COPPER" => LayerMaterial::COPPER,
-            "FR4" | "FR-4" => LayerMaterial::FR4,
-            "PR1080" => LayerMaterial::PR1080,
-            "PR2116" => LayerMaterial::PR2116,
-            "Core-009" => LayerMaterial::Core009,
-            "PP-006" => LayerMaterial::PP006,
-            "Composite dielectric" => LayerMaterial::CompositeDielectric,
-            "Polyimide" => LayerMaterial::Polyimide,
             _ => {
                 Err(build_parser_backtrack_error((
                     "plane M value",

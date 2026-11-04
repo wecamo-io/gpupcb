@@ -36,7 +36,7 @@ mod altium_export_tests {
         assert!(outline.is_empty());
 
         // STACKUP
-        assert_eq!(stackup.len(), 3);
+        assert_eq!(stackup.len(), 4);
 
         assert_eq!(
             stackup[0],
@@ -65,6 +65,18 @@ mod altium_export_tests {
 
         assert_eq!(
             stackup[2],
+            Layer {
+                layer_type: LayerType::Plane {
+                    resistivity: 1.724e-8
+                },
+                thickness: 0.035433,
+                layer_name: String::from("Top Layer"),
+                material: LayerMaterial::COPPER,
+            }
+        );
+
+        assert_eq!(
+            stackup[3],
             Layer {
                 layer_type: LayerType::Signal {
                     resistivity: 1.724e-8,
@@ -197,7 +209,7 @@ mod altium_export_tests {
         );
 
         // SEGMENTS
-        assert_eq!(vcc.segments.len(), 1);
+        assert_eq!(vcc.segments.len(), 2);
 
         assert_eq!(
             vcc.segments[0],
