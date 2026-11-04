@@ -39,7 +39,7 @@ encoding_rs = "0.8.44"
 # dependencies to load when in browser
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2.130"
-
+serde-wasm-bindgen = "0.6.5"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
