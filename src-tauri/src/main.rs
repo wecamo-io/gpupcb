@@ -6,5 +6,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    gpupcb_app_lib::run()
+    let target = std::env::var("TARGET").unwrap_or_default();
+
+    if target.starts_with("wasm32") {
+        return;
+    }
+
+    gpupcb_app_lib::run();
 }
