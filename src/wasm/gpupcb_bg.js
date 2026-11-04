@@ -28,9 +28,33 @@ export function load_hyperlynx_with_wasm(content) {
         wasm.__wbindgen_export3(deferred3_0, deferred3_1, 1);
     }
 }
-export function __wbindgen_generic_0000000000000001(arg0, arg1) {
+export function __wbg_Error_208446807d0d1e30(arg0, arg1) {
+    const ret = Error(getStringFromWasm0(arg0, arg1));
+    return ret;
+}
+export function __wbg___wbindgen_throw_4c88d8bf264fd984(arg0, arg1) {
+    throw new Error(getStringFromWasm0(arg0, arg1));
+}
+export function __wbg_new_cd4348290afae586() {
+    const ret = new Object();
+    return ret;
+}
+export function __wbg_set_e4b9a833d288759a(arg0, arg1, arg2) {
+    arg0[arg1] = arg2;
+}
+export function __wbindgen_generic_0000000000000001(arg0) {
+    // Cast intrinsic for `F64 -> Externref`.
+    const ret = arg0;
+    return ret;
+}
+export function __wbindgen_generic_0000000000000002(arg0, arg1) {
     // Cast intrinsic for `Ref(String) -> Externref`.
     const ret = getStringFromWasm0(arg0, arg1);
+    return ret;
+}
+export function __wbindgen_generic_0000000000000003(arg0) {
+    // Cast intrinsic for `U64 -> Externref`.
+    const ret = BigInt.asUintN(64, arg0);
     return ret;
 }
 export function __wbindgen_init_externref_table() {
