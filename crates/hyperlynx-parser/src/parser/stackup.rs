@@ -454,16 +454,21 @@ mod stackup_block_parser_tests {
         assert_eq!(signal_layer, expected);
     }
 
-    #[test]
-    fn parses_stackup_block() {
-        let mut input = "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n  (DIELECTRIC T=0.0594488 C=4.5 L=\"DE_F.Cu\" M=\"FR4\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"B.Cu\" M=COPPER)\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"B.Mask\" M=\"Solder Mask\")\n}\n\n{...}";
-        let expected_signals_length: usize = 2;
-        let expected_dielectrics_length: usize = 3;
-        let expected_further_input = "\n\n{...}";
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n  (DIELECTRIC T=0.0594488 C=4.5 L=\"DE_F.Cu\" M=\"FR4\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"B.Cu\" M=COPPER)\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"B.Mask\" M=\"Solder Mask\")\n}\n\n{...}",
+        (2, 3, vec![LayerMaterial::SolderMask, LayerMaterial::COPPER, LayerMaterial::FR4, LayerMaterial::COPPER, LayerMaterial::SolderMask]); ""
+    )]
+    #[test_case(
+        "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"some random mat\")\n}\n\n{...}",
+        (0, 1, vec![LayerMaterial::UnknownMaterial(String::from("some random mat"))]); ""
+    )]
+    fn parses_stackup_block(mut input: &str, expected_values: (usize, usize, Vec<LayerMaterial>)) {
+        let (expected_signals_length, expected_dielectrics_length, expected_layer_materials) =
+            expected_values;
 
         let layers = parse_stackup_block(&mut input).unwrap();
 
-        let (signals, dielectrics): (Vec<_>, Vec<_>) = layers.into_iter().partition(|l| {
+        let (signals, dielectrics): (Vec<_>, Vec<_>) = layers.iter().partition(|l| {
             matches!(
                 l.layer_type,
                 LayerType::Signal {
@@ -476,8 +481,9 @@ mod stackup_block_parser_tests {
         assert_eq!(expected_signals_length, signals.len());
         assert_eq!(expected_dielectrics_length, dielectrics.len());
 
-        // leaves further input
-        assert_eq!(input, expected_further_input);
+        for (i, layer) in layers.iter().enumerate() {
+            assert_eq!(layer.material, expected_layer_materials[i])
+        }
     }
 
     #[test_case(
@@ -680,52 +686,6 @@ mod stackup_block_parser_tests {
         StrContext::Expected(StrContextValue::Description(
             "invalid indentation, needs single space"
         ))
-    )]
-    // M attribute value malformation
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=xyz\"Solder Mask\")",
-        StrContext::Label("dielectric M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder xyzMask\")",
-        StrContext::Label("dielectric M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=xyzCOPPER)",
-        StrContext::Label("signal M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COxyzPPER)",
-        StrContext::Label("signal M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=xyz\"Solder Mask\")",
-        StrContext::Label("dielectric M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=xyzSolder Mask\")",
-        StrContext::Label("dielectric M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask)",
-        StrContext::Label("dielectric M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=\"COPPER)",
-        StrContext::Label("signal M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER\")",
-        StrContext::Label("signal M value"),
-        StrContext::Expected(StrContextValue::Description("invalid M attribute value"))
     )]
     // P attribute value malformation (SIGNAL only)
     #[test_case(
