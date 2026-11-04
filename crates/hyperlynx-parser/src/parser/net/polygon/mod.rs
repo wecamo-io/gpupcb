@@ -13,8 +13,8 @@ use crate::parser::net::polygon::curve::parse_curve_row_with_err;
 use crate::parser::net::polygon::line::parse_line_row_with_err;
 use crate::parser::utils::{
     ExtractEntryErrorMessages, build_parser_backtrack_error, build_parser_cut_error, close_block,
-    extract_float_entry, extract_quoted_string_entry, extract_string_entry,
-    extract_unsigned_integer_entry, open_block, single_space, skip_ignored,
+    extract_float_entry, extract_string_entry, extract_unsigned_integer_entry, open_block,
+    single_space, skip_ignored,
 };
 
 mod curve;
@@ -160,9 +160,10 @@ pub fn parse_polygon_block(input: &mut &str) -> ModalResult<Polygon> {
 
     single_space(input)?;
 
-    let layer = extract_quoted_string_entry(
+    let layer = extract_string_entry(
         input,
         "L",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "polygon L key",
             key_error_description: "invalid L key name",
@@ -247,9 +248,10 @@ pub fn parse_polyline_block(input: &mut &str) -> ModalResult<Polyline> {
 
     single_space(input)?;
 
-    let layer = extract_quoted_string_entry(
+    let layer = extract_string_entry(
         input,
         "L",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "polyline L key",
             key_error_description: "invalid L key name",
@@ -669,27 +671,6 @@ mod polyvoid_block_parser_tests {
             StrContext::Expected(StrContextValue::Description("invalid L key name"))
         ); "after L key"
     )]
-    #[test_case(
-        "{POLYGON T=POUR L=xyz\"B.Cu\" ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
-        (
-            StrContext::Label("polygon L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "before L value"
-    )]
-    #[test_case(
-        "{POLYGON T=POUR L=B.Cu ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
-        (
-            StrContext::Label("polygon L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "after L value"
-    )]
-    #[test_case(
-        "{POLYGON T=POUR L=\"B.Cu ID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
-        (
-            StrContext::Label("polygon L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "after L value"
-    )]
     // ID entry
     #[test_case(
         "{POLYGON T=POUR L=\"B.Cu\" xyzID=2 X=8.3127283071 Y=-4.5086490157\n    (LINE X=8.3127283071 Y=-4.5086490157)\n}",
@@ -851,27 +832,6 @@ mod polyvoid_block_parser_tests {
             StrContext::Label("polyline L key"),
             StrContext::Expected(StrContextValue::Description("invalid L key name"))
         ); "after L key"
-    )]
-    #[test_case(
-        "{POLYLINE L=xyz\"B.Cu\" W=0.25 ID=3 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
-        (
-            StrContext::Label("polyline L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "before L value"
-    )]
-    #[test_case(
-        "{POLYLINE L=B.Cu W=0.25 ID=3 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
-        (
-            StrContext::Label("polyline L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "after L value"
-    )]
-    #[test_case(
-        "{POLYLINE L=\"B.Cu W=0.25 ID=3 X=8.1200787402 Y=-4.6751968504\n    (LINE X=8.1200787402 Y=-4.6634706693)\n}",
-        (
-            StrContext::Label("polyline L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "unterminated L value"
     )]
     // W entry
     #[test_case(

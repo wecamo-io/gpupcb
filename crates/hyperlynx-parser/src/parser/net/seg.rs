@@ -8,8 +8,8 @@ use winnow::prelude::*;
 
 use crate::model::Segment;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_quoted_string_entry,
-    row_open, single_space, skip_ignored,
+    ExtractEntryErrorMessages, close_row, extract_float_entry, extract_string_entry, row_open,
+    single_space, skip_ignored,
 };
 
 pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
@@ -87,9 +87,10 @@ pub fn parse_seg_row(input: &mut &str) -> ModalResult<Segment> {
 
     single_space(input)?;
 
-    let layer = extract_quoted_string_entry(
+    let layer = extract_string_entry(
         input,
         "L",
+        ')',
         ExtractEntryErrorMessages {
             key_error_label: "seg L key",
             key_error_description: "invalid L key name",
@@ -386,27 +387,6 @@ mod seg_row_parser_tests {
             StrContext::Label("seg L key"),
             StrContext::Expected(StrContextValue::Description("invalid L key name"))
         ); "after L key"
-    )]
-    #[test_case(
-        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L=xyz"F.Cu")"#,
-        (
-            StrContext::Label("seg L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "before L value"
-    )]
-    #[test_case(
-        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L=F.Cu")"#,
-        (
-            StrContext::Label("seg L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "missing first double quote"
-    )]
-    #[test_case(
-        r#"(SEG X1=8.2480314961 Y1=-4.8854330709 X2=8.3055118110 Y2=-4.9429133858 W=0.0118110236 L="F.Cu)"#,
-        (
-            StrContext::Label("seg L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        ); "missing second double quote"
     )]
     // closing row
     #[test_case(
