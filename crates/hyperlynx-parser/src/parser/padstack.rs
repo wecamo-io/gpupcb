@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 use winnow::ascii::{digit1, multispace0};
-use winnow::combinator::{backtrack_err, cut_err, peek, repeat};
+use winnow::combinator::{backtrack_err, cut_err, opt, peek, repeat};
 use winnow::error::{StrContext, StrContextValue};
 use winnow::prelude::*;
 use winnow::token::literal;
@@ -97,6 +97,68 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
 
     parse_pad_separator(input)?;
 
+    let (termal_shape, termal_size_x, termal_size_y, termal_angle) = opt(|input: &mut &str| {
+        let shape = {
+            let value = backtrack_err(digit1)
+                .context(StrContext::Label("pad thermal shape value"))
+                .context(StrContext::Expected(StrContextValue::Description(
+                    "invalid thermal shape value",
+                )))
+                .parse_next(input)?;
+
+            match value {
+                "0" => PadShape::Oval,
+                "1" => PadShape::Roundrect,
+                "2" => PadShape::Rectangle,
+                _ => {
+                    Err(build_parser_backtrack_error((
+                        "pad thermal shape value",
+                        "invalid pad thermal shape value, should be 0-2",
+                    )))
+                }?,
+            }
+        };
+
+        parse_pad_separator(input)?;
+
+        let size_x = extract_float_value(
+            input,
+            ',',
+            ExtractValueErrorMessages {
+                value_error_label: "thermal size_x value",
+                value_error_description: "invalid thermal size_x value",
+            },
+        )?;
+
+        parse_pad_separator(input)?;
+
+        let size_y = extract_float_value(
+            input,
+            ',',
+            ExtractValueErrorMessages {
+                value_error_label: "thermal size_y value",
+                value_error_description: "invalid thermal size_y value",
+            },
+        )?;
+
+        parse_pad_separator(input)?;
+
+        let angle = extract_float_value(
+            input,
+            ',',
+            ExtractValueErrorMessages {
+                value_error_label: "thermal angle value",
+                value_error_description: "invalid thermal angle value",
+            },
+        )?;
+
+        parse_pad_separator(input)?;
+
+        Ok((shape, size_x, size_y, angle))
+    })
+    .parse_next(input)?
+    .unwrap_or((PadShape::Oval, 0.0, 0.0, 0.0));
+
     let r#type = {
         let value = extract_unquoted_string_value(
             input,
@@ -110,7 +172,12 @@ fn parse_pad_row(input: &mut &str) -> ModalResult<Pad> {
         match value.as_str() {
             "M" => PadType::M,
             "A" => PadType::A,
-            "T" => PadType::T,
+            "T" => PadType::T {
+                shape: termal_shape,
+                size_x: termal_size_x,
+                size_y: termal_size_y,
+                angle: termal_angle,
+            },
             _ => {
                 Err(build_parser_backtrack_error((
                     "pad type",
@@ -214,14 +281,19 @@ mod padstack_block_parser_tests {
         }
     )]
     #[test_case(
-        "(\"F.Cu\", 1, 0.047244094, 0.055118110, 0, T)\n  (...)",
+        "(GND1, 2, 0.01, 0.02, 0, 2, 0.001, 0.002, 90.0, T)\n  (...)",
         Pad {
-            layer: String::from("F.Cu"),
-            shape: PadShape::Roundrect,
-            size_x: 0.047244094,
-            size_y: 0.055118110,
+            layer: String::from("GND1"),
+            shape: PadShape::Rectangle,
+            size_x: 0.01,
+            size_y: 0.02,
             angle: 0.0,
-            r#type: PadType::T,
+            r#type: PadType::T {
+                shape: PadShape::Rectangle,
+                size_x: 0.001,
+                size_y: 0.002,
+                angle: 90.0,
+            },
         }; "angle being in form of a single digit and T material"
     )]
     fn parses_pad_row(mut input: &str, expected: Pad) {

@@ -39,18 +39,23 @@ pub enum LayerMaterial {
     Polyimide,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Clone)]
 pub enum PadShape {
     Oval,
     Roundrect,
     Rectangle,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Clone)]
 pub enum PadType {
     M, // Metal
     A, // Antipad
-    T, // Thermal relief
+    T {
+        shape: PadShape,
+        size_x: f64,
+        size_y: f64,
+        angle: f64,
+    }, // Thermal relief
 }
 
 #[derive(Debug, PartialEq, Serialize)]

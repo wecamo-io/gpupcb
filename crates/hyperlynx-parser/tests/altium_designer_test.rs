@@ -164,6 +164,19 @@ mod altium_export_tests {
                         angle: 90.0,
                         r#type: PadType::A,
                     },
+                    Pad {
+                        layer: String::from("GND1"),
+                        shape: PadShape::Rectangle,
+                        size_x: 0.01,
+                        size_y: 0.02,
+                        angle: 0.0,
+                        r#type: PadType::T {
+                            shape: PadShape::Rectangle,
+                            size_x: 0.001,
+                            size_y: 0.002,
+                            angle: 90.0,
+                        }
+                    },
                 ],
             }
         );
