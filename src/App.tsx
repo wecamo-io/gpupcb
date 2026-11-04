@@ -10,10 +10,20 @@ import { BoardAccordion } from "./components/Accordion";
 import type { Board } from "./types";
 import { load_hyperlynx_with_wasm } from "./wasm/gpupcb";
 
+interface HyperlynxParseError {
+  line: number;
+  placement: string;
+  inner: string;
+  offset: number;
+}
+
 function App() {
   const [board, setBoard] = createSignal<Board | null>(null);
+  const [error, setError] = createSignal<HyperlynxParseError | null>(null);
 
   async function selectHyperlynxFile() {
+    setError(null);
+
     try {
       // desktop file loading
       if (isTauri()) {
@@ -54,14 +64,18 @@ function App() {
 
             setBoard(result);
           } catch (error) {
-            console.error("Failed to parse HyperLynx file:", error);
+            let parseError = error as HyperlynxParseError;
+            setBoard(null);
+            setError(parseError);
           }
         };
 
         input.click();
       }
     } catch (error) {
-      console.error("Failed to load HyperLynx file:", error);
+      const parseError = error as HyperlynxParseError;
+      setBoard(null);
+      setError(parseError);
     }
   }
 
@@ -70,6 +84,25 @@ function App() {
       <h1>GPUPCB</h1>
       <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
       <BoardAccordion board={board} />
+      {error() && (
+        <div class="parse-error">
+          <div class="parse-error-details">
+            <div class="error-data">
+              <span>
+                Line: <strong>{error()!.line}</strong>
+              </span>
+              <span>
+                Offset: <strong>{error()!.offset}</strong>
+              </span>
+              <strong>Location</strong>
+              <pre>{error()!.placement}</pre>
+
+              <strong>Parser context</strong>
+              <pre>{error()!.inner}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

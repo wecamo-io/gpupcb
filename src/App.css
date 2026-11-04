@@ -48,3 +48,55 @@ button:hover {
     background-color: #2f2f2f;
   }
 }
+
+
+.parse-error {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.07);
+  color: var(--text-color, inherit);
+}
+
+.parse-error-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.parse-error-details > div > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.error-data {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 24px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.parse-error-details pre {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.15);
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: inherit;
+}
