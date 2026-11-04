@@ -285,7 +285,7 @@ pub fn extract_float_entry(
     Ok(value)
 }
 
-pub fn extract_quoted_string_entry(
+pub fn _extract_quoted_string_entry(
     input: &mut &str,
     key: &str,
     error_messages: ExtractEntryErrorMessages,
