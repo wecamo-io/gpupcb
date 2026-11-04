@@ -6,11 +6,12 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { createSignal } from "solid-js";
 import "./App.css";
+import { BoardAccordion } from "./components/Accordion";
 import type { Board } from "./types";
 import { load_hyperlynx_with_wasm } from "./wasm/gpupcb";
 
 function App() {
-  const [board, setBoard] = createSignal<Board>();
+  const [board, setBoard] = createSignal<Board | null>(null);
 
   async function selectHyperlynxFile() {
     try {
@@ -68,7 +69,7 @@ function App() {
     <main class="container">
       <h1>GPUPCB</h1>
       <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
-      <span>{board()?.version ?? "No board loaded"}</span>
+      <BoardAccordion board={board} />
     </main>
   );
 }
