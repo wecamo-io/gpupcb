@@ -90,6 +90,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             "PR2116" => LayerMaterial::PR2116,
             "Core-009" => LayerMaterial::Core009,
             "PP-006" => LayerMaterial::PP006,
+            "Composite dielectric" => LayerMaterial::CompositeDielectric,
+            "Polyimide" => LayerMaterial::Polyimide,
             _ => {
                 Err(build_parser_backtrack_error((
                     "dielectric M value",
@@ -248,7 +250,7 @@ fn plane(input: &mut &str) -> ModalResult<Layer> {
 
     single_space(input)?;
 
-    let dielectric_constant = extract_float_entry(
+    let resistivity = extract_float_entry(
         input,
         "C",
         ' ',
@@ -295,6 +297,10 @@ fn plane(input: &mut &str) -> ModalResult<Layer> {
             "FR4" | "FR-4" => LayerMaterial::FR4,
             "PR1080" => LayerMaterial::PR1080,
             "PR2116" => LayerMaterial::PR2116,
+            "Core-009" => LayerMaterial::Core009,
+            "PP-006" => LayerMaterial::PP006,
+            "Composite dielectric" => LayerMaterial::CompositeDielectric,
+            "Polyimide" => LayerMaterial::Polyimide,
             _ => {
                 Err(build_parser_backtrack_error((
                     "plane M value",
@@ -309,9 +315,7 @@ fn plane(input: &mut &str) -> ModalResult<Layer> {
     skip_ignored(input)?;
 
     Ok(Layer {
-        layer_type: LayerType::Dielectric {
-            dielectric_constant,
-        },
+        layer_type: LayerType::Plane { resistivity },
         thickness,
         layer_name,
         material,

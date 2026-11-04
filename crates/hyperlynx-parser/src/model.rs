@@ -19,7 +19,9 @@ pub enum LayerType {
         resistivity: f64,
         plating_thickness: f64,
     },
-    Plane,
+    Plane {
+        resistivity: f64,
+    },
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -31,6 +33,8 @@ pub enum LayerMaterial {
     PR2116,
     Core009,
     PP006,
+    CompositeDielectric,
+    Polyimide,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -50,6 +54,7 @@ pub enum PadType {
 #[derive(Debug, PartialEq, Serialize)]
 pub enum PolygonType {
     Pour,
+    COPPER,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
