@@ -7,7 +7,7 @@ mod desktop {
 
     use encoding_rs::{UTF_16BE, UTF_16LE, WINDOWS_1252};
     use hyperlynx_parser::model::Board;
-    use hyperlynx_parser::parser::parse_hyperlynx;
+    use hyperlynx_parser::parser::{ReturnParseError, parse_hyperlynx};
     use std::fs;
 
     pub fn decode_hyperlynx_file(bytes: &[u8]) -> String {
@@ -25,26 +25,32 @@ mod desktop {
     }
 
     #[tauri::command]
-    pub fn load_hyperlynx_file(path: String) -> Result<Board, String> {
-        let content: String = match fs::read(path) {
-            Ok(bytes) => decode_hyperlynx_file(&bytes),
-            Err(error) => panic!(
-                "Couldn't read the file.\nMake sure it has the right format (.hyp or .HYP) and that the path is correct\n{error:#?}"
-            ),
-        };
+    pub fn load_hyperlynx_file(path: String) -> Result<Board, ReturnParseError> {
+        let bytes = fs::read(path).map_err(|e| ReturnParseError {
+            line: 0,
+            placement: format!("File read error: {e}"),
+            inner: String::from("FileSystemError"),
+            offset: 0,
+        })?;
 
-        parse_hyperlynx(&content).map_err(|err| err.to_string())
+        let content = decode_hyperlynx_file(&bytes);
+
+        parse_hyperlynx(&content)
     }
 }
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-    use hyperlynx_parser::parser::parse_hyperlynx;
+    use hyperlynx_parser::parser::{ReturnParseError, parse_hyperlynx};
     use wasm_bindgen::prelude::*;
 
     #[wasm_bindgen]
     pub fn load_hyperlynx_with_wasm(content: &str) -> Result<String, JsValue> {
-        let board = parse_hyperlynx(content).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let board = parse_hyperlynx(content).map_err(|e| {
+            let error = ReturnParseError::from(e);
+
+            serde_wasm_bindgen::to_value(&error).unwrap_or_else(|_| JsValue::NULL)
+        })?;
 
         serde_json::to_string(&board).map_err(|e| JsValue::from_str(&e.to_string()))
     }
