@@ -19,6 +19,7 @@ pub enum LayerType {
         resistivity: f64,
         plating_thickness: f64,
     },
+    Plane,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -28,6 +29,8 @@ pub enum LayerMaterial {
     FR4,
     PR1080,
     PR2116,
+    Core009,
+    PP006,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
