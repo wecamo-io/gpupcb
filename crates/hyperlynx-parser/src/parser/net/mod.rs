@@ -223,6 +223,7 @@ pub fn parse_net_block(input: &mut &str) -> ModalResult<Net> {
         arcs,
         polygons,
         polyvoids,
+        polylines,
     })
 }
 
@@ -346,6 +347,7 @@ mod net_block_parser_tests {
                 curves: Vec::new(),
             },
         ],
+        polylines: Vec::new(),
     }
     )]
     fn parses_net_block(mut input: &str, expected: Net) {
