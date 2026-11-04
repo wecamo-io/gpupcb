@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+#
+# SPDX-License-Identifier: GPL 3.0
+
+[package]
+name = "hyperlynx-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+winnow = "1.0.4"
+test-case = "3.4.0"
+serde = { version = "1.0.229", features = ["derive"] }

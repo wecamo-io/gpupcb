@@ -1,0 +1,158 @@
+// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+//
+// SPDX-License-Identifier: GPL 3.0
+
+use winnow::combinator::opt;
+use winnow::error::ContextError;
+use winnow::prelude::*;
+use winnow::token::take_until;
+
+use crate::model::{Board, Device, Layer, Net, Padstack, Perimeter, Units};
+use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
+use std::fmt;
+
+mod devices;
+mod net;
+mod padstack;
+mod perimeter_segment;
+mod stackup;
+mod units;
+mod utils;
+mod version;
+
+#[derive(Debug)]
+pub struct ReturnParseError {
+    pub line: u32,
+    pub placement: String,
+    pub inner: ContextError,
+    pub offset: usize,
+}
+
+impl fmt::Display for ReturnParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+fn parse_optional_data_mode(input: &mut &str) -> ModalResult<()> {
+    opt((
+        take_until(0.., "{DATA_MODE="),
+        take_until(0.., "}"),
+        take_until(0.., "{UNITS="),
+    ))
+    .void()
+    .parse_next(input)
+}
+
+fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
+    skip_ignored(input)?;
+
+    // {VERSION}
+    let version: String = version::parse_version_block(input)?;
+
+    skip_ignored(input)?;
+
+    // {DATA_MODE} optional
+    parse_optional_data_mode(input)?;
+
+    skip_ignored(input)?;
+
+    // {UNITS}
+    let units: Units = units::parse_units_block(input)?;
+
+    skip_ignored(input)?;
+
+    // {BOARD}
+    let outline: Vec<Perimeter> = perimeter_segment::parse_board_block(input)?;
+
+    skip_ignored(input)?;
+
+    // {STACKUP}
+    let stackup: Vec<Layer> = stackup::parse_stackup_block(input)?;
+
+    skip_ignored(input)?;
+
+    // {DEVICES}
+    let devices: Vec<Device> = devices::parse_devices_block(input)?;
+
+    skip_ignored(input)?;
+
+    // {PADSTACK}
+    let mut padstacks: Vec<Padstack> = Vec::new();
+    loop {
+        // solves the issue with first NET block after PADSTACKs
+        // throwing block name - PADSTACK error context
+        if input.is_empty() || input.starts_with("{N") {
+            break;
+        }
+
+        if !input.starts_with("{PADSTACK=") {
+            return Err(build_parser_backtrack_error(("block name", "PADSTACK")));
+        }
+
+        let (padstack, _): (Padstack, _) =
+            (padstack::parse_padstack_block, skip_ignored).parse_next(input)?;
+
+        padstacks.push(padstack);
+    }
+
+    // double_line_ending between last PADSTACK and first NET is not required
+    // because last iteration in parse_padstack_block loop already handles that
+
+    // {NET}
+    let mut nets: Vec<Net> = Vec::new();
+    loop {
+        if input.is_empty() || input.starts_with("{END}") {
+            break;
+        }
+
+        if !input.starts_with("{NET=") {
+            return Err(build_parser_backtrack_error(("block name", "NET")));
+        }
+
+        let (net, _): (Net, _) = (net::parse_net_block, skip_ignored).parse_next(input)?;
+        nets.push(net);
+    }
+
+    // {END} and {KEY=...} are ignored
+    *input = "";
+
+    Ok(Board {
+        version,
+        units,
+        outline,
+        stackup,
+        devices,
+        padstacks,
+        nets,
+    })
+}
+
+pub fn parse_hyperlynx(input: &str) -> Result<Board, ReturnParseError> {
+    let remaining = input;
+
+    parse_file_content.parse(remaining).map_err(|err| {
+        let index: usize = err.offset();
+        let s: &str = err.input();
+
+        let space: usize = 16;
+        let mut start: usize = index.saturating_sub(space);
+        while !s.is_char_boundary(start) {
+            start += 1;
+        }
+        let mut end: usize = index.saturating_add(space).min(s.len());
+        while !s.is_char_boundary(end) {
+            end += 1;
+        }
+
+        let placement: String = format!("...{}...", &s[start..end]);
+        let line: u32 = s[..index].matches('\n').count() as u32 + 1;
+
+        ReturnParseError {
+            line,
+            placement,
+            inner: err.inner().clone(),
+            offset: err.offset(),
+        }
+    })
+}
