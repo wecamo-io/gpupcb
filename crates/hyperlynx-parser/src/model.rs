@@ -26,7 +26,6 @@ pub enum LayerType {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum LayerMaterial {
     SolderMask,
     COPPER,
@@ -43,7 +42,6 @@ pub enum LayerMaterial {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub enum PadShape {
     Oval,
     Roundrect,
@@ -51,7 +49,6 @@ pub enum PadShape {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub enum PadType {
     M, // Metal
     A, // Antipad
@@ -65,7 +62,6 @@ pub enum PadType {
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum PolygonType {
     Pour,
     COPPER,
@@ -236,6 +232,7 @@ pub struct Net {
     pub arcs: Vec<Arc>,
     pub polygons: Vec<Polygon>,
     pub polyvoids: Vec<Polyvoid>,
+    pub polylines: Vec<Polyline>,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
