@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+//
+// SPDX-License-Identifier: GPL 3.0
+
 import { createSignal } from "solid-js";
 import logo from "./assets/logo.svg";
 import { invoke } from "@tauri-apps/api/core";

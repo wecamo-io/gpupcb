@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+//
+// SPDX-License-Identifier: GPL 3.0
+
 import { defineConfig } from "vite";
 import solid from "vite-plugin-solid";
 // @ts-expect-error type error without @types/node package
