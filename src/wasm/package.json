@@ -1,0 +1,21 @@
+{
+  "name": "gpupcb-app",
+  "type": "module",
+  "collaborators": [
+    "Wecamo"
+  ],
+  "description": "GPUPCB App",
+  "version": "0.1.0",
+  "files": [
+    "gpupcb_bg.wasm",
+    "gpupcb.js",
+    "gpupcb_bg.js",
+    "gpupcb.d.ts"
+  ],
+  "main": "gpupcb.js",
+  "types": "gpupcb.d.ts",
+  "sideEffects": [
+    "./gpupcb.js",
+    "./snippets/*"
+  ]
+}
