@@ -2,29 +2,30 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Units {
     English, // inches
     Metric,  // centimeters
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum LayerType {
-    Dielectric {
-        dielectric_constant: f64,
-    },
+    #[serde(rename_all = "camelCase")]
+    Dielectric { dielectric_constant: f64 },
+    #[serde(rename_all = "camelCase")]
     Signal {
         resistivity: f64,
         plating_thickness: f64,
     },
-    Plane {
-        resistivity: f64,
-    },
+    #[serde(rename_all = "camelCase")]
+    Plane { resistivity: f64 },
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum LayerMaterial {
     SolderMask,
     COPPER,
@@ -40,17 +41,18 @@ pub enum LayerMaterial {
     UnknownMaterial(String),
 }
 
-#[derive(Debug, PartialEq, Serialize, Clone)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum PadShape {
     Oval,
     Roundrect,
     Rectangle,
 }
 
-#[derive(Debug, PartialEq, Serialize, Clone)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum PadType {
     M, // Metal
     A, // Antipad
+    #[serde(rename_all = "camelCase")]
     T {
         shape: PadShape,
         size_x: f64,
@@ -59,19 +61,21 @@ pub enum PadType {
     }, // Thermal relief
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum PolygonType {
     Pour,
     COPPER,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum PerimeterType {
     Segment,
     Arc { xc: f64, yc: f64, radius: f64 },
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Perimeter {
     pub x1: f64,
     pub x2: f64,
@@ -80,7 +84,8 @@ pub struct Perimeter {
     pub r#type: PerimeterType,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Layer {
     pub layer_type: LayerType,
     pub thickness: f64,
@@ -88,13 +93,15 @@ pub struct Layer {
     pub material: LayerMaterial,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Device {
     pub reference: String,
     pub layer: String,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Pad {
     pub layer: String,
     pub shape: PadShape,
@@ -104,14 +111,16 @@ pub struct Pad {
     pub r#type: PadType,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Padstack {
     pub id: u32,
     pub drill: f64,
     pub pads: Vec<Pad>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Pin {
     pub x: f64,
     pub y: f64,
@@ -119,14 +128,16 @@ pub struct Pin {
     pub padstack_id: u32,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Via {
     pub x: f64,
     pub y: f64,
     pub padstack_id: u32,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Segment {
     pub x1: f64,
     pub y1: f64,
@@ -136,7 +147,8 @@ pub struct Segment {
     pub layer: String,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UnroutedSegment {
     pub x1: f64,
     pub y1: f64,
@@ -149,7 +161,8 @@ pub struct UnroutedSegment {
     pub resistance: f64,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Arc {
     pub x1: f64,
     pub y1: f64,
@@ -162,7 +175,8 @@ pub struct Arc {
     pub layer: String,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Curve {
     pub x1: f64,
     pub y1: f64,
@@ -173,7 +187,8 @@ pub struct Curve {
     pub radius: f64,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Polygon {
     pub polygon_type: PolygonType,
     pub layer: String,
@@ -184,7 +199,8 @@ pub struct Polygon {
     pub curves: Vec<Curve>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Polyvoid {
     pub id: u32,
     pub x: f64,
@@ -193,7 +209,8 @@ pub struct Polyvoid {
     pub curves: Vec<Curve>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Polyline {
     pub layer: String,
     pub width: f64,
@@ -204,7 +221,8 @@ pub struct Polyline {
     pub curves: Vec<Curve>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Net {
     pub name: String,
     pub pins: Vec<Pin>,
@@ -214,9 +232,11 @@ pub struct Net {
     pub arcs: Vec<Arc>,
     pub polygons: Vec<Polygon>,
     pub polyvoids: Vec<Polyvoid>,
+    pub polylines: Vec<Polyline>,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Board {
     pub version: String,
     pub units: Units,

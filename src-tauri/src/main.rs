@@ -1,0 +1,16 @@
+// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+//
+// SPDX-License-Identifier: GPL 3.0
+
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+fn main() {
+    let target = std::env::var("TARGET").unwrap_or_default();
+
+    if target.starts_with("wasm32") {
+        return;
+    }
+
+    gpupcb_app_lib::run();
+}

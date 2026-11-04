@@ -1,0 +1,14 @@
+// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+//
+// SPDX-License-Identifier: GPL 3.0
+
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}

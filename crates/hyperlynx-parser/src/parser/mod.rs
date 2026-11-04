@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+use serde::Serialize;
 use winnow::combinator::opt;
-use winnow::error::ContextError;
 use winnow::prelude::*;
 use winnow::token::take_until;
 
@@ -20,11 +20,11 @@ mod units;
 mod utils;
 mod version;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct ReturnParseError {
     pub line: u32,
     pub placement: String,
-    pub inner: ContextError,
+    pub inner: String,
     pub offset: usize,
 }
 
@@ -151,7 +151,7 @@ pub fn parse_hyperlynx(input: &str) -> Result<Board, ReturnParseError> {
         ReturnParseError {
             line,
             placement,
-            inner: err.inner().clone(),
+            inner: format!("{:?}", err.inner()),
             offset: err.offset(),
         }
     })
