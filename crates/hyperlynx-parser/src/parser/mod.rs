@@ -9,6 +9,7 @@ use winnow::token::take_until;
 
 use crate::model::{Board, Device, Layer, Net, Padstack, Perimeter, Units};
 use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
+use std::fmt;
 
 mod devices;
 mod net;
@@ -25,6 +26,12 @@ pub struct ReturnParseError {
     pub placement: String,
     pub inner: ContextError,
     pub offset: usize,
+}
+
+impl fmt::Display for ReturnParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 fn parse_optional_data_mode(input: &mut &str) -> ModalResult<()> {
