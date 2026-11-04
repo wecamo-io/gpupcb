@@ -31,7 +31,9 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     )?;
 
     // omit unnecessary NAME entry that appears in some exporterts
-    take_until(0.., "L=").parse_next(input)?;
+    take_until(0.., " L=").parse_next(input)?;
+
+    single_space(input)?;
 
     let layer = extract_string_entry(
         input,
