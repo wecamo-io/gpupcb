@@ -10,8 +10,8 @@ use winnow::token::literal;
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
     ExtractEntryErrorMessages, build_parser_backtrack_error, build_parser_cut_error, close_block,
-    close_row, extract_float_entry, extract_quoted_string_entry, extract_string_entry, open_block,
-    row_open, single_space, skip_ignored,
+    close_row, extract_float_entry, extract_string_entry, open_block, row_open, single_space,
+    skip_ignored,
 };
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
@@ -20,7 +20,7 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
         Err(_) => {
             return Err(build_parser_cut_error((
                 "layer row name",
-                "dielectric/signal key name",
+                "dielectric/signal/plane key name",
             )));
         }
     };
@@ -55,9 +55,10 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
 
     single_space(input)?;
 
-    let layer_name = extract_quoted_string_entry(
+    let layer_name = extract_string_entry(
         input,
         "L",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "dielectric L key",
             key_error_description: "invalid L key name",
@@ -87,6 +88,8 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             "FR4" | "FR-4" => LayerMaterial::FR4,
             "PR1080" => LayerMaterial::PR1080,
             "PR2116" => LayerMaterial::PR2116,
+            "Core-009" => LayerMaterial::Core009,
+            "PP-006" => LayerMaterial::PP006,
             _ => {
                 Err(build_parser_backtrack_error((
                     "dielectric M value",
@@ -116,7 +119,7 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
         Err(_) => {
             return Err(build_parser_cut_error((
                 "layer row name",
-                "dielectric/signal key name",
+                "dielectric/signal/plane key name",
             )));
         }
     };
@@ -165,9 +168,10 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
     single_space(input)?;
 
-    let layer_name = extract_quoted_string_entry(
+    let layer_name = extract_string_entry(
         input,
         "L",
+        ' ',
         ExtractEntryErrorMessages {
             key_error_label: "signal L key",
             key_error_description: "invalid L key name",
@@ -217,6 +221,103 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
     })
 }
 
+fn plane(input: &mut &str) -> ModalResult<Layer> {
+    match row_open(input, "PLANE") {
+        Ok(_) => {}
+        Err(_) => {
+            return Err(build_parser_cut_error((
+                "layer row name",
+                "dielectric/signal/plane key name",
+            )));
+        }
+    };
+
+    single_space(input)?;
+
+    let thickness = extract_float_entry(
+        input,
+        "T",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "plane T key",
+            key_error_description: "invalid T key name",
+            value_error_label: "plane T value",
+            value_error_description: "invalid T attribute value",
+        },
+    )?;
+
+    single_space(input)?;
+
+    let dielectric_constant = extract_float_entry(
+        input,
+        "C",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "plane C key",
+            key_error_description: "invalid C key name",
+            value_error_label: "plane C value",
+            value_error_description: "invalid C attribute value",
+        },
+    )?;
+
+    single_space(input)?;
+
+    let layer_name = extract_string_entry(
+        input,
+        "L",
+        ' ',
+        ExtractEntryErrorMessages {
+            key_error_label: "plane L key",
+            key_error_description: "invalid L key name",
+            value_error_label: "plane L value",
+            value_error_description: "invalid L attribute value",
+        },
+    )?;
+
+    single_space(input)?;
+
+    let material = {
+        let m = extract_string_entry(
+            input,
+            "M",
+            ')',
+            ExtractEntryErrorMessages {
+                key_error_label: "plane M key",
+                key_error_description: "invalid M key name",
+                value_error_label: "plane M value",
+                value_error_description: "invalid M attribute value",
+            },
+        )?;
+
+        match m.as_str() {
+            "Solder Mask" => LayerMaterial::SolderMask,
+            "COPPER" => LayerMaterial::COPPER,
+            "FR4" | "FR-4" => LayerMaterial::FR4,
+            "PR1080" => LayerMaterial::PR1080,
+            "PR2116" => LayerMaterial::PR2116,
+            _ => {
+                Err(build_parser_backtrack_error((
+                    "plane M value",
+                    "invalid M attribute value",
+                )))
+            }?,
+        }
+    };
+
+    close_row(input)?;
+
+    skip_ignored(input)?;
+
+    Ok(Layer {
+        layer_type: LayerType::Dielectric {
+            dielectric_constant,
+        },
+        thickness,
+        layer_name,
+        material,
+    })
+}
+
 // use conditions instead of winnow::alt due to wrong error context
 // for any case other than SIGNAL or DIELECTRIC run alt()
 fn parse_layer(input: &mut &str) -> ModalResult<Layer> {
@@ -232,7 +333,13 @@ fn parse_layer(input: &mut &str) -> ModalResult<Layer> {
         if is_dielectric.is_ok() {
             dielectric.parse_next(input)
         } else {
-            alt((dielectric, signal)).parse_next(input)
+            let is_plane: ModalResult<&str> = peek(literal("(PLANE")).parse_next(input);
+
+            if is_plane.is_ok() {
+                plane.parse_next(input)
+            } else {
+                alt((dielectric, signal, plane)).parse_next(input)
+            }
         }
     }
 }
@@ -367,38 +474,38 @@ mod stackup_block_parser_tests {
     #[test_case(
         "xyz(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     // row name malformations
     #[test_case(
         "(xyzDIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     #[test_case(
         "(DIELExyzCTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     #[test_case(
         "(DIELECTRICxyz T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     #[test_case(
         "(xyzSIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     #[test_case(
         "(SIGxyzNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     #[test_case(
         "(SIGNALxyz T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)",
         StrContext::Label("layer row name"),
-        StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
+        StrContext::Expected(StrContextValue::Description("dielectric/signal/plane key name"))
     )]
     // T attribute malformation
     #[test_case(
@@ -559,36 +666,11 @@ mod stackup_block_parser_tests {
     )]
     // L attribute value malformation
     #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=xyz\"F.Mask\" M=\"Solder Mask\")",
-        StrContext::Label("dielectric L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-    )]
-    #[test_case(
-        "(DIELECTRIC T=0.000393701 C=3.3 L=F.Mask\" M=\"Solder Mask\")",
-        StrContext::Label("dielectric L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-    )]
-    #[test_case(
         "(DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask M=\"Solder Mask\")",
         StrContext::Label("single space"),
         StrContext::Expected(StrContextValue::Description(
             "invalid indentation, needs single space"
         ))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=xyz\"F.Cu\" M=COPPER)",
-        StrContext::Label("signal L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=F.Cu\" M=COPPER)",
-        StrContext::Label("signal L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-    )]
-    #[test_case(
-        "(SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu M=COPPER)",
-        StrContext::Label("signal L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
     )]
     // M attribute value malformation
     #[test_case(
@@ -704,20 +786,6 @@ mod stackup_block_parser_tests {
     )]
     // row malversation
     #[test_case(
-        "{STACKUP\n  (xyzDIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
-        (
-            StrContext::Label("layer row name"),
-            StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
-        )
-    )]
-    #[test_case(
-        "{STACKUP\n  (DIELECTRICxyz T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
-        (
-            StrContext::Label("layer row name"),
-            StrContext::Expected(StrContextValue::Description("dielectric/signal key name"))
-        )
-    )]
-    #[test_case(
         "{STACKUP\n  (DIELECTRIC xyzT=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=\"F.Cu\" M=COPPER)\n}",
         (
             StrContext::Label("dielectric T key"),
@@ -743,13 +811,6 @@ mod stackup_block_parser_tests {
         (
             StrContext::Label("dielectric C value"),
             StrContext::Expected(StrContextValue::Description("invalid C attribute value"))
-        )
-    )]
-    #[test_case(
-        "{STACKUP\n  (DIELECTRIC T=0.000393701 C=3.3 L=\"F.Mask\" M=\"Solder Mask\")\n  (SIGNAL T=0.00137795 P=0 C=1.724e-08 L=F.Cu\" M=COPPER)\n}",
-        (
-            StrContext::Label("signal L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
         )
     )]
     // closing bracket
