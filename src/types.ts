@@ -2,28 +2,12 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-export enum Units {
-  English = "English",
-  Metric = "Metric",
-}
+export type Units = "english" | "metric";
 
 export type LayerType =
-  | {
-      Dielectric: {
-        dielectric_constant: number;
-      };
-    }
-  | {
-      Signal: {
-        resistivity: number;
-        plating_thickness: number;
-      };
-    }
-  | {
-      Plane: {
-        resistivity: number;
-      };
-    };
+  | { dielectric: { dielectricConstant: number } }
+  | { signal: { resistivity: number; platingThickness: number } }
+  | { plane: { resistivity: number } };
 
 export type LayerMaterial =
   | "SolderMask"
@@ -37,22 +21,18 @@ export type LayerMaterial =
   | "Core018"
   | "CompositeDielectric"
   | "Polyimide"
-  | { UnknownMaterial: string };
+  | { unknownMaterial: string };
 
-export enum PadShape {
-  Oval = "Oval",
-  Roundrect = "Roundrect",
-  Rectangle = "Rectangle",
-}
+export type PadShape = "Oval" | "Roundrect" | "Rectangle";
 
 export type PadType =
   | "M"
   | "A"
   | {
-      T: {
+      t: {
         shape: PadShape;
-        size_x: number;
-        size_y: number;
+        sizeX: number;
+        sizeY: number;
         angle: number;
       };
     };
@@ -60,14 +40,7 @@ export type PadType =
 export type PolygonType = "Pour" | "COPPER";
 
 export type PerimeterType =
-  | "Segment"
-  | {
-      Arc: {
-        xc: number;
-        yc: number;
-        radius: number;
-      };
-    };
+  "segment" | { arc: { xc: number; yc: number; radius: number } };
 
 export interface Perimeter {
   x1: number;
@@ -78,9 +51,9 @@ export interface Perimeter {
 }
 
 export interface Layer {
-  layer_type: LayerType;
+  layerType: LayerType;
   thickness: number;
-  layer_name: string;
+  layerName: string;
   material: LayerMaterial;
 }
 
@@ -92,8 +65,8 @@ export interface Device {
 export interface Pad {
   layer: string;
   shape: PadShape;
-  size_x: number;
-  size_y: number;
+  sizeX: number;
+  sizeY: number;
   angle: number;
   type: PadType;
 }
@@ -107,14 +80,14 @@ export interface Padstack {
 export interface Pin {
   x: number;
   y: number;
-  component_reference: string;
-  padstack_id: number;
+  componentReference: string;
+  padstackId: number;
 }
 
 export interface Via {
   x: number;
   y: number;
-  padstack_id: number;
+  padstackId: number;
 }
 
 export interface Segment {
@@ -161,7 +134,7 @@ export interface Curve {
 }
 
 export interface Polygon {
-  polygon_type: PolygonType;
+  polygonType: PolygonType;
   layer: string;
   id: number;
   x: number;
@@ -193,10 +166,11 @@ export interface Net {
   pins: Pin[];
   vias: Via[];
   segments: Segment[];
-  unrouted_segments: UnroutedSegment[];
+  unroutedSegments: UnroutedSegment[];
   arcs: Arc[];
   polygons: Polygon[];
   polyvoids: Polyvoid[];
+  polylines: Polyline[];
 }
 
 export interface Board {
