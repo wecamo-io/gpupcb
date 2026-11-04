@@ -4,14 +4,8 @@ name: HyperLynx Parser CI
 on:
   push:
     branches: [main, feat/hyperlynx-parser, hyperlynx-parser/ci]
-    paths:
-      - 'crates/hyperlynx-parser/**'
-      - '.github/workflows/hyperlynx_parser.yaml'
   pull_request:
     branches: [main, feat/hyperlynx-parser, hyperlynx-parser/ci]
-    paths:
-      - 'crates/hyperlynx-parser/**'
-      - '.github/workflows/hyperlynx_parser.yaml'
 
 env:
   CARGO_TERM_COLOR: always
