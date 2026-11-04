@@ -37,6 +37,7 @@ pub enum LayerMaterial {
     Core018,
     CompositeDielectric,
     Polyimide,
+    UnknownMaterial(String),
 }
 
 #[derive(Debug, PartialEq, Serialize, Clone)]

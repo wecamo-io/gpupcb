@@ -9,9 +9,8 @@ use winnow::token::literal;
 
 use crate::model::{Layer, LayerMaterial, LayerType};
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, build_parser_backtrack_error, build_parser_cut_error, close_block,
-    close_row, extract_float_entry, extract_string_entry, open_block, row_open, single_space,
-    skip_ignored,
+    ExtractEntryErrorMessages, build_parser_cut_error, close_block, close_row, extract_float_entry,
+    extract_string_entry, open_block, row_open, single_space, skip_ignored,
 };
 
 fn dielectric(input: &mut &str) -> ModalResult<Layer> {
@@ -94,12 +93,16 @@ fn dielectric(input: &mut &str) -> ModalResult<Layer> {
             "Core-018" => LayerMaterial::Core018,
             "Composite dielectric" => LayerMaterial::CompositeDielectric,
             "Polyimide" => LayerMaterial::Polyimide,
-            _ => {
-                Err(build_parser_backtrack_error((
-                    "dielectric M value",
-                    "invalid M attribute value",
-                )))
-            }?,
+            // there is a possibility that many of possible materials
+            // has not been yet covered in the model
+            // so we place it in UnknownMaterial
+            other => LayerMaterial::UnknownMaterial(String::from(other)),
+            // _ => {
+            //     Err(build_parser_backtrack_error((
+            //         "dielectric M value",
+            //         "invalid M attribute value",
+            //     )))
+            // }?,
         }
     };
 
@@ -201,12 +204,16 @@ fn signal(input: &mut &str) -> ModalResult<Layer> {
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
-            _ => {
-                Err(build_parser_backtrack_error((
-                    "signal M value",
-                    "invalid M attribute value",
-                )))
-            }?,
+            // there is a possibility that many of possible materials
+            // has not been yet covered in the model
+            // so we place it in UnknownMaterial
+            other => LayerMaterial::UnknownMaterial(String::from(other)),
+            // _ => {
+            //     Err(build_parser_backtrack_error((
+            //         "signal M value",
+            //         "invalid M attribute value",
+            //     )))
+            // }?,
         }
     };
 
@@ -295,12 +302,16 @@ fn plane(input: &mut &str) -> ModalResult<Layer> {
 
         match m.as_str() {
             "COPPER" => LayerMaterial::COPPER,
-            _ => {
-                Err(build_parser_backtrack_error((
-                    "plane M value",
-                    "invalid M attribute value",
-                )))
-            }?,
+            // there is a possibility that many of possible materials
+            // has not been yet covered in the model
+            // so we place it in UnknownMaterial
+            other => LayerMaterial::UnknownMaterial(String::from(other)),
+            // _ => {
+            //     Err(build_parser_backtrack_error((
+            //         "plane M value",
+            //         "invalid M attribute value",
+            //     )))
+            // }?,
         }
     };
 
