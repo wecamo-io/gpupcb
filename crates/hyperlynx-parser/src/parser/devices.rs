@@ -9,8 +9,8 @@ use winnow::token::take_until;
 
 use crate::model::Device;
 use crate::parser::utils::{
-    ExtractEntryErrorMessages, close_block, close_row, extract_quoted_string_entry,
-    extract_string_entry, open_block, row_open, single_space, skip_ignored,
+    ExtractEntryErrorMessages, close_block, close_row, extract_string_entry, open_block, row_open,
+    single_space, skip_ignored,
 };
 
 fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
@@ -33,9 +33,10 @@ fn parse_device_row(input: &mut &str) -> ModalResult<Device> {
     // omit unnecessary NAME entry that appears in some exporterts
     take_until(0.., "L=").parse_next(input)?;
 
-    let layer = extract_quoted_string_entry(
+    let layer = extract_string_entry(
         input,
         "L",
+        ')',
         ExtractEntryErrorMessages {
             key_error_label: "device L key",
             key_error_description: "invalid L key name",
@@ -179,36 +180,6 @@ mod device_block_parser_tests {
         StrContext::Expected(StrContextValue::Description("invalid REF key name"))
         )
     )]
-    // // TODO: should throw invalid REF value context
-    // #[test_case(
-    //     "(? REF=\"R3 L=\"F.Cu\")\n  (...)",
-    //     (
-    //     StrContext::Label("device L key"),
-    //     StrContext::Expected(StrContextValue::Description("invalid L key name"))
-    //     )
-    // )]
-    // L attribute malversations
-    #[test_case(
-        "(? REF=\"R3\" L=xyz\"F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        )
-    )]
-    #[test_case(
-        "(? REF=\"R3\" L=F.Cu\")\n  (...)",
-        (
-        StrContext::Label("device L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        )
-    )]
-    #[test_case(
-        "(? REF=\"R3\" L=\"F.Cu)\n  (...)",
-        (
-        StrContext::Label("device L value"),
-        StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
-        )
-    )]
     // closing row
     #[test_case(
         "(? REF=\"R3\" L=\"F.Cu\" xyz)\n  (...)",
@@ -262,13 +233,6 @@ mod device_block_parser_tests {
         (
             StrContext::Label("device REF key"),
             StrContext::Expected(StrContextValue::Description("invalid REF key name"))
-        )
-    )]
-    #[test_case(
-        "{DEVICES\n  (? REF=\"R3\" L=F.Cu\")\n}",
-        (
-            StrContext::Label("device L value"),
-            StrContext::Expected(StrContextValue::Description("invalid L attribute value"))
         )
     )]
     // closing block
