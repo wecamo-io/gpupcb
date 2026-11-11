@@ -18,7 +18,7 @@ The following areas are included in the scope of the audit:
 - **File selection restrictions (Tauri application):** Verify that users can select only HyperLynx files through the GUI file selection dialogs. The application should restrict file selection to supported HyperLynx file types (.hyp, .HYP) rather than allowing arbitrary files, particularly sensitive system files, to be selected for parsing.
 
 ## OpenSSF Scorecard
-### Initial scan
+### 1. Initial scan
 #### RESULTS
 Aggregate score: 2.8 / 10
 
@@ -43,3 +43,15 @@ Check scores:
 | 0 / 10  | Signed-Releases        | Project has not signed or included provenance with any releases.                  | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#signed-releases        |
 | 0 / 10  | Token-Permissions      | detected GitHub workflow tokens with excessive permissions                        | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#token-permissions      |
 | 5 / 10  | Vulnerabilities        | 5 existing vulnerabilities detected                                               | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#vulnerabilities        |
+
+### 2. Fixing *Dependency-Update-Tool* check
+Created dependabot.yaml file in .github/ directory to enable automatic dependency updates. This fixed the Scorecard check:
+
+#### RESULTS
+Aggregate score: 10.0 / 10
+
+Check scores:
+
+|  SCORE  |          NAME          |        REASON        |                              DETAILS                              |                                              DOCUMENTATION / REMEDIATION                                              |
+|---------|------------------------|----------------------|-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| 10 / 10 | Dependency-Update-Tool | update tool detected | Info: detected update tool: Dependabot: .github/dependabot.yaml:1 | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#dependency-update-tool |
