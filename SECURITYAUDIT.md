@@ -55,3 +55,16 @@ Check scores:
 |  SCORE  |          NAME          |        REASON        |                              DETAILS                              |                                              DOCUMENTATION / REMEDIATION                                              |
 |---------|------------------------|----------------------|-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | 10 / 10 | Dependency-Update-Tool | update tool detected | Info: detected update tool: Dependabot: .github/dependabot.yaml:1 | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#dependency-update-tool |
+
+### 3. Fixing *Pinned-Dependencies* check
+Pinned dependencies used in **HyperLynx Parser CI** and **publish** workflows to use commit SHAs pointing to certain version of actions. Thix fixed the Scorecard check:
+
+#### RESULTS
+
+Aggregate score: 10.0 / 10
+
+Check scores:
+|  SCORE  |        NAME         |           REASON            |                              DETAILS                               |                                            DOCUMENTATION / REMEDIATION                                             |
+|---------|---------------------|-----------------------------|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| 10 / 10 | Pinned-Dependencies | all dependencies are pinned | Info:   4 out of   4 GitHub-owned GitHubAction dependencies pinned | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#pinned-dependencies |
+|         |                     |                             | Info:   4 out of   4 third-party GitHubAction dependencies pinned  |
