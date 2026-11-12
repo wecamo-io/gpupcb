@@ -79,3 +79,19 @@ Check scores:
 |  SCORE  |      NAME       |            REASON             |                                          DOCUMENTATION / REMEDIATION                                           |
 |---------|-----------------|-------------------------------|----------------------------------------------------------------------------------------------------------------|
 | 10 / 10 | Security-Policy | security policy file detected | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#security-policy |
+
+### 4. Fixing *Security-Policy* check
+Added top-level read permissions to *HyperLynx Parser CI* and *publish* GitHub workflows. This fixed the Scorecard check:
+
+#### RESULTS
+
+Aggregate score: 10.0 / 10
+
+Check scores:
+|  SCORE  |       NAME        |                           REASON                           |                                            DETAILS                                             |                                           DOCUMENTATION / REMEDIATION                                            |
+|---------|-------------------|------------------------------------------------------------|------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| 10 / 10 | Token-Permissions | GitHub workflow tokens follow principle of least privilege | Warn: jobLevel 'contents' permission set to 'write': .github/workflows/publish.yaml:16         | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#token-permissions |
+|         |                   |                                                            | Info: topLevel 'contents' permission set to 'read': .github/workflows/hyperlynx_parser.yaml:11 |                                                                                                                  |
+|         |                   |                                                            | Info: topLevel 'contents' permission set to 'read': .github/workflows/publish.yaml:11          |                                                                                                                  |
+
+Note: the following ***Warn: jobLevel ‘contents’ permission set to ‘write’: .github/workflows/publish.yaml:16*** points at the necessary write permission of *publish* workflow release-creating job.
