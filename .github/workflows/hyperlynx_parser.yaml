@@ -2,6 +2,7 @@
 name: HyperLynx Parser CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, feat/hyperlynx-parser, hyperlynx-parser/ci]
   pull_request:
