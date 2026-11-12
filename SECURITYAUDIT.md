@@ -107,3 +107,50 @@ Check scores:
 |---------|------|----------------------------|-----------------------------------------------|-----------------------------------------------------------------------------------------------------|
 | 10 / 10 | SAST | SAST tool detected: CodeQL | Info: SAST configuration detected: CodeQL     | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#sast |
 |         |      |                            | Warn: no pull requests merged into dev branch |                                                                                                     |
+
+### 7. Fixing *Vulnerabilities* check
+Started from:
+
+#### RESULTS
+Aggregate score: 5.0 / 10
+
+Check scores:
+| SCORE  |      NAME       |               REASON                |                              DETAILS                              |                                          DOCUMENTATION / REMEDIATION                                           |
+|--------|-----------------|-------------------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| 5 / 10 | Vulnerabilities | 5 existing vulnerabilities detected | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2024-0429 | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#vulnerabilities |
+|        |                 |                                     | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2024-0370 |                                                                                                                |
+|        |                 |                                     | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2026-0371 |                                                                                                                |
+|        |                 |                                     | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2026-0370 |                                                                                                                |
+|        |                 |                                     | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2026-0372 |                                                                                                                |
+
+
+Investigated and updated the project's Rust dependencies to eliminate reported security vulnerabilities.
+
+It turned out that three of the vulnerabilities had been connected to presence of unused **tauri-plugin-opener=2** dependency in src-tauri/Cargo.toml (which itself used **zbus** crate that had not yet been updated to use version 6 of it where those vulnerabilities would have been eradicated).
+
+Deleted the **tauri-plugin-opener=2** because it was not used anywhere anyway.
+It reduced the count of existing vulnerabilities to 2.
+
+As for those vulnerabilities that are still left:
+
+#### RESULTS
+Aggregate score: 8.0 / 10
+
+Check scores:
+| SCORE  |      NAME       |               REASON                |                              DETAILS                              |                                          DOCUMENTATION / REMEDIATION                                           |
+|--------|-----------------|-------------------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| 8 / 10 | Vulnerabilities | 2 existing vulnerabilities detected | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2024-0429 | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#vulnerabilities |
+|        |                 |                                     | Warn: Project is vulnerable to: https://osv.dev/RUSTSEC-2024-0370 |                                                                                                                |
+
+**RUSTSEC-2024-0429** can be resolved by updating Tauri's glib dependency from version 0.18.5 to 0.20.0 or newer. Since this dependency is managed by Tauri, the issue requires an upstream Tauri update or patch that introduces a compatible version of glib.
+
+**RUSTSEC-2024-0370** concerns proc-macro-error, an unmaintained crate that is also included in Tauri's dependencies. Since no fixed version is available, resolving this warning requires Tauri to replace it with a maintained alternative.
+
+Additionally, cargo audit was executed in both /crates/hyperlynx-parser and /src-tauri to check for known vulnerabilities in their respective Rust dependencies.
+
+The results showed that:
+
+- HyperLynx parser (/crates/hyperlynx-parser): No known vulnerabilities were detected.
+- Tauri (/src-tauri): The audit confirmed the same dependency warnings previously identified by OpenSSF Scorecard: 
+  - RUSTSEC-2024-0429
+  - RUSTSEC-2024-0370.
