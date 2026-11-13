@@ -31,7 +31,6 @@ hyperlynx-parser = { path = "../crates/hyperlynx-parser/" }
 # dependencies to load when in Desktop
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2.7.1"
 encoding_rs = "0.8.44"
