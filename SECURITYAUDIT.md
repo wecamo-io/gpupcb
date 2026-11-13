@@ -154,3 +154,6 @@ The results showed that:
 - Tauri (/src-tauri): The audit confirmed the same dependency warnings previously identified by OpenSSF Scorecard: 
   - RUSTSEC-2024-0429
   - RUSTSEC-2024-0370.
+
+## HyperLynx parser crate dependency update
+Updated winnow from v1.0.4 to v1.0.5 and test-case from 3.4.0 to 3.4.1.
