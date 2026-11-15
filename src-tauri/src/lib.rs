@@ -76,7 +76,7 @@ mod wasm {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use desktop::load_hyperlynx_file;
+pub use desktop::{decode_hyperlynx_file, load_hyperlynx_file};
 
 #[cfg(target_arch = "wasm32")]
 pub use wasm::load_hyperlynx_with_wasm;

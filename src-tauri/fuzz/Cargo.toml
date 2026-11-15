@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+#
+# SPDX-License-Identifier: GPL 3.0
+
+[package]
+name = "gpupcb-app-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+hyperlynx-parser = { path = "../../crates/hyperlynx-parser" }
+
+[dependencies.gpupcb-app]
+path = ".."
+
+[[bin]]
+name = "decode_hyperlynx"
+path = "fuzz_targets/decode_hyperlynx.rs"
+test = false
+doc = false
+bench = false
