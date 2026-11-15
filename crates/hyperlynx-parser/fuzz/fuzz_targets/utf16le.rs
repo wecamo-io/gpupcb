@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+//
+// SPDX-License-Identifier: GPL 3.0
+
 #![no_main]
 
 use hyperlynx_parser::parser::decode_hyperlynx_file;
