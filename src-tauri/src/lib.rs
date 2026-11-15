@@ -45,7 +45,17 @@ mod wasm {
     use wasm_bindgen::prelude::*;
 
     #[wasm_bindgen]
-    pub fn load_hyperlynx_with_wasm(content: &str) -> Result<String, JsValue> {
+    pub fn load_hyperlynx_with_wasm(filename: &str, content: &str) -> Result<String, JsValue> {
+        // validate extension
+        if !filename.to_lowercase().ends_with(".hyp") {
+            let error = ReturnParseError {
+                line: 0,
+                placement: String::from("Invalid file extension. Expected .hyp"),
+                inner: String::from("FileExtensionError"),
+                offset: 0,
+            };
+        }
+
         let board = parse_hyperlynx(content).map_err(|e| {
             let error = ReturnParseError::from(e);
 
