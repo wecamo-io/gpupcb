@@ -23,3 +23,31 @@ path = "fuzz_targets/parse_hyperlynx.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "utf8"
+path = "fuzz_targets/utf8.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "utf16le"
+path = "fuzz_targets/utf16le.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "utf16be"
+path = "fuzz_targets/utf16be.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "windows1252"
+path = "fuzz_targets/windows1252.rs"
+test = false
+doc = false
+bench = false

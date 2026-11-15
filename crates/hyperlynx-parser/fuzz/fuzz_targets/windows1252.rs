@@ -1,7 +1,6 @@
 #![no_main]
 
-use gpupcb_app_lib::decode_hyperlynx_file;
-use hyperlynx_parser::parser::parse_hyperlynx;
+use hyperlynx_parser::parser::decode_hyperlynx_file;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
@@ -11,6 +10,5 @@ fuzz_target!(|data: &[u8]| {
     let mut windows1252 = vec![0xFF];
 
     windows1252.extend_from_slice(data);
-    let decoded = decode_hyperlynx_file(&windows1252);
-    let _ = parse_hyperlynx(&decoded);
+    let _ = decode_hyperlynx_file(&windows1252);
 });

@@ -35,7 +35,7 @@ impl fmt::Display for ReturnParseError {
     }
 }
 
-fn decode_hyperlynx_file(bytes: &[u8]) -> Result<String, ReturnParseError> {
+pub fn decode_hyperlynx_file(bytes: &[u8]) -> Result<String, ReturnParseError> {
     let decoded = match bytes {
         // UTF-16
         [0xFF, 0xFE, rest @ ..] => UTF_16LE.decode(rest).0.to_string(),
