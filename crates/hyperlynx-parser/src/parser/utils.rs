@@ -177,6 +177,14 @@ pub fn extract_float_value(
     )))
     .parse_next(input)?;
 
+    // does not allow Infinities or NaNs
+    if !value.is_finite() {
+        return Err(build_parser_cut_error((
+            error_messages.value_error_label,
+            error_messages.value_error_description,
+        )));
+    }
+
     Ok(value)
 }
 
