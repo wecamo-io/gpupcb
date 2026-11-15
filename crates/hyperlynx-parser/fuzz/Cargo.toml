@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+#
+# SPDX-License-Identifier: GPL 3.0
+
+[package]
+name = "hyperlynx-parser-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.hyperlynx-parser]
+path = ".."
+
+[[bin]]
+name = "parse_hyperlynx"
+path = "fuzz_targets/parse_hyperlynx.rs"
+test = false
+doc = false
+bench = false
