@@ -9,6 +9,7 @@ use winnow::token::take_until;
 
 use crate::model::{Board, Device, Layer, Net, Padstack, Perimeter, Units};
 use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
+use encoding_rs::{UTF_16BE, UTF_16LE, WINDOWS_1252};
 use std::fmt;
 
 mod devices;
@@ -31,6 +32,20 @@ pub struct ReturnParseError {
 impl fmt::Display for ReturnParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+fn decode_hyperlynx_file(bytes: &[u8]) -> String {
+    match bytes {
+        // UTF-16
+        [0xFF, 0xFE, rest @ ..] => UTF_16LE.decode(rest).0.to_string(),
+        [0xFE, 0xFF, rest @ ..] => UTF_16BE.decode(rest).0.to_string(),
+
+        // UTF-8
+        _ if std::str::from_utf8(bytes).is_ok() => String::from_utf8(bytes.to_vec()).unwrap(),
+
+        // place WINDOWS_1252 decoding as fallback
+        _ => WINDOWS_1252.decode(bytes).0.to_string(),
     }
 }
 
@@ -128,8 +143,8 @@ fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
     })
 }
 
-pub fn parse_hyperlynx(input: &str) -> Result<Board, ReturnParseError> {
-    let remaining = input;
+pub fn parse_hyperlynx(bytes: &[u8]) -> Result<Board, ReturnParseError> {
+    let remaining = &decode_hyperlynx_file(bytes);
 
     parse_file_content.parse(remaining).map_err(|err| {
         let index: usize = err.offset();

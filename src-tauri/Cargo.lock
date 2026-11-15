@@ -1150,7 +1150,6 @@ dependencies = [
 name = "gpupcb-app"
 version = "0.1.0"
 dependencies = [
- "encoding_rs",
  "hyperlynx-parser",
  "serde",
  "serde-wasm-bindgen",
@@ -1351,6 +1350,7 @@ dependencies = [
 name = "hyperlynx-parser"
 version = "0.1.0"
 dependencies = [
+ "encoding_rs",
  "serde",
  "test-case",
  "winnow 1.0.5",

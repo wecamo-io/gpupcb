@@ -11,3 +11,4 @@ edition = "2024"
 winnow = "1.0.5"
 test-case = "3.4.1"
 serde = { version = "1.0.229", features = ["derive"] }
+encoding_rs = "0.8.44"
