@@ -97,7 +97,7 @@ mod kicad_export_tests {
                     dielectric_constant: 4.5,
                 },
                 thickness: 0.0594488,
-                layer_name: String::from("F.Cu"),
+                layer_name: String::from("B.Cu"),
                 material: LayerMaterial::FR4,
             }
         );
