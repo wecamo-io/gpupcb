@@ -16,12 +16,12 @@
     "@tauri-apps/plugin-dialog": "~2.8.4",
     "@tauri-apps/plugin-fs": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2",
-    "solid-js": "^1.9.3"
+    "solid-js": "^1.9.19"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
-    "typescript": "~6.0.3",
-    "vite": "^8.0.16",
-    "vite-plugin-solid": "^2.11.12"
+    "typescript": "~7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-solid": "^2.11.16"
   }
 }
