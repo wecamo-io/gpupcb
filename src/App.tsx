@@ -21,6 +21,10 @@ function App() {
   const [board, setBoard] = createSignal<Board | null>(null);
   const [error, setError] = createSignal<HyperlynxParseError | null>(null);
 
+  function isValidHyperlynxFile(file: File): boolean {
+    return file.name.toLowerCase().endsWith(".hyp");
+  }
+
   async function selectHyperlynxFile() {
     setError(null);
 
@@ -57,6 +61,18 @@ function App() {
           if (!file) return;
 
           try {
+            // Validate extension
+            if (!isValidHyperlynxFile(file)) {
+              setBoard(null);
+              setError({
+                line: 0,
+                placement: "Invalid file extension. Please select a .hyp file.",
+                inner: "FileExtensionError",
+                offset: 0,
+              });
+              return;
+            }
+
             const content = await file.text();
 
             const json = load_hyperlynx_with_wasm(content);
