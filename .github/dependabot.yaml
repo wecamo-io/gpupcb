@@ -1,0 +1,52 @@
+version: 2
+
+updates:
+  # frontend
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
+    labels:
+      - "dependencies"
+      - "typescript"
+    commit-message:
+      prefix: "deps(pnpm)"
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+
+  # crates dir
+  - package-ecosystem: "cargo"
+    directory: "/crates"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
+    labels:
+      - "dependencies"
+      - "crates"
+    commit-message:
+      prefix: "deps(crates)"
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
+
+  # Tauri
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Warsaw"
+    labels:
+      - "dependencies"
+      - "tauri"
+    commit-message:
+      prefix: "deps(tauri)"
