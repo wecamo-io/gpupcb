@@ -155,6 +155,26 @@ The results showed that:
   - RUSTSEC-2024-0429
   - RUSTSEC-2024-0370.
 
+### 8. Fixing *Fuzzing* check
+Started from:
+
+#### RESULTS
+| SCORE  |  NAME   |        REASON         |                                      DOCUMENTATION / REMEDIATION                                       |
+|--------|---------|-----------------------|--------------------------------------------------------------------------------------------------------|
+| 0 / 10 | Fuzzing | project is not fuzzed | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#fuzzing |
+
+Created some fuzz tests that feed the HyperLynx parsing function input encoded in different ways. It fixed the score:
+
+#### RESULTS
+|  SCORE  |  NAME   |      REASON       |                                                 DETAILS                                                 |                                      DOCUMENTATION / REMEDIATION                                       |
+|---------|---------|-------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| 10 / 10 | Fuzzing | project is fuzzed | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/parse_hyperlynx.rs:8 | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#fuzzing |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf16be.rs:8         |                                                                                                        |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf16le.rs:8         |                                                                                                        |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf8.rs:7            |                                                                                                        |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/windows1252.rs:8     |                                                                                                        |
+
+
 ## HyperLynx parser crate dependency update
 Updated winnow from v1.0.4 to v1.0.5 and test-case from 3.4.0 to 3.4.1.
 
