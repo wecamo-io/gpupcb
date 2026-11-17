@@ -174,6 +174,20 @@ Created some fuzz tests that feed the HyperLynx parsing function input encoded i
 |         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf8.rs:7            |                                                                                                        |
 |         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/windows1252.rs:8     |                                                                                                        |
 
+### 9. Protecting the main branch
+
+Enabled basic protection on main branch in repo:
+
+
+#### RESULTS
+Aggregate score: 3.0 / 10
+
+Check scores:
+| SCORE  |       NAME        |                                  REASON                                  |                                           DOCUMENTATION / REMEDIATION                                            |
+|--------|-------------------|--------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| 3 / 10 | Branch-Protection | branch protection is not maximal on development and all release branches | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#branch-protection |
+
+
 
 ## HyperLynx parser crate dependency update
 Updated winnow from v1.0.4 to v1.0.5 and test-case from 3.4.0 to 3.4.1.
