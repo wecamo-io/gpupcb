@@ -14,7 +14,7 @@ mod altium_export_tests {
 
     #[test]
     fn parses_altium_export() {
-        let input = include_str!("fixtures/altium designer.HYP");
+        let input = include_bytes!("fixtures/altium designer.HYP");
 
         let Board {
             version,

@@ -5,24 +5,9 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod desktop {
 
-    use encoding_rs::{UTF_16BE, UTF_16LE, WINDOWS_1252};
     use hyperlynx_parser::model::Board;
     use hyperlynx_parser::parser::{ReturnParseError, parse_hyperlynx};
     use std::fs;
-
-    pub fn decode_hyperlynx_file(bytes: &[u8]) -> String {
-        match bytes {
-            // UTF-16
-            [0xFF, 0xFE, rest @ ..] => UTF_16LE.decode(rest).0.to_string(),
-            [0xFE, 0xFF, rest @ ..] => UTF_16BE.decode(rest).0.to_string(),
-
-            // UTF-8
-            _ if std::str::from_utf8(bytes).is_ok() => String::from_utf8(bytes.to_vec()).unwrap(),
-
-            // place WINDOWS_1252 decoding as fallback
-            _ => WINDOWS_1252.decode(bytes).0.to_string(),
-        }
-    }
 
     #[tauri::command]
     pub fn load_hyperlynx_file(path: String) -> Result<Board, ReturnParseError> {
@@ -42,9 +27,7 @@ mod desktop {
             offset: 0,
         })?;
 
-        let content = decode_hyperlynx_file(&bytes);
-
-        parse_hyperlynx(&content)
+        parse_hyperlynx(&bytes)
     }
 }
 

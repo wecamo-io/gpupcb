@@ -15,7 +15,7 @@ mod kicad_export_tests {
 
     #[test]
     fn parses_kicad_export() {
-        let input = include_str!("fixtures/kicad.hyp");
+        let input = include_bytes!("fixtures/kicad.hyp");
 
         let Board {
             version,
