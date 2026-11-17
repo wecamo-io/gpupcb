@@ -42,7 +42,7 @@ impl From<ErrMode<ContextError>> for ReturnParseError {
         Self {
             line: 0,
             placement: String::from("Validation Error"),
-            inner: String::from(format!("{item:?}")),
+            inner: format!("{item:?}"),
             offset: 0,
         }
     }
