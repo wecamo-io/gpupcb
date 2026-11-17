@@ -157,3 +157,15 @@ The results showed that:
 
 ## HyperLynx parser crate dependency update
 Updated winnow from v1.0.4 to v1.0.5 and test-case from 3.4.0 to 3.4.1.
+
+## HyperLynx importer issues
+### During an audit of HyperLynx file parsing flow a few issues have been discovered:
+- Browser version of importer accepted files with other extension than .hyp
+- Float parsing functions accepted Infinity and Nan values
+
+### The following fixes have been made to solve those problems:
+- Fixed issue with parser accepting NaN and Infinity values when extracing floats.
+- Fixed issue where browser version of file select allowed user to select other types of files after selecting 'All files' option. Added HyperLynx file extension validation to accept only these type of files.
+
+### Additionally first post-parsing validator has been created:
+- Added post-parsing validation of references to the existing layers of parsed PCB model. It checks whether some parts of board do not point to non-existing layer.
