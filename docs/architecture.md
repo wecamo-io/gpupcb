@@ -1,5 +1,11 @@
 # Architecture
 
+SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
+
+SPDX-License-Identifier: GPL 3.0
+
+---
+
 This document describes the internal architecture of GPUPCB, its main components and how they interact.
 
 GPUPCB is a multiplatform application that can be run on Windows, macOS, Linux and even in Browser.
