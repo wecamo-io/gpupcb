@@ -4,3 +4,4 @@
 
 pub mod model;
 pub mod parser;
+mod validation;

@@ -4,11 +4,13 @@
 
 use serde::Serialize;
 use winnow::combinator::opt;
+use winnow::error::{ContextError, ErrMode};
 use winnow::prelude::*;
 use winnow::token::take_until;
 
 use crate::model::{Board, Device, Layer, Net, Padstack, Perimeter, Units};
 use crate::parser::utils::{build_parser_backtrack_error, skip_ignored};
+use crate::validation::validate_layer_references;
 use encoding_rs::{UTF_16BE, UTF_16LE, WINDOWS_1252};
 use std::fmt;
 
@@ -18,7 +20,7 @@ mod padstack;
 mod perimeter_segment;
 mod stackup;
 mod units;
-mod utils;
+pub mod utils;
 mod version;
 
 #[derive(Debug, Serialize)]
@@ -32,6 +34,17 @@ pub struct ReturnParseError {
 impl fmt::Display for ReturnParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl From<ErrMode<ContextError>> for ReturnParseError {
+    fn from(item: ErrMode<ContextError>) -> Self {
+        Self {
+            line: 0,
+            placement: String::from("Validation Error"),
+            inner: format!("{item:?}"),
+            offset: 0,
+        }
     }
 }
 
@@ -159,7 +172,7 @@ fn parse_file_content(input: &mut &str) -> ModalResult<Board> {
 pub fn parse_hyperlynx(bytes: &[u8]) -> Result<Board, ReturnParseError> {
     let remaining = &decode_hyperlynx_file(bytes)?;
 
-    parse_file_content.parse(remaining).map_err(|err| {
+    let board = parse_file_content.parse(remaining).map_err(|err| {
         let index: usize = err.offset();
         let s: &str = err.input();
 
@@ -182,5 +195,9 @@ pub fn parse_hyperlynx(bytes: &[u8]) -> Result<Board, ReturnParseError> {
             inner: format!("{:?}", err.inner()),
             offset: err.offset(),
         }
-    })
+    })?;
+
+    validate_layer_references(&board)?;
+
+    Ok(board)
 }
