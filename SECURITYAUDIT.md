@@ -155,5 +155,51 @@ The results showed that:
   - RUSTSEC-2024-0429
   - RUSTSEC-2024-0370.
 
+### 8. Fixing *Fuzzing* check
+Started from:
+
+#### RESULTS
+| SCORE  |  NAME   |        REASON         |                                      DOCUMENTATION / REMEDIATION                                       |
+|--------|---------|-----------------------|--------------------------------------------------------------------------------------------------------|
+| 0 / 10 | Fuzzing | project is not fuzzed | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#fuzzing |
+
+Created some fuzz tests that feed the HyperLynx parsing function input encoded in different ways. It fixed the score:
+
+#### RESULTS
+|  SCORE  |  NAME   |      REASON       |                                                 DETAILS                                                 |                                      DOCUMENTATION / REMEDIATION                                       |
+|---------|---------|-------------------|---------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| 10 / 10 | Fuzzing | project is fuzzed | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/parse_hyperlynx.rs:8 | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#fuzzing |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf16be.rs:8         |                                                                                                        |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf16le.rs:8         |                                                                                                        |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/utf8.rs:7            |                                                                                                        |
+|         |         |                   | Info: RustCargoFuzzer integration found: crates/hyperlynx-parser/fuzz/fuzz_targets/windows1252.rs:8     |                                                                                                        |
+
+### 9. Protecting the main branch
+
+Enabled basic protection on main branch in repo:
+
+
+#### RESULTS
+Aggregate score: 3.0 / 10
+
+Check scores:
+| SCORE  |       NAME        |                                  REASON                                  |                                           DOCUMENTATION / REMEDIATION                                            |
+|--------|-------------------|--------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| 3 / 10 | Branch-Protection | branch protection is not maximal on development and all release branches | https://github.com/ossf/scorecard/blob/61e84743356275f6ffca23b1b2f2cb945e19eb96/docs/checks.md#branch-protection |
+
+
+
 ## HyperLynx parser crate dependency update
 Updated winnow from v1.0.4 to v1.0.5 and test-case from 3.4.0 to 3.4.1.
+
+## HyperLynx importer issues
+### During an audit of HyperLynx file parsing flow a few issues have been discovered:
+- Browser version of importer accepted files with other extension than .hyp
+- Float parsing functions accepted Infinity and Nan values
+
+### The following fixes have been made to solve those problems:
+- Fixed issue with parser accepting NaN and Infinity values when extracing floats.
+- Fixed issue where browser version of file select allowed user to select other types of files after selecting 'All files' option. Added HyperLynx file extension validation to accept only these type of files.
+
+### Additionally first post-parsing validator has been created:
+- Added post-parsing validation of references to the existing layers of parsed PCB model. It checks whether some parts of board do not point to non-existing layer.

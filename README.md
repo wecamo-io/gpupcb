@@ -1,4 +1,4 @@
-GPUPCB
+# GPUPCB
 
 GPUPCB is an interactive, live-updating 3D simulator of electromagnetic fields for PCB working completely in GPU, simulating transient states using finite-difference time-domain method (FDTD) and frequency-domain response finite-difference frequency-domain method (FDFD).
 
