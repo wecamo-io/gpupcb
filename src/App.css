@@ -16,16 +16,46 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  /* variables */
+  --header-height: 5rem;
+  --logo-color: #FF2600;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 .container {
-  margin: 0;
-  padding-top: 10vh;
+    height: 100vh;
+}
+
+header {
+    border-bottom: 1px solid gray;
+    padding-top: 1rem;
+    height: var(--header-height);
+}
+
+main {
   display: flex;
   flex-direction: column;
   justify-content: center;
   text-align: center;
   gap: 1rem;
+  height: calc(100% - var(--header-height));
+  overflow-y: scroll;
+}
+
+h1 {
+    letter-spacing: 1rem;
+    width: 16rem;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    color: var(--logo-color);
 }
 
 button {

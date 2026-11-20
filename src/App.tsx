@@ -96,30 +96,34 @@ function App() {
   }
 
   return (
-    <main class="container">
-      <h1>GPUPCB</h1>
-      <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
-      <BoardAccordion board={board} />
-      {error() && (
-        <div class="parse-error">
-          <div class="parse-error-details">
-            <div class="error-data">
-              <span>
-                Line: <strong>{error()!.line}</strong>
-              </span>
-              <span>
-                Offset: <strong>{error()!.offset}</strong>
-              </span>
-              <strong>Location</strong>
-              <pre>{error()!.placement}</pre>
+    <div class="container">
+      <header>
+        <h1>GPUPCB</h1>
+      </header>
+      <main>
+        <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
+        <BoardAccordion board={board} />
+        {error() && (
+          <div class="parse-error">
+            <div class="parse-error-details">
+              <div class="error-data">
+                <span>
+                  Line: <strong>{error()!.line}</strong>
+                </span>
+                <span>
+                  Offset: <strong>{error()!.offset}</strong>
+                </span>
+                <strong>Location</strong>
+                <pre>{error()!.placement}</pre>
 
-              <strong>Parser context</strong>
-              <pre>{error()!.inner}</pre>
+                <strong>Parser context</strong>
+                <pre>{error()!.inner}</pre>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </main>
+        )}
+      </main>
+    </div>
   );
 }
 
