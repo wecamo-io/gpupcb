@@ -26,6 +26,9 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+
+    scrollbar-color: #1e1e1e #2f2f2f;
+    scrollbar-width: thin;
 }
 
 .container {
@@ -45,7 +48,7 @@ main {
   display: flex;
   gap: 1rem;
   height: calc(100% - var(--header-height));
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 
 aside {
