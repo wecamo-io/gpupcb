@@ -34,18 +34,26 @@
 
 header {
     border-bottom: 1px solid gray;
-    padding-top: 1rem;
     height: var(--header-height);
+}
+
+header > * {
+    padding-top: 1rem;
 }
 
 main {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
   gap: 1rem;
   height: calc(100% - var(--header-height));
   overflow-y: scroll;
+}
+
+aside {
+    padding-top: 1rem;
+    border-right: 1px solid gray;
+    width: 16rem;
+    height: 100%;
+    text-align: center;
 }
 
 h1 {
@@ -56,6 +64,7 @@ h1 {
     place-items: center;
     font-size: 2rem;
     color: var(--logo-color);
+    border-right: 1px solid gray;
 }
 
 button {

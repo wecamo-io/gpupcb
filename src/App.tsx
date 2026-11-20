@@ -101,7 +101,9 @@ function App() {
         <h1>GPUPCB</h1>
       </header>
       <main>
-        <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
+        <aside>
+          <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
+        </aside>
         <BoardAccordion board={board} />
         {error() && (
           <div class="parse-error">
