@@ -4,19 +4,13 @@
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import "./App.css";
 import { BoardAccordion } from "./components/Accordion";
 import { Chip } from "./components/Chip";
+import ErrorDisplay, { HyperlynxParseError } from "./components/ErrorDisplay";
 import type { Board } from "./types";
 import { load_hyperlynx_with_wasm } from "./wasm/gpupcb";
-
-interface HyperlynxParseError {
-  line: number;
-  placement: string;
-  inner: string;
-  offset: number;
-}
 
 const sections = ["Load File", "Control Panel", "FDTD", "FDFD", "Parameters"];
 
@@ -123,26 +117,9 @@ function App() {
             Open HyperLynx file
           </button>
         </aside>
-        <BoardAccordion board={board} />
-        {error() && (
-          <div class="parse-error">
-            <div class="parse-error-details">
-              <div class="error-data">
-                <span>
-                  Line: <strong>{error()!.line}</strong>
-                </span>
-                <span>
-                  Offset: <strong>{error()!.offset}</strong>
-                </span>
-                <strong>Location</strong>
-                <pre>{error()!.placement}</pre>
-
-                <strong>Parser context</strong>
-                <pre>{error()!.inner}</pre>
-              </div>
-            </div>
-          </div>
-        )}
+        <Show when={error()} fallback={<BoardAccordion board={board} />}>
+          {(err) => <ErrorDisplay error={err()} />}
+        </Show>
       </main>
     </div>
   );
