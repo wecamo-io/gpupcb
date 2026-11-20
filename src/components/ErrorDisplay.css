@@ -5,8 +5,8 @@
 .parse-error {
   width: 100%;
   box-sizing: border-box;
-  margin: 16px 0;
-  padding: 18px;
+  margin: 1rem;
+  padding: 1rem;
   border: 1px solid rgba(239, 68, 68, 0.35);
   border-radius: 10px;
   background: rgba(239, 68, 68, 0.07);
