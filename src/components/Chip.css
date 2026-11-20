@@ -1,0 +1,8 @@
+.chip {
+    border: 1px solid gray;
+    padding: 0.1rem 1rem;
+    width: fit-content;
+    flex-grow: 1;
+    background: none;
+    color: #f6f6f6;
+}

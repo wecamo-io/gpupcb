@@ -7,6 +7,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { createSignal } from "solid-js";
 import "./App.css";
 import { BoardAccordion } from "./components/Accordion";
+import { Chip } from "./components/Chip";
 import type { Board } from "./types";
 import { load_hyperlynx_with_wasm } from "./wasm/gpupcb";
 
@@ -17,9 +18,16 @@ interface HyperlynxParseError {
   offset: number;
 }
 
+const sections = ["Load File", "Control Panel", "FDTD", "FDFD", "Parameters"];
+
 function App() {
   const [board, setBoard] = createSignal<Board | null>(null);
   const [error, setError] = createSignal<HyperlynxParseError | null>(null);
+  const [state, setState] = createSignal<number>(0);
+
+  function handleSetState(index: number) {
+    setState(index);
+  }
 
   function isValidHyperlynxFile(file: File): boolean {
     return file.name.toLowerCase().endsWith(".hyp");
@@ -102,7 +110,18 @@ function App() {
       </header>
       <main>
         <aside>
-          <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
+          <div class="chips">
+            {sections.map((section, index) => (
+              <Chip
+                name={section}
+                isActive={index === state()}
+                handleClick={() => handleSetState(index)}
+              ></Chip>
+            ))}
+          </div>
+          <button id="load-file" onClick={selectHyperlynxFile}>
+            Open HyperLynx file
+          </button>
         </aside>
         <BoardAccordion board={board} />
         {error() && (
