@@ -18,6 +18,12 @@ function App() {
           <Sidebar />
           <ErrorDisplay />
         </main>
+        <footer>
+          <span>{new Date().getFullYear()} GPUPCB by&nbsp;</span>
+          <a href="https://www.wecamo.io/" target="_blank">
+            Wecamo
+          </a>
+        </footer>
       </div>
     </BoardContextProvider>
   );

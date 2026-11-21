@@ -19,6 +19,7 @@
 
   /* variables */
   --header-height: 5rem;
+  --footer-height: 2rem;
   --logo-color: #FF2600;
 }
 
@@ -46,7 +47,21 @@ header > * {
 
 main {
   display: flex;
-  height: calc(100% - var(--header-height));
+  height: calc(100% - var(--header-height) - var(--footer-height));
+}
+
+footer {
+    height: var(--footer-height);
+    border-top: 1px solid gray;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: gray;
+}
+
+footer > a {
+    color: var(--logo-color);
+    text-decoration: none;
 }
 
 #board-info {
