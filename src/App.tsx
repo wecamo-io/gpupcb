@@ -2,126 +2,24 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
-import { createSignal, Show } from "solid-js";
 import "./App.css";
-import { BoardAccordion } from "./components/Accordion";
-import { Chip } from "./components/Chip";
-import ErrorDisplay, { HyperlynxParseError } from "./components/ErrorDisplay";
-import type { Board } from "./types";
-import { load_hyperlynx_with_wasm } from "./wasm/gpupcb";
-
-const sections = ["Load File", "Control Panel", "FDTD", "FDFD", "Parameters"];
+import ErrorDisplay from "./components/ErrorDisplay";
+import Sidebar from "./components/Sidebar";
+import { BoardContextProvider } from "./context/board";
 
 function App() {
-  const [board, setBoard] = createSignal<Board | null>(null);
-  const [error, setError] = createSignal<HyperlynxParseError | null>(null);
-  const [state, setState] = createSignal<number>(0);
-
-  function handleSetState(index: number) {
-    setState(index);
-  }
-
-  function isValidHyperlynxFile(file: File): boolean {
-    return file.name.toLowerCase().endsWith(".hyp");
-  }
-
-  async function selectHyperlynxFile() {
-    setError(null);
-
-    try {
-      // desktop file loading
-      if (isTauri()) {
-        const path = await open({
-          multiple: false,
-          directory: false,
-          filters: [
-            {
-              name: "HyperLynx files",
-              extensions: ["hyp", "HYP"],
-            },
-          ],
-        });
-
-        if (!path) return;
-
-        const result = await invoke<Board>("load_hyperlynx_file", {
-          path,
-        });
-
-        setBoard(result);
-        // browser file loading via WASM
-      } else {
-        const input = document.createElement("input");
-
-        input.type = "file";
-        input.accept = ".hyp";
-
-        input.onchange = async () => {
-          const file = input.files?.[0];
-          if (!file) return;
-
-          try {
-            // Validate extension
-            if (!isValidHyperlynxFile(file)) {
-              setBoard(null);
-              setError({
-                line: 0,
-                placement: "Invalid file extension. Please select a .hyp file.",
-                inner: "FileExtensionError",
-                offset: 0,
-              });
-              return;
-            }
-
-            const content = await file.text();
-
-            const json = load_hyperlynx_with_wasm(content);
-            const result = JSON.parse(json) as Board;
-
-            setBoard(result);
-          } catch (error) {
-            let parseError = error as HyperlynxParseError;
-            setBoard(null);
-            setError(parseError);
-          }
-        };
-
-        input.click();
-      }
-    } catch (error) {
-      const parseError = error as HyperlynxParseError;
-      setBoard(null);
-      setError(parseError);
-    }
-  }
-
   return (
-    <div class="container">
-      <header>
-        <h1>GPUPCB</h1>
-      </header>
-      <main>
-        <aside>
-          <div class="chips">
-            {sections.map((section, index) => (
-              <Chip
-                name={section}
-                isActive={index === state()}
-                handleClick={() => handleSetState(index)}
-              ></Chip>
-            ))}
-          </div>
-          <button id="load-file" onClick={selectHyperlynxFile}>
-            Open HyperLynx file
-          </button>
-        </aside>
-        <Show when={error()} fallback={<BoardAccordion board={board} />}>
-          {(err) => <ErrorDisplay error={err()} />}
-        </Show>
-      </main>
-    </div>
+    <BoardContextProvider>
+      <div class="container">
+        <header>
+          <h1>GPUPCB</h1>
+        </header>
+        <main>
+          <Sidebar />
+          <ErrorDisplay />
+        </main>
+      </div>
+    </BoardContextProvider>
   );
 }
 

@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+import { Show } from "solid-js";
+import { useBoardContext } from "../context/board";
+import { BoardAccordion } from "./Accordion";
 import "./ErrorDisplay.css";
 
 export interface HyperlynxParseError {
@@ -11,26 +14,28 @@ export interface HyperlynxParseError {
   offset: number;
 }
 
-export default function ErrorDisplay(props: { error: HyperlynxParseError }) {
-  const { error } = props;
+export default function ErrorDisplay() {
+  const { board, error } = useBoardContext();
 
   return (
-    <div class="parse-error">
-      <div class="parse-error-details">
-        <div class="error-data">
-          <span>
-            Line: <strong>{error.line}</strong>
-          </span>
-          <span>
-            Offset: <strong>{error.offset}</strong>
-          </span>
-          <strong>Location</strong>
-          <pre>{error.placement}</pre>
+    <Show when={error()} fallback={<BoardAccordion board={board} />}>
+      <div class="parse-error">
+        <div class="parse-error-details">
+          <div class="error-data">
+            <span>
+              Line: <strong>{error()!.line}</strong>
+            </span>
+            <span>
+              Offset: <strong>{error()!.offset}</strong>
+            </span>
+            <strong>Location</strong>
+            <pre>{error()!.placement}</pre>
 
-          <strong>Parser context</strong>
-          <pre>{error.inner}</pre>
+            <strong>Parser context</strong>
+            <pre>{error()!.inner}</pre>
+          </div>
         </div>
       </div>
-    </div>
+    </Show>
   );
 }

@@ -1,0 +1,27 @@
+/* SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/> */
+/* */
+/* SPDX-License-Identifier: GPL 3.0 */
+
+aside {
+    border-right: 1px solid gray;
+    min-width: 16rem;
+    max-width: 16rem;
+    height: 100%;
+    text-align: center;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#load-file {
+  margin-top: 1rem;
+  width: fit-content;
+  color: #f6f6f6;
+  background-color: #2f2f2f;
+  border: 1px solid;
+  align-self: center;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
