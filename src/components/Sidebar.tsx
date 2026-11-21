@@ -12,7 +12,10 @@ import { Chip } from "./Chip";
 import { HyperlynxParseError } from "./ErrorDisplay";
 import "./Sidebar.css";
 
-export default function Sidebar() {
+export default function Sidebar(props: {
+  isOpen: boolean;
+  toggleSidebar: () => void;
+}) {
   const { setBoard, setError } = useBoardContext();
 
   const [state, setState] = createSignal<number>(0);
@@ -98,7 +101,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside>
+    <aside class={`${props.isOpen ? "open" : "closed"}`}>
       <div class="chips">
         {sections.map((section, index) => (
           <Chip
@@ -110,6 +113,14 @@ export default function Sidebar() {
       </div>
       <button id="load-file" onClick={selectHyperlynxFile}>
         Open HyperLynx file
+      </button>
+
+      <button
+        class="sidebar-toggle"
+        onClick={props.toggleSidebar}
+        aria-label={props.isOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        {props.isOpen ? "❮" : "❯"}
       </button>
     </aside>
   );

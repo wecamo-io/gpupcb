@@ -8,6 +8,9 @@ aside {
     max-width: 16rem;
     height: 100%;
     text-align: center;
+    position: relative;
+    left: 0;
+    transition: left 0.1s ease;
 }
 
 .chips {
@@ -24,4 +27,36 @@ aside {
   align-self: center;
   border-radius: 0.5rem;
   padding: 0.5rem;
+}
+
+aside.closed {
+  left: -16rem;
+}
+
+aside.closed .chips,
+aside.closed #load-file {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 50%;
+  right: -2rem;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 4rem;
+  border: none;
+  border-radius: 0 0.5rem 0.5rem 0;
+  border: 1px solid gray;
+  border-left: none;
+  background: #2f2f2f;
+  color: white;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.sidebar-toggle:hover {
+  background: #4e4e4e;
 }

@@ -2,12 +2,19 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+import { createSignal } from "solid-js";
 import "./App.css";
 import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
 import { BoardContextProvider } from "./context/board";
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = createSignal<boolean>(true);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
+
   return (
     <BoardContextProvider>
       <div class="container">
@@ -15,7 +22,7 @@ function App() {
           <h1>GPUPCB</h1>
         </header>
         <main>
-          <Sidebar />
+          <Sidebar isOpen={isSidebarOpen()} toggleSidebar={toggleSidebar} />
           <ErrorDisplay />
         </main>
         <footer>
