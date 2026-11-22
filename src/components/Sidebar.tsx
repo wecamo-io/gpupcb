@@ -4,10 +4,11 @@
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { createSignal } from "solid-js";
+import { createSignal, Show } from "solid-js";
 import { useBoardContext } from "../context/board";
 import { Board } from "../types";
 import { load_hyperlynx_with_wasm } from "../wasm/gpupcb";
+import { BoardAccordion } from "./Accordion";
 import { Chip } from "./Chip";
 import { HyperlynxParseError } from "./ErrorDisplay";
 import "./Sidebar.css";
@@ -16,7 +17,7 @@ export default function Sidebar(props: {
   isOpen: boolean;
   toggleSidebar: () => void;
 }) {
-  const { setBoard, setError } = useBoardContext();
+  const { board, setBoard, setError } = useBoardContext();
 
   const [state, setState] = createSignal<number>(0);
 
@@ -114,6 +115,10 @@ export default function Sidebar(props: {
       <button id="load-file" onClick={selectHyperlynxFile}>
         Open HyperLynx file
       </button>
+
+      <Show when={board()}>
+        <BoardAccordion board={board} />
+      </Show>
 
       <button
         class="sidebar-toggle"

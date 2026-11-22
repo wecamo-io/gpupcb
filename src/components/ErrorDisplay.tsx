@@ -4,7 +4,6 @@
 
 import { Show } from "solid-js";
 import { useBoardContext } from "../context/board";
-import { BoardAccordion } from "./Accordion";
 import "./ErrorDisplay.css";
 
 export interface HyperlynxParseError {
@@ -15,10 +14,10 @@ export interface HyperlynxParseError {
 }
 
 export default function ErrorDisplay() {
-  const { board, error } = useBoardContext();
+  const { error } = useBoardContext();
 
   return (
-    <Show when={error()} fallback={<BoardAccordion board={board} />}>
+    <Show when={error()}>
       <div class="parse-error">
         <div class="parse-error-details">
           <div class="error-data">
