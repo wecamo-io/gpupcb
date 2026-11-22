@@ -1,0 +1,62 @@
+/* SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/> */
+/* */
+/* SPDX-License-Identifier: GPL 3.0 */
+
+.active-tab {
+    border: none;
+    border-left: 1px solid var(--primary-border-color);
+    border-bottom: 3px solid var(--primary-border-color);
+    padding: 0.1rem 0.5rem;
+    font-size: 1rem;
+    background: var(--primary-background);
+    color: var(--primary-text-color);
+    height: fit-content;
+    font-style: italic;
+    color: var(--primary-border-color);
+    display: flex;
+    gap: 4px;
+}
+
+.active-tab.open {
+    font-style: normal;
+    color: var(--primary-text-color);
+    background-color: var(--primary-border-color);
+    border-left: 1px solid var(--primary-text-color);
+    border-bottom: 3px solid var(--primary-text-color);
+    cursor: pointer;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.active-tab.closed {
+  flex: 0 1 3rem;
+  min-width: 2rem;
+}
+
+.active-tab > span {
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.close-active-tab {
+    background: none;
+    border: none;
+    color: var(--primary-border-color);
+    flex-shrink: 0;
+}
+.close-active-tab:hover {
+    background: none;
+    color: var(--primary-text-color);
+}
+
+.active-tab.open > .close-active-tab {
+    color: var(--primary-text-color);
+}
+
+.active-tab.open > .close-active-tab:hover {
+    color: var(--primary-background);
+}

@@ -40,3 +40,7 @@ aside.closed #load-file {
   z-index: 10;
   transition: background 0.2s;
 }
+
+.active-tabs {
+    display: flex;
+}
