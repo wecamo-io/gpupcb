@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-import { createSignal } from "solid-js";
+import { createSignal, JSXElement } from "solid-js";
 import { Chip } from "./Chip";
 import { LoadFileSection } from "./LoadFileSection";
 import "./Sidebar.css";
@@ -13,7 +13,13 @@ export default function Sidebar(props: {
 }) {
   const [state, setState] = createSignal<number>(0);
 
-  const sections = ["Load File", "Control Panel", "FDTD", "FDFD", "Parameters"];
+  const sections: { name: string; content: JSXElement }[] = [
+    { name: "Load File", content: <LoadFileSection /> },
+    { name: "Control Panel", content: <div></div> },
+    { name: "FDTD", content: <div></div> },
+    { name: "FDFD", content: <div></div> },
+    { name: "Parameters", content: <div></div> },
+  ];
 
   function handleSetState(index: number) {
     setState(index);
@@ -24,14 +30,15 @@ export default function Sidebar(props: {
       <div class="chips">
         {sections.map((section, index) => (
           <Chip
-            name={section}
+            name={section.name}
             isActive={index === state()}
             handleClick={() => handleSetState(index)}
           ></Chip>
         ))}
       </div>
 
-      <LoadFileSection />
+      {/* display only selected section */}
+      {sections[state()].content}
 
       <button
         class="sidebar-toggle"
