@@ -20,8 +20,8 @@
   /* variables */
   --header-height: 5rem;
   --footer-height: 2rem;
-  --logo-color: #FF2600;
-  --primary-background: #2f2f2f;
+  --logo-color: #FF5500;
+  --primary-background: #1d1d1d;
   --primary-text-color: #f6f6f6;
   --primary-border-color: gray;
 }
@@ -65,6 +65,7 @@ footer {
 
 footer > a {
     color: var(--logo-color);
+    filter: contrast(1.5) saturate(1.5);
     text-decoration: none;
 }
 
@@ -85,6 +86,10 @@ h1 {
     font-size: 2rem;
     color: var(--logo-color);
     border-right: 1px solid gray;
+}
+
+h1 > img {
+    filter: contrast(1.5) saturate(1.5);
 }
 
 button:hover {

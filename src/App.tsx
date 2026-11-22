@@ -7,6 +7,7 @@ import "./App.css";
 import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
 import { BoardContextProvider } from "./context/board";
+import logo from "./assets/logo.svg"
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = createSignal<boolean>(true);
@@ -19,7 +20,9 @@ function App() {
     <BoardContextProvider>
       <div class="container">
         <header>
-          <h1>GPUPCB</h1>
+          <h1>
+            <img src={logo} alt="GPUPCB" />
+          </h1>
         </header>
         <main>
           <Sidebar isOpen={isSidebarOpen()} toggleSidebar={toggleSidebar} />
