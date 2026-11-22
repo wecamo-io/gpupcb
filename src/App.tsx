@@ -8,6 +8,8 @@ import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
 import { BoardContextProvider } from "./context/board";
 import logo from "./assets/logo.svg"
+import { TabContextProvider } from "./context/tab";
+import Tabs from "./components/Tabs";
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = createSignal<boolean>(true);
@@ -18,11 +20,13 @@ function App() {
 
   return (
     <BoardContextProvider>
+      <TabContextProvider>
       <div class="container">
         <header>
           <h1>
             <img src={logo} alt="GPUPCB" />
-          </h1>
+            </h1>
+            <Tabs />
         </header>
         <main>
           <Sidebar isOpen={isSidebarOpen()} toggleSidebar={toggleSidebar} />
@@ -34,7 +38,8 @@ function App() {
             Wecamo
           </a>
         </footer>
-      </div>
+        </div>
+      </TabContextProvider>
     </BoardContextProvider>
   );
 }

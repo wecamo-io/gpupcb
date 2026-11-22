@@ -14,16 +14,10 @@ aside {
     background-color: var(--primary-background);
 }
 
-.chips {
-    display: flex;
-    flex-wrap: wrap;
-}
-
 aside.closed {
   left: -16rem;
 }
 
-aside.closed .chips,
 aside.closed #load-file {
   opacity: 0;
   pointer-events: none;

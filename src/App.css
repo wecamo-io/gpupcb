@@ -42,6 +42,8 @@
 header {
     border-bottom: 1px solid var(--primary-border-color);
     height: var(--header-height);
+    display: flex;
+    align-items: flex-end;
 }
 
 header > * {
