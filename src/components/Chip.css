@@ -3,10 +3,10 @@
 /* SPDX-License-Identifier: GPL 3.0 */
 
 .chip {
-    border: 1px solid gray;
+    border: 1px solid var(--primary-border-color);
     padding: 0.1rem 1rem;
     width: fit-content;
     flex-grow: 1;
     background: none;
-    color: #f6f6f6;
+    color: var(--primary-text-color);
 }

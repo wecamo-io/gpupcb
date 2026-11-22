@@ -12,14 +12,14 @@
 }
 
 .acc {
-  border: 1px solid rgba(128, 128, 128, 0.35);
+  border: 1px solid var(--primary-border-color);
   border-radius: 8px;
-  background: rgba(128, 128, 128, 0.06);
+  background: var(--primary-background);
 }
 
 .acc-nested {
   margin: 0.4rem 0;
-  background: rgba(128, 128, 128, 0.04);
+  background: var(--primary-background);
 }
 
 .acc-summary {
@@ -60,7 +60,7 @@
   font-weight: 500;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
-  background: rgba(128, 128, 128, 0.25);
+  background: var(--primary-background);
 }
 
 .acc-body {
@@ -109,7 +109,7 @@
 .acc-table td {
   padding: 0.25rem 0.6rem;
   text-align: left;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  border-bottom: 1px solid var(--primary-border-color);
   white-space: nowrap;
 }
 
@@ -126,7 +126,7 @@
   margin-bottom: 0.5rem;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
-  border: 1px solid rgba(128, 128, 128, 0.4);
+  border: 1px solid var(--primary-border-color);
   background: transparent;
   color: inherit;
 }
@@ -142,18 +142,6 @@
   font-size: 0.72rem;
   padding: 0.05rem 0.45rem;
   border-radius: 4px;
-  background: rgba(128, 128, 128, 0.25);
+  background: var(--primary-background);
   font-weight: 500;
-}
-
-.tag-signal {
-  background: rgba(220, 140, 40, 0.3);
-}
-
-.tag-plane {
-  background: rgba(60, 130, 220, 0.3);
-}
-
-.tag-dielectric {
-  background: rgba(70, 180, 100, 0.3);
 }

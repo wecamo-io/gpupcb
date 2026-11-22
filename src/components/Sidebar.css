@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: GPL 3.0 */
 
 aside {
-    border-right: 1px solid gray;
+    border-right: 1px solid var(--primary-border-color);
     min-width: 16rem;
     max-width: 16rem;
     height: 100%;
@@ -11,6 +11,7 @@ aside {
     position: relative;
     left: 0;
     transition: left 0.1s ease;
+    background-color: var(--primary-background);
 }
 
 .chips {
@@ -21,8 +22,8 @@ aside {
 #load-file {
   margin-top: 1rem;
   width: fit-content;
-  color: #f6f6f6;
-  background-color: #2f2f2f;
+  color: var(--primary-text-color);
+  background-color: var(--primary-background);
   border: 1px solid;
   align-self: center;
   border-radius: 0.5rem;
@@ -50,13 +51,9 @@ aside.closed #load-file {
   border-radius: 0 0.5rem 0.5rem 0;
   border: 1px solid gray;
   border-left: none;
-  background: #2f2f2f;
-  color: white;
+  background: var(--primary-background);
+  color: var(--primary-text-color);
   cursor: pointer;
   z-index: 10;
   transition: background 0.2s;
-}
-
-.sidebar-toggle:hover {
-  background: #4e4e4e;
 }

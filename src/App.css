@@ -21,6 +21,9 @@
   --header-height: 5rem;
   --footer-height: 2rem;
   --logo-color: #FF2600;
+  --primary-background: #2f2f2f;
+  --primary-text-color: #f6f6f6;
+  --primary-border-color: gray;
 }
 
 * {
@@ -28,7 +31,7 @@
     padding: 0;
     box-sizing: border-box;
 
-    scrollbar-color: #1e1e1e #2f2f2f;
+    scrollbar-color: #1e1e1e var(--primary-background);
     scrollbar-width: thin;
 }
 
@@ -37,7 +40,7 @@
 }
 
 header {
-    border-bottom: 1px solid gray;
+    border-bottom: 1px solid var(--primary-border-color);
     height: var(--header-height);
 }
 
@@ -48,11 +51,12 @@ header > * {
 main {
   display: flex;
   height: calc(100% - var(--header-height) - var(--footer-height));
+  background-color: black;
 }
 
 footer {
     height: var(--footer-height);
-    border-top: 1px solid gray;
+    border-top: 1px solid var(--primary-border-color);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -90,7 +94,7 @@ button:hover {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+    color: var(--primary-text-color);
+    background-color: var(--primary-background);
   }
 }
