@@ -19,17 +19,6 @@ aside {
     flex-wrap: wrap;
 }
 
-#load-file {
-  margin-top: 1rem;
-  width: fit-content;
-  color: var(--primary-text-color);
-  background-color: var(--primary-background);
-  border: 1px solid;
-  align-self: center;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-}
-
 aside.closed {
   left: -16rem;
 }
