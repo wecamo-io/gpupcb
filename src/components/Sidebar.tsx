@@ -80,7 +80,6 @@ export default function Sidebar(props: {
         <For each={
           tabs
             .filter(tab => activeTabs().includes(tab.name))
-            .sort(a => a.name === selectedTab() ? -1 : 1)
         }>
           {(tab) => (
               <ActiveTab
