@@ -97,7 +97,12 @@ h1 {
 }
 
 h1 > img {
-    filter: contrast(1.5) saturate(1.5);
+    filter:
+      contrast(1.5)
+      saturate(1.5)
+      drop-shadow(0 0 2px #FF550080)
+      drop-shadow(0 0 8px #FF550040)
+      drop-shadow(0 0 16px #FF550026);
 }
 
 button:hover {
