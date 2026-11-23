@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL 3.0
 
 import { For, JSXElement, Show, createEffect, createSignal } from "solid-js";
+import { useDragContext } from "../context/drag";
 import { Sections, useTabContext } from "../context/tab";
 import ActiveTab from "./ActiveTab";
 import { ControlPanelSection } from "./ControlPanelSection";
@@ -14,14 +15,8 @@ import "./Sidebar.css";
 
 export default function Sidebar(props: {
   isOpen: boolean;
-  toggleSidebar: () => void;
   tabs: Sections[];
-  isDragging: boolean;
-  toggleDragging: () => void;
-  handleDragOverOtherSidebar: (value: {
-    left: boolean;
-    right: boolean;
-  }) => void;
+  toggleSidebar: () => void;
   isRight?: boolean;
 }) {
   const TABS: { name: Sections; content: JSXElement }[] = [
@@ -39,6 +34,8 @@ export default function Sidebar(props: {
     removeLeftActiveTab,
     removeRightActiveTab,
   } = useTabContext();
+  const { handleDragOverOtherSidebar } = useDragContext();
+
   const [selectedTab, setSelectedTab] = createSignal<Sections | null>(
     leftActiveTabs()[0] ? leftActiveTabs()[0] : null,
   );
@@ -108,7 +105,7 @@ export default function Sidebar(props: {
     e.preventDefault();
     e.currentTarget.classList.add("drag-over");
 
-    props.handleDragOverOtherSidebar(
+    handleDragOverOtherSidebar(
       props.isRight
         ? { left: false, right: true }
         : { left: true, right: false },
@@ -181,7 +178,6 @@ export default function Sidebar(props: {
               tabs={props.tabs}
               selectTab={selectTab}
               closeTab={closeTab}
-              toggleDragging={props.toggleDragging}
             />
           )}
         </For>

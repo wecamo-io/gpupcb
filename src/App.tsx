@@ -8,14 +8,21 @@ import logo from "./assets/logo.svg";
 import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
 import Tabs from "./components/Tabs";
+import { useDragContext } from "./context/drag";
 import { useTabContext } from "./context/tab";
 
 function App() {
   const { leftActiveTabs, rightActiveTabs } = useTabContext();
+  const {
+    isDragging,
+    previousSidebarStates,
+    setPreviousSidebarStates,
+    isDraggingOverOtherSidebar,
+    setIsDraggingOverOtherSidebar,
+  } = useDragContext();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = createSignal<boolean>(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] =
     createSignal<boolean>(false);
-  const [isDragging, setIsDragging] = createSignal<boolean>(false);
 
   const toggleLeftSidebar = () => {
     setIsLeftSidebarOpen((prev) => !prev);
@@ -23,27 +30,6 @@ function App() {
 
   const toggleRightSidebar = () => {
     setIsRightSidebarOpen((prev) => !prev);
-  };
-
-  const toggleDragging = () => {
-    setIsDragging((prev) => !prev);
-  };
-
-  const [previousSidebarStates, setPreviousSidebarStates] = createSignal<{
-    left: boolean;
-    right: boolean;
-  } | null>(null);
-
-  const [isDraggingOverOtherSidebar, setIsDraggingOverOtherSidebar] =
-    createSignal<{ left: boolean; right: boolean }>({
-      left: false,
-      right: false,
-    });
-
-  const handleDragOverOtherSidebar = (
-    value: ReturnType<typeof isDraggingOverOtherSidebar>,
-  ) => {
-    setIsDraggingOverOtherSidebar(value);
   };
 
   createEffect(() => {
@@ -86,25 +72,19 @@ function App() {
         <h1>
           <img src={logo} alt="GPUPCB" />
         </h1>
-        <Tabs toggleDragging={toggleDragging} />
+        <Tabs />
       </header>
       <main>
         <Sidebar
           isOpen={isLeftSidebarOpen()}
-          toggleSidebar={toggleLeftSidebar}
           tabs={leftActiveTabs()}
-          isDragging={isDragging()}
-          toggleDragging={toggleDragging}
-          handleDragOverOtherSidebar={handleDragOverOtherSidebar}
+          toggleSidebar={toggleLeftSidebar}
         />
         <ErrorDisplay />
         <Sidebar
           isOpen={isRightSidebarOpen()}
-          toggleSidebar={toggleRightSidebar}
           tabs={rightActiveTabs()}
-          isDragging={isDragging()}
-          toggleDragging={toggleDragging}
-          handleDragOverOtherSidebar={handleDragOverOtherSidebar}
+          toggleSidebar={toggleRightSidebar}
           isRight={true}
         />
       </main>

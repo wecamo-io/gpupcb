@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+import { useDragContext } from "../context/drag";
 import { Sections } from "../context/tab";
 import "./ActiveTab.css";
 
@@ -11,33 +12,14 @@ export default function ActiveTab(props: {
   tabs: Sections[];
   selectTab: (name: Sections) => void;
   closeTab: (name: Sections) => void;
-  toggleDragging: () => void;
 }) {
+  const { handleDragStart, handleDragEnd } = useDragContext();
+
   const handleCloseActiveTab = (e: MouseEvent) => {
     e.stopPropagation();
     props.closeTab(props.tabName);
 
     if (props.isSelected) props.selectTab(props.tabs[0]);
-  };
-
-  const handleDragStart = (e: DragEvent, name: Sections) => {
-    e.dataTransfer?.setData(
-      "text/plain",
-      JSON.stringify({
-        name,
-        source: "sidebar",
-      }),
-    );
-
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = "move";
-    }
-
-    props.toggleDragging();
-  };
-
-  const handleDragEnd = () => {
-    props.toggleDragging();
   };
 
   return (

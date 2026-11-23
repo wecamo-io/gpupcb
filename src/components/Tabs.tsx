@@ -3,31 +3,13 @@
 // SPDX-License-Identifier: GPL 3.0
 
 import { For } from "solid-js";
+import { useDragContext } from "../context/drag";
 import { Sections, useTabContext } from "../context/tab";
 import "./Tabs.css";
 
-export default function Tabs(props: { toggleDragging: () => void }) {
+export default function Tabs() {
   const { addLeftActiveTab } = useTabContext();
-
-  const handleDragStart = (e: DragEvent, name: Sections) => {
-    e.dataTransfer?.setData(
-      "text/plain",
-      JSON.stringify({
-        name,
-        source: "tabs",
-      }),
-    );
-
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = "move";
-    }
-
-    props.toggleDragging();
-  };
-
-  const handleDragEnd = () => {
-    props.toggleDragging();
-  };
+  const { handleDragStart, handleDragEnd } = useDragContext();
 
   return (
     <div class="tabs">

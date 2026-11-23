@@ -6,13 +6,16 @@
 import { render } from "solid-js/web";
 import App from "./App";
 import { BoardContextProvider } from "./context/board";
+import { DragContextProvider } from "./context/drag";
 import { TabContextProvider } from "./context/tab";
 
 render(
   () => (
     <BoardContextProvider>
       <TabContextProvider>
-        <App />
+        <DragContextProvider>
+          <App />
+        </DragContextProvider>
       </TabContextProvider>
     </BoardContextProvider>
   ),
