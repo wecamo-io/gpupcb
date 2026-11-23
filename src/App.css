@@ -36,6 +36,10 @@
     scrollbar-width: thin;
 }
 
+body {
+    overflow: hidden;
+}
+
 .container {
     height: 100vh;
 }
