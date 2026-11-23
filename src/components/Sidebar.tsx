@@ -11,10 +11,19 @@ import ActiveTab from "./ActiveTab";
 export default function Sidebar(props: {
   isOpen: boolean;
   toggleSidebar: () => void;
-  tabs: Sections[],
+  tabs: Sections[];
+  isDragging: boolean;
+  toggleDragging: () => void;
+  handleDragOverOtherSidebar: (value: { left: boolean, right: boolean }) => void;
   isRight?: boolean;
 }) {
-  const { leftActiveTabs, removeLeftActiveTab, removeRightActiveTab } = useTabContext();
+  const {
+    leftActiveTabs,
+    addLeftActiveTab,
+    addRightActiveTab,
+    removeLeftActiveTab,
+    removeRightActiveTab,
+  } = useTabContext();
   const [selectedTab, setSelectedTab] = createSignal<Sections | null>(leftActiveTabs()[0] ? leftActiveTabs()[0] : null);
   const [sidebarWidth, setSidebarWidth] = createSignal<number>(256);
   const [isResizing, setIsResizing] = createSignal<boolean>(false);
@@ -63,6 +72,58 @@ selectTab
     setIsResizing(false);
   };
 
+  const dragTab = (name: Sections) => {
+    if (props.isRight) {
+      removeLeftActiveTab(name);
+      addRightActiveTab(name);
+    } else {
+      removeRightActiveTab(name);
+      addLeftActiveTab(name);
+    }
+  };
+
+  const handleDragOver = (
+    e: DragEvent & {
+      currentTarget: HTMLElement;
+      target: Element;
+    }
+  ) => {
+    e.preventDefault();
+    e.currentTarget.classList.add("drag-over");
+
+    props.handleDragOverOtherSidebar(
+      props.isRight
+        ? { left: false, right: true }
+        : { left: true, right: false }
+    );
+  }
+
+  const handleDragLeave = (
+    e: DragEvent & {
+      currentTarget: HTMLElement;
+      target: Element;
+    }
+  ) => {
+    e.currentTarget.classList.remove("drag-over");
+
+  }
+
+  const handleOnDrop = (
+    e: DragEvent & {
+      currentTarget: HTMLElement;
+      target: Element;
+    }
+  ) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove("drag-over");
+
+    const tabName = e.dataTransfer?.getData("text/plain") as Sections;
+
+    if (tabName) {
+      dragTab(tabName);
+    }
+  }
+
   createEffect(() => {
     const selected = selectedTab();
 
@@ -84,6 +145,9 @@ selectTab
         left: props.isRight ? "auto" : (props.isOpen ? "0" : `-${sidebarWidth()}px`),
         right: props.isRight ? (props.isOpen ? "0" : `-${sidebarWidth()}px`) : "auto",
       }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleOnDrop}
     >
 
       <div class="active-tabs">
@@ -98,6 +162,7 @@ selectTab
               tabs={props.tabs}
               selectTab={selectTab}
               closeTab={closeTab}
+              toggleDragging={props.toggleDragging}
               />
           )}
         </For>

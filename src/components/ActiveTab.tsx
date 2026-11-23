@@ -11,6 +11,7 @@ export default function ActiveTab(props: {
   tabs: Sections[],
   selectTab: (name: Sections) => void,
   closeTab: (name: Sections) => void,
+  toggleDragging: () => void,
 }) {
 
   const handleCloseActiveTab = (e: MouseEvent) => {
@@ -20,11 +21,28 @@ export default function ActiveTab(props: {
     if (props.isSelected) props.selectTab(props.tabs[0]);
   }
 
+  const handleDragStart = (e: DragEvent) => {
+    e.dataTransfer?.setData("text/plain", props.tabName);
+
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+    }
+
+    props.toggleDragging();
+  };
+
+  const handleDragEnd = () => {
+    props.toggleDragging();
+  };
+
   return (
     <div
       class={`active-tab ${props.isSelected ? "open" : "closed"}`}
       onClick={() => props.selectTab(props.tabName)}
       title={props.tabName}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <button
         class="close-active-tab"
