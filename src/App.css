@@ -3,13 +3,11 @@
 /* SPDX-License-Identifier: GPL 3.0 */
 
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
+    font-family: Inter, Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: 0.01em;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,10 +19,12 @@
   --header-height: 5rem;
   --footer-height: 2rem;
   --logo-color: #FF5500;
-  --primary-background: #1d1d1d;
-  --primary-text-color: #f6f6f6;
-  --primary-border-color: gray;
-  --secondary-background: #2f2f2f;
+  --primary-background: #191B1E;
+  --secondary-background: #24272B;
+  --primary-text-color: #E6E8EB;
+  --secondary-text-color: #A0A6AE;
+  --primary-border-color: #41464D;
+  --secondary-border-color: #30353B;
 }
 
 * {
