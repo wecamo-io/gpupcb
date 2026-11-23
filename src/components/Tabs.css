@@ -9,10 +9,15 @@
 
 .tab {
     border: 1px solid var(--primary-border-color);
-    padding: 0.1rem 1rem;
-    width: fit-content;
+    padding: 0.1rem 0.5rem;
+    min-width: 24px;
+    line-height: 1.2;
+    /*width: fit-content;*/
     flex-grow: 1;
     background: none;
     color: var(--primary-text-color);
     height: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
