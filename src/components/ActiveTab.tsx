@@ -20,8 +20,14 @@ export default function ActiveTab(props: {
     if (props.isSelected) props.selectTab(props.tabs[0]);
   };
 
-  const handleDragStart = (e: DragEvent) => {
-    e.dataTransfer?.setData("text/plain", props.tabName);
+  const handleDragStart = (e: DragEvent, name: Sections) => {
+    e.dataTransfer?.setData(
+      "text/plain",
+      JSON.stringify({
+        name,
+        source: "sidebar",
+      }),
+    );
 
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move";
@@ -40,7 +46,7 @@ export default function ActiveTab(props: {
       onClick={() => props.selectTab(props.tabName)}
       title={props.tabName}
       draggable={true}
-      onDragStart={handleDragStart}
+      onDragStart={(e) => handleDragStart(e, props.tabName)}
       onDragEnd={handleDragEnd}
     >
       <button class="close-active-tab" onClick={(e) => handleCloseActiveTab(e)}>

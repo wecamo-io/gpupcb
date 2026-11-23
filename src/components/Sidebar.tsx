@@ -80,13 +80,22 @@ export default function Sidebar(props: {
     setIsResizing(false);
   };
 
-  const dragTab = (name: Sections) => {
-    if (props.isRight) {
-      removeLeftActiveTab(name);
-      addRightActiveTab(name);
-    } else {
-      removeRightActiveTab(name);
-      addLeftActiveTab(name);
+  const dragTab = (name: Sections, source: string) => {
+    if (source === "tabs") {
+      if (props.isRight) {
+        addRightActiveTab(name);
+      } else {
+        addLeftActiveTab(name);
+      }
+    } else if (source === "sidebar") {
+      if (props.isRight) {
+        removeLeftActiveTab(name);
+        addRightActiveTab(name);
+        addRightActiveTab(name);
+      } else {
+        removeRightActiveTab(name);
+        addLeftActiveTab(name);
+      }
     }
   };
 
@@ -124,10 +133,12 @@ export default function Sidebar(props: {
     e.preventDefault();
     e.currentTarget.classList.remove("drag-over");
 
-    const tabName = e.dataTransfer?.getData("text/plain") as Sections;
+    const data = e.dataTransfer?.getData("text/plain") as Sections;
 
-    if (tabName) {
-      dragTab(tabName);
+    if (data) {
+      const { name, source } = JSON.parse(data);
+
+      dragTab(name, source);
     }
   };
 

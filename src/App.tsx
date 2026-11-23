@@ -86,7 +86,7 @@ function App() {
         <h1>
           <img src={logo} alt="GPUPCB" />
         </h1>
-        <Tabs />
+        <Tabs toggleDragging={toggleDragging} />
       </header>
       <main>
         <Sidebar
