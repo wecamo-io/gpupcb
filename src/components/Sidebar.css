@@ -4,6 +4,7 @@
 
 aside.left {
     border-right: 1px solid var(--primary-border-color);
+    outline-offset: 4px;
     min-width: 16rem;
     height: 100%;
     text-align: center;
@@ -11,9 +12,18 @@ aside.left {
     transition: left 0.1s ease;
     background-color: var(--primary-background);
 }
+aside.left::before {
+    content: "";
+    height: 100%;
+    width: 1px;
+    position: absolute;
+    top: 0;
+    right: 1px;
+    background-color: var(--primary-border-color);
+}
 
 aside.right {
-    border-left: 1px solid var(--primary-border-color);
+    border-left: 1px double var(--primary-border-color);
     min-width: 16rem;
     height: 100%;
     text-align: center;
@@ -21,7 +31,15 @@ aside.right {
     transition: right 0.1s ease;
     background-color: var(--primary-background);
 }
-
+aside.right::before {
+    content: "";
+    height: 100%;
+    width: 1px;
+    position: absolute;
+    top: 0;
+    left: 1px;
+    background-color: var(--primary-border-color);
+}
 aside.drag-over {
     background-color: var(--secondary-background);
 }
