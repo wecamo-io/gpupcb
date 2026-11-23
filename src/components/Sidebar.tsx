@@ -14,6 +14,9 @@ export default function Sidebar(props: {
 }) {
   const { activeTabs } = useTabContext();
   const [selectedTab, setSelectedTab] = createSignal<Sections | null>(activeTabs()[0]);
+  const [sidebarWidth, setSidebarWidth] = createSignal<number>(256);
+  const [isResizing, setIsResizing] = createSignal<boolean>(false);
+
 
     const tabs: { name: Sections; content: JSXElement }[] = [
     { name: Sections.LoadFile, content: <LoadFileSection /> },
@@ -26,6 +29,32 @@ export default function Sidebar(props: {
   const handleSelectTab = (name: Sections) => {
     setSelectedTab(name);
   }
+
+  let startX = 0;
+  let startWidth = 0;
+
+  const handleResizeStart = (e: PointerEvent) => {
+    e.preventDefault();
+
+    startX = e.clientX;
+    startWidth = sidebarWidth();
+
+    setIsResizing(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleResize = (e: PointerEvent) => {
+    if (!isResizing()) return;
+
+    const newWidth = startWidth + (e.clientX - startX);
+
+    // width between 256px and half of screen size
+    setSidebarWidth(Math.max(256, Math.min(window.innerWidth / 2, newWidth)));
+  };
+
+  const handleResizeEnd = () => {
+    setIsResizing(false);
+  };
 
   createEffect(() => {
     const tabs = activeTabs();
@@ -40,7 +69,12 @@ export default function Sidebar(props: {
   });
 
   return (
-    <aside class={`${props.isOpen ? "open" : "closed"}`}>
+    <aside
+      class={
+        `${props.isOpen ? "open" : "closed"} ${isResizing() && "resizing"}`
+      }
+      style={{ width: `${sidebarWidth()}px` }}
+    >
 
       <div class="active-tabs">
         <For each={
@@ -73,6 +107,14 @@ export default function Sidebar(props: {
       >
         {props.isOpen ? "❮" : "❯"}
       </button>
+
+      <div
+        class="resize-handle"
+        onPointerDown={handleResizeStart}
+        onPointerMove={handleResize}
+        onPointerUp={handleResizeEnd}
+        onLostPointerCapture={handleResizeEnd}
+      />
     </aside>
   );
 }

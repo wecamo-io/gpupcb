@@ -5,7 +5,6 @@
 aside {
     border-right: 1px solid var(--primary-border-color);
     min-width: 16rem;
-    max-width: 16rem;
     height: 100%;
     text-align: center;
     position: relative;
@@ -43,4 +42,22 @@ aside.closed #load-file {
 
 .active-tabs {
     display: flex;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.resize-handle:hover,
+.resizing .resize-handle {
+  background: none;
+}
+
+.resizing {
+  cursor: col-resize;
 }
