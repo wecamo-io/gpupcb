@@ -73,7 +73,7 @@ export default function Sidebar(props: {
       class={
         `${props.isOpen ? "open" : "closed"} ${isResizing() && "resizing"}`
       }
-      style={{ width: `${sidebarWidth()}px` }}
+      style={{ width: `${sidebarWidth()}px`, left: props.isOpen ? "0" : `-${sidebarWidth()}px` }}
     >
 
       <div class="active-tabs">

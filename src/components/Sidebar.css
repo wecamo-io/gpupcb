@@ -8,13 +8,8 @@ aside {
     height: 100%;
     text-align: center;
     position: relative;
-    left: 0;
     transition: left 0.1s ease;
     background-color: var(--primary-background);
-}
-
-aside.closed {
-  left: -16rem;
 }
 
 aside.closed #load-file {
