@@ -87,6 +87,7 @@ aside.closed #load-file {
 
 .active-tabs {
     display: flex;
+    border-bottom: 1px solid var(--primary-border-color);
 }
 
 .resize-handle.left {
