@@ -2,24 +2,23 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-import "./ActiveTab.css";
 import { Sections } from "../context/tab";
+import "./ActiveTab.css";
 
 export default function ActiveTab(props: {
-  tabName: Sections,
-  isSelected: boolean,
-  tabs: Sections[],
-  selectTab: (name: Sections) => void,
-  closeTab: (name: Sections) => void,
-  toggleDragging: () => void,
+  tabName: Sections;
+  isSelected: boolean;
+  tabs: Sections[];
+  selectTab: (name: Sections) => void;
+  closeTab: (name: Sections) => void;
+  toggleDragging: () => void;
 }) {
-
   const handleCloseActiveTab = (e: MouseEvent) => {
     e.stopPropagation();
     props.closeTab(props.tabName);
 
     if (props.isSelected) props.selectTab(props.tabs[0]);
-  }
+  };
 
   const handleDragStart = (e: DragEvent) => {
     e.dataTransfer?.setData("text/plain", props.tabName);
@@ -44,15 +43,10 @@ export default function ActiveTab(props: {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <button
-        class="close-active-tab"
-        onClick={e => handleCloseActiveTab(e)}
-      >
+      <button class="close-active-tab" onClick={(e) => handleCloseActiveTab(e)}>
         X
       </button>
-      <span>
-        {props.tabName}
-      </span>
+      <span>{props.tabName}</span>
     </div>
   );
 }

@@ -4,16 +4,17 @@
 
 import { createEffect, createSignal } from "solid-js";
 import "./App.css";
+import logo from "./assets/logo.svg";
 import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
-import logo from "./assets/logo.svg"
-import { useTabContext } from "./context/tab";
 import Tabs from "./components/Tabs";
+import { useTabContext } from "./context/tab";
 
 function App() {
   const { leftActiveTabs, rightActiveTabs } = useTabContext();
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = createSignal<boolean>(true);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = createSignal<boolean>(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] =
+    createSignal<boolean>(false);
   const [isDragging, setIsDragging] = createSignal<boolean>(false);
 
   const toggleLeftSidebar = () => {
@@ -25,20 +26,22 @@ function App() {
   };
 
   const toggleDragging = () => {
-    setIsDragging(prev => !prev);
-  }
+    setIsDragging((prev) => !prev);
+  };
 
-  const [previousSidebarStates, setPreviousSidebarStates] =
-    createSignal<{ left: boolean; right: boolean } | null>(null);
+  const [previousSidebarStates, setPreviousSidebarStates] = createSignal<{
+    left: boolean;
+    right: boolean;
+  } | null>(null);
 
   const [isDraggingOverOtherSidebar, setIsDraggingOverOtherSidebar] =
     createSignal<{ left: boolean; right: boolean }>({
       left: false,
-      right: false
+      right: false,
     });
 
   const handleDragOverOtherSidebar = (
-    value: ReturnType<typeof isDraggingOverOtherSidebar>
+    value: ReturnType<typeof isDraggingOverOtherSidebar>,
   ) => {
     setIsDraggingOverOtherSidebar(value);
   };
@@ -48,12 +51,12 @@ function App() {
       if (previousSidebarStates() === null) {
         setPreviousSidebarStates({
           left: isLeftSidebarOpen(),
-          right: isRightSidebarOpen()
+          right: isRightSidebarOpen(),
         });
 
         setIsDraggingOverOtherSidebar({
           left: false,
-          right: false
+          right: false,
         });
       }
 
@@ -71,7 +74,7 @@ function App() {
         setPreviousSidebarStates(null);
         setIsDraggingOverOtherSidebar({
           left: false,
-          right: false
+          right: false,
         });
       }
     }
@@ -82,8 +85,8 @@ function App() {
       <header>
         <h1>
           <img src={logo} alt="GPUPCB" />
-          </h1>
-          <Tabs />
+        </h1>
+        <Tabs />
       </header>
       <main>
         <Sidebar

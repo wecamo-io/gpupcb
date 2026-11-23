@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: GPL 3.0
 
 import { For, JSXElement, Show, createEffect, createSignal } from "solid-js";
-import "./Sidebar.css";
 import { Sections, useTabContext } from "../context/tab";
 import ActiveTab from "./ActiveTab";
 import { ControlPanelSection } from "./ControlPanelSection";
-import { LoadFileSection } from "./LoadFileSection";
-import { FDTDSection } from "./FDTDSection";
 import { FDFDSection } from "./FDFDSection";
+import { FDTDSection } from "./FDTDSection";
+import { LoadFileSection } from "./LoadFileSection";
 import { ParametersSection } from "./ParametersSection";
+import "./Sidebar.css";
 
 export default function Sidebar(props: {
   isOpen: boolean;
@@ -18,7 +18,10 @@ export default function Sidebar(props: {
   tabs: Sections[];
   isDragging: boolean;
   toggleDragging: () => void;
-  handleDragOverOtherSidebar: (value: { left: boolean, right: boolean }) => void;
+  handleDragOverOtherSidebar: (value: {
+    left: boolean;
+    right: boolean;
+  }) => void;
   isRight?: boolean;
 }) {
   const TABS: { name: Sections; content: JSXElement }[] = [
@@ -36,18 +39,20 @@ export default function Sidebar(props: {
     removeLeftActiveTab,
     removeRightActiveTab,
   } = useTabContext();
-  const [selectedTab, setSelectedTab] = createSignal<Sections | null>(leftActiveTabs()[0] ? leftActiveTabs()[0] : null);
+  const [selectedTab, setSelectedTab] = createSignal<Sections | null>(
+    leftActiveTabs()[0] ? leftActiveTabs()[0] : null,
+  );
   const [sidebarWidth, setSidebarWidth] = createSignal<number>(256);
   const [isResizing, setIsResizing] = createSignal<boolean>(false);
 
   const selectTab = (name: Sections) => {
     setSelectedTab(name);
-  }
+  };
 
   const closeTab = (name: Sections) => {
     props.isRight ? removeRightActiveTab(name) : removeLeftActiveTab(name);
-  }
-selectTab
+  };
+  selectTab;
   let startX = 0;
   let startWidth = 0;
 
@@ -89,7 +94,7 @@ selectTab
     e: DragEvent & {
       currentTarget: HTMLElement;
       target: Element;
-    }
+    },
   ) => {
     e.preventDefault();
     e.currentTarget.classList.add("drag-over");
@@ -97,25 +102,24 @@ selectTab
     props.handleDragOverOtherSidebar(
       props.isRight
         ? { left: false, right: true }
-        : { left: true, right: false }
+        : { left: true, right: false },
     );
-  }
+  };
 
   const handleDragLeave = (
     e: DragEvent & {
       currentTarget: HTMLElement;
       target: Element;
-    }
+    },
   ) => {
     e.currentTarget.classList.remove("drag-over");
-
-  }
+  };
 
   const handleOnDrop = (
     e: DragEvent & {
       currentTarget: HTMLElement;
       target: Element;
-    }
+    },
   ) => {
     e.preventDefault();
     e.currentTarget.classList.remove("drag-over");
@@ -125,58 +129,55 @@ selectTab
     if (tabName) {
       dragTab(tabName);
     }
-  }
+  };
 
   createEffect(() => {
     const selected = selectedTab();
 
     if (props.tabs.length === 0) {
       setSelectedTab(null);
-    }
-    else if (!selected || !props.tabs.includes(selected)) {
+    } else if (!selected || !props.tabs.includes(selected)) {
       setSelectedTab(props.tabs[0]);
     }
   });
 
   return (
     <aside
-      class={
-        `${props.isOpen ? "open" : "closed"} ${props.isRight ? "right" : "left"} ${isResizing() && "resizing"}`
-      }
+      class={`${props.isOpen ? "open" : "closed"} ${props.isRight ? "right" : "left"} ${isResizing() && "resizing"}`}
       style={{
         width: `${sidebarWidth()}px`,
-        left: props.isRight ? "auto" : (props.isOpen ? "0" : `-${sidebarWidth()}px`),
-        right: props.isRight ? (props.isOpen ? "0" : `-${sidebarWidth()}px`) : "auto",
+        left: props.isRight
+          ? "auto"
+          : props.isOpen
+            ? "0"
+            : `-${sidebarWidth()}px`,
+        right: props.isRight
+          ? props.isOpen
+            ? "0"
+            : `-${sidebarWidth()}px`
+          : "auto",
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleOnDrop}
     >
-
       <div class="active-tabs">
-        <For each={
-          TABS
-            .filter(tab => props.tabs.includes(tab.name))
-        }>
+        <For each={TABS.filter((tab) => props.tabs.includes(tab.name))}>
           {(tab) => (
-              <ActiveTab
+            <ActiveTab
               tabName={tab.name}
               isSelected={tab.name === selectedTab()}
               tabs={props.tabs}
               selectTab={selectTab}
               closeTab={closeTab}
               toggleDragging={props.toggleDragging}
-              />
+            />
           )}
         </For>
       </div>
 
       <Show when={selectedTab()}>
-        {(tab) => (
-          <>
-            {TABS.find(t => t.name === tab())?.content}
-          </>
-        )}
+        {(tab) => <>{TABS.find((t) => t.name === tab())?.content}</>}
       </Show>
 
       <button
@@ -184,15 +185,11 @@ selectTab
         onClick={props.toggleSidebar}
         aria-label={props.isOpen ? "Close sidebar" : "Open sidebar"}
       >
-        {
-          props.isRight
-            ? (props.isOpen ? "❯" : "❮")
-            : (props.isOpen ? "❮" : "❯")
-        }
+        {props.isRight ? (props.isOpen ? "❯" : "❮") : props.isOpen ? "❮" : "❯"}
       </button>
 
       <div
-        class={`resize-handle ${ props.isOpen && (props.isRight ? "right" : "left")}`}
+        class={`resize-handle ${props.isOpen && (props.isRight ? "right" : "left")}`}
         onPointerDown={handleResizeStart}
         onPointerMove={handleResize}
         onPointerUp={handleResizeEnd}

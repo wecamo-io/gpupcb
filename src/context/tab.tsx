@@ -9,34 +9,34 @@ export enum Sections {
   ControlPanel = "Control Panel",
   FDTD = "FDTD",
   FDFD = "FDFD",
-  Parameters = "Parameters"
+  Parameters = "Parameters",
 }
 
 export const makeTabContext = () => {
   const [leftActiveTabs, setLeftActiveTabs] = createSignal<Sections[]>([
-    Sections.LoadFile
+    Sections.LoadFile,
   ]);
 
   const [rightActiveTabs, setRightActiveTabs] = createSignal<Sections[]>([]);
 
   const addLeftActiveTab = (name: Sections) => {
     if (!leftActiveTabs().includes(name)) {
-      setLeftActiveTabs(prev => [...prev, name]);
+      setLeftActiveTabs((prev) => [...prev, name]);
     }
   };
 
   const removeLeftActiveTab = (name: Sections) => {
-    setLeftActiveTabs(prev => prev.filter(tab => tab !== name));
+    setLeftActiveTabs((prev) => prev.filter((tab) => tab !== name));
   };
 
   const addRightActiveTab = (name: Sections) => {
     if (!rightActiveTabs().includes(name)) {
-      setRightActiveTabs(prev => [...prev, name]);
+      setRightActiveTabs((prev) => [...prev, name]);
     }
   };
 
   const removeRightActiveTab = (name: Sections) => {
-    setRightActiveTabs(prev => prev.filter(tab => tab !== name));
+    setRightActiveTabs((prev) => prev.filter((tab) => tab !== name));
   };
 
   return {
@@ -45,7 +45,7 @@ export const makeTabContext = () => {
     addLeftActiveTab,
     removeLeftActiveTab,
     addRightActiveTab,
-    removeRightActiveTab
+    removeRightActiveTab,
   };
 };
 
@@ -57,9 +57,7 @@ export function TabContextProvider(props: ParentProps) {
   const context = makeTabContext();
 
   return (
-    <TabContext.Provider value={context}>
-      {props.children}
-    </TabContext.Provider>
+    <TabContext.Provider value={context}>{props.children}</TabContext.Provider>
   );
 }
 
@@ -67,9 +65,7 @@ export function useTabContext() {
   const context = useContext(TabContext);
 
   if (!context) {
-    throw new Error(
-      "useTabContext should be called inside TabContextProvider"
-    );
+    throw new Error("useTabContext should be called inside TabContextProvider");
   }
 
   return context;

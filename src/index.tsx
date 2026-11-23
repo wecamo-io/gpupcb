@@ -8,10 +8,13 @@ import App from "./App";
 import { BoardContextProvider } from "./context/board";
 import { TabContextProvider } from "./context/tab";
 
-render(() => (
+render(
+  () => (
     <BoardContextProvider>
       <TabContextProvider>
         <App />
       </TabContextProvider>
     </BoardContextProvider>
-  ), document.getElementById("root") as HTMLElement);
+  ),
+  document.getElementById("root") as HTMLElement,
+);

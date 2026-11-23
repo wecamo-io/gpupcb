@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: GPL 3.0
 
 import { For } from "solid-js";
-import "./Tabs.css";
 import { Sections, useTabContext } from "../context/tab";
+import "./Tabs.css";
 
 export default function Tabs() {
   const { addLeftActiveTab } = useTabContext();
@@ -13,14 +13,11 @@ export default function Tabs() {
     <div class="tabs">
       <For each={Object.values(Sections)}>
         {(name) => (
-          <button
-            class="tab"
-            onClick={() => addLeftActiveTab(name)}
-          >
+          <button class="tab" onClick={() => addLeftActiveTab(name)}>
             {name}
           </button>
         )}
       </For>
-      </div>
+    </div>
   );
 }
