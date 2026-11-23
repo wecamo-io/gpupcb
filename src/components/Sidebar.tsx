@@ -3,10 +3,14 @@
 // SPDX-License-Identifier: GPL 3.0
 
 import { For, JSXElement, Show, createEffect, createSignal } from "solid-js";
-import { LoadFileSection } from "./LoadFileSection";
 import "./Sidebar.css";
 import { Sections, useTabContext } from "../context/tab";
 import ActiveTab from "./ActiveTab";
+import { ControlPanelSection } from "./ControlPanelSection";
+import { LoadFileSection } from "./LoadFileSection";
+import { FDTDSection } from "./FDTDSection";
+import { FDFDSection } from "./FDFDSection";
+import { ParametersSection } from "./ParametersSection";
 
 export default function Sidebar(props: {
   isOpen: boolean;
@@ -17,6 +21,14 @@ export default function Sidebar(props: {
   handleDragOverOtherSidebar: (value: { left: boolean, right: boolean }) => void;
   isRight?: boolean;
 }) {
+  const TABS: { name: Sections; content: JSXElement }[] = [
+    { name: Sections.LoadFile, content: <LoadFileSection /> },
+    { name: Sections.ControlPanel, content: <ControlPanelSection /> },
+    { name: Sections.FDTD, content: <FDTDSection /> },
+    { name: Sections.FDFD, content: <FDFDSection /> },
+    { name: Sections.Parameters, content: <ParametersSection /> },
+  ];
+
   const {
     leftActiveTabs,
     addLeftActiveTab,
@@ -27,15 +39,6 @@ export default function Sidebar(props: {
   const [selectedTab, setSelectedTab] = createSignal<Sections | null>(leftActiveTabs()[0] ? leftActiveTabs()[0] : null);
   const [sidebarWidth, setSidebarWidth] = createSignal<number>(256);
   const [isResizing, setIsResizing] = createSignal<boolean>(false);
-
-
-    const tabs: { name: Sections; content: JSXElement }[] = [
-    { name: Sections.LoadFile, content: <LoadFileSection /> },
-    { name: Sections.ControlPanel, content: <div></div> },
-    { name: Sections.FDTD, content: <div></div> },
-    { name: Sections.FDFD, content: <div></div> },
-    { name: Sections.Parameters, content: <div></div> },
-  ];
 
   const selectTab = (name: Sections) => {
     setSelectedTab(name);
@@ -152,7 +155,7 @@ selectTab
 
       <div class="active-tabs">
         <For each={
-          tabs
+          TABS
             .filter(tab => props.tabs.includes(tab.name))
         }>
           {(tab) => (
@@ -171,7 +174,7 @@ selectTab
       <Show when={selectedTab()}>
         {(tab) => (
           <>
-            {tabs.find(t => t.name === tab())?.content}
+            {TABS.find(t => t.name === tab())?.content}
           </>
         )}
       </Show>

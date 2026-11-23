@@ -8,7 +8,7 @@ import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
 import logo from "./assets/logo.svg"
 import { useTabContext } from "./context/tab";
-import Tabs from "./components/Tab";
+import Tabs from "./components/Tabs";
 
 function App() {
   const { leftActiveTabs, rightActiveTabs } = useTabContext();
