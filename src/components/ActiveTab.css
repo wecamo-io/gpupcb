@@ -24,12 +24,12 @@
     border-left: 1px solid var(--primary-text-color);
     border-bottom: 3px solid var(--primary-text-color);
     cursor: pointer;
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-width: 0;
 }
 
 .active-tab.closed {
-  flex: 0 1 3rem;
+  flex: 0 1 auto;
   min-width: 2rem;
 }
 
