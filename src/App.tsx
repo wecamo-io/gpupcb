@@ -14,7 +14,7 @@ function App() {
   const { leftActiveTabs, rightActiveTabs } = useTabContext();
 
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = createSignal<boolean>(true);
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = createSignal<boolean>(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = createSignal<boolean>(false);
 
   const toggleLeftSidebar = () => {
     setIsLeftSidebarOpen((prev) => !prev);
