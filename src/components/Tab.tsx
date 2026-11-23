@@ -4,11 +4,11 @@
 
 import { JSXElement } from "solid-js";
 import { LoadFileSection } from "./LoadFileSection";
-import "./Tabs.css";
+import "./Tab.css";
 import { Sections, useTabContext } from "../context/tab";
 
-export default function Sidebar() {
-  const { addActiveTab } = useTabContext();
+export default function Tabs() {
+  const { addLeftActiveTab } = useTabContext();
 
   const tabs: { name: Sections; content: JSXElement }[] = [
     { name: Sections.LoadFile, content: <LoadFileSection /> },
@@ -23,7 +23,7 @@ export default function Sidebar() {
         {tabs.map(tab => (
           <button
             class="tab"
-            onClick={() => addActiveTab(tab.name)}
+            onClick={() => addLeftActiveTab(tab.name)}
           >
             {tab.name}
           </button>

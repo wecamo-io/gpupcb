@@ -1,8 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/>
-//
-// SPDX-License-Identifier: GPL 3.0
 
-import { createContext, createEffect, createSignal, ParentProps, useContext } from "solid-js";
+import { createContext, createSignal, ParentProps, useContext } from "solid-js";
 
 export enum Sections {
   LoadFile = "Load File",
@@ -13,24 +10,39 @@ export enum Sections {
 }
 
 export const makeTabContext = () => {
-  const [activeTabs, setActiveTabs] = createSignal<Sections[]>([Sections.LoadFile]);
+  const [leftActiveTabs, setLeftActiveTabs] = createSignal<Sections[]>([
+    Sections.LoadFile
+  ]);
 
-  const addActiveTab = (name: Sections) => {
-    if(!activeTabs().includes(name)) setActiveTabs(prev => [...prev, name]);
-  }
+  const [rightActiveTabs, setRightActiveTabs] = createSignal<Sections[]>([]);
 
-  const removeActiveTab = (name: Sections) => {
-    setActiveTabs(prev => prev.filter(tab => tab !== name));
-  }
+  const addLeftActiveTab = (name: Sections) => {
+    if (!leftActiveTabs().includes(name)) {
+      setLeftActiveTabs(prev => [...prev, name]);
+    }
+  };
 
-  createEffect(() => {
-    console.log("Active tabs changed:", activeTabs());
-  });
+  const removeLeftActiveTab = (name: Sections) => {
+    setLeftActiveTabs(prev => prev.filter(tab => tab !== name));
+  };
+
+  const addRightActiveTab = (name: Sections) => {
+    if (!rightActiveTabs().includes(name)) {
+      setRightActiveTabs(prev => [...prev, name]);
+    }
+  };
+
+  const removeRightActiveTab = (name: Sections) => {
+    setRightActiveTabs(prev => prev.filter(tab => tab !== name));
+  };
 
   return {
-    activeTabs,
-    addActiveTab,
-    removeActiveTab
+    leftActiveTabs,
+    rightActiveTabs,
+    addLeftActiveTab,
+    removeLeftActiveTab,
+    addRightActiveTab,
+    removeRightActiveTab
   };
 };
 
@@ -53,7 +65,7 @@ export function useTabContext() {
 
   if (!context) {
     throw new Error(
-      "useTabContext should be called inside TabContextProvider",
+      "useTabContext should be called inside TabContextProvider"
     );
   }
 

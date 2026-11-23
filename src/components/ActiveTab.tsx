@@ -3,26 +3,27 @@
 // SPDX-License-Identifier: GPL 3.0
 
 import "./ActiveTab.css";
-import { Sections, useTabContext } from "../context/tab";
+import { Sections } from "../context/tab";
 
 export default function ActiveTab(props: {
   tabName: Sections,
   isSelected: boolean,
-  handleSelectTab: (name: Sections) => void,
+  tabs: Sections[],
+  selectTab: (name: Sections) => void,
+  closeTab: (name: Sections) => void,
 }) {
-  const { activeTabs, removeActiveTab } = useTabContext();
 
   const handleCloseActiveTab = (e: MouseEvent) => {
     e.stopPropagation();
-    removeActiveTab(props.tabName);
+    props.closeTab(props.tabName);
 
-    if (props.isSelected) props.handleSelectTab(activeTabs()[0]);
+    if (props.isSelected) props.selectTab(props.tabs[0]);
   }
 
   return (
     <div
       class={`active-tab ${props.isSelected ? "open" : "closed"}`}
-      onClick={() => props.handleSelectTab(props.tabName)}
+      onClick={() => props.selectTab(props.tabName)}
       title={props.tabName}
     >
       <button

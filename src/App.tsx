@@ -6,41 +6,44 @@ import { createSignal } from "solid-js";
 import "./App.css";
 import ErrorDisplay from "./components/ErrorDisplay";
 import Sidebar from "./components/Sidebar";
-import { BoardContextProvider } from "./context/board";
 import logo from "./assets/logo.svg"
-import { TabContextProvider } from "./context/tab";
-import Tabs from "./components/Tabs";
+import { useTabContext } from "./context/tab";
+import Tabs from "./components/Tab";
 
 function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = createSignal<boolean>(true);
+  const { leftActiveTabs, rightActiveTabs } = useTabContext();
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen((prev) => !prev);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = createSignal<boolean>(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = createSignal<boolean>(true);
+
+  const toggleLeftSidebar = () => {
+    setIsLeftSidebarOpen((prev) => !prev);
+  };
+
+  const toggleRightSidebar = () => {
+    setIsRightSidebarOpen((prev) => !prev);
   };
 
   return (
-    <BoardContextProvider>
-      <TabContextProvider>
-      <div class="container">
-        <header>
-          <h1>
-            <img src={logo} alt="GPUPCB" />
-            </h1>
-            <Tabs />
-        </header>
-        <main>
-          <Sidebar isOpen={isSidebarOpen()} toggleSidebar={toggleSidebar} />
-          <ErrorDisplay />
-        </main>
-        <footer>
-          <span>{new Date().getFullYear()} GPUPCB by&nbsp;</span>
-          <a href="https://www.wecamo.io/" target="_blank">
-            Wecamo
-          </a>
-        </footer>
-        </div>
-      </TabContextProvider>
-    </BoardContextProvider>
+    <div class="container">
+      <header>
+        <h1>
+          <img src={logo} alt="GPUPCB" />
+          </h1>
+          <Tabs />
+      </header>
+      <main>
+          <Sidebar isOpen={isLeftSidebarOpen()} toggleSidebar={toggleLeftSidebar} tabs={leftActiveTabs()} />
+        <ErrorDisplay />
+          <Sidebar isOpen={isRightSidebarOpen()} toggleSidebar={toggleRightSidebar} tabs={rightActiveTabs()} isRight={true} />
+      </main>
+      <footer>
+        <span>{new Date().getFullYear()} GPUPCB by&nbsp;</span>
+        <a href="https://www.wecamo.io/" target="_blank">
+          Wecamo
+        </a>
+      </footer>
+    </div>
   );
 }
 
