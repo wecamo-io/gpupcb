@@ -12,6 +12,13 @@ export default function ActiveTab(props: {
 }) {
   const { activeTabs, removeActiveTab } = useTabContext();
 
+  const handleCloseActiveTab = (e: MouseEvent) => {
+    e.stopPropagation();
+    removeActiveTab(props.tabName);
+
+    if (props.isSelected) props.handleSelectTab(activeTabs()[0]);
+  }
+
   return (
     <div
       class={`active-tab ${props.isSelected ? "open" : "closed"}`}
@@ -20,12 +27,7 @@ export default function ActiveTab(props: {
     >
       <button
         class="close-active-tab"
-        onClick={e => {
-          e.stopPropagation();
-          removeActiveTab(props.tabName);
-
-          if (props.isSelected) props.handleSelectTab(activeTabs()[0]);
-        } }
+        onClick={e => handleCloseActiveTab(e)}
       >
         X
       </button>
