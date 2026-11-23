@@ -51,10 +51,6 @@ header {
     align-items: flex-end;
 }
 
-header > * {
-    padding-top: 1rem;
-}
-
 main {
   display: flex;
   justify-content: space-between;
