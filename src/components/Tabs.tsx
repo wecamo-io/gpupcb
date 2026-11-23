@@ -19,7 +19,7 @@ export default function Tabs() {
             class="tab"
             onClick={() => addLeftActiveTab(name)}
             draggable={true}
-            onDragStart={(e) => handleDragStart(e, name)}
+            onDragStart={(e) => handleDragStart(e, name, "tabs")}
             onDragEnd={handleDragEnd}
           >
             {name}

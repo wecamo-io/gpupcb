@@ -28,7 +28,7 @@ export default function ActiveTab(props: {
       onClick={() => props.selectTab(props.tabName)}
       title={props.tabName}
       draggable={true}
-      onDragStart={(e) => handleDragStart(e, props.tabName)}
+      onDragStart={(e) => handleDragStart(e, props.tabName, "sidebar")}
       onDragEnd={handleDragEnd}
     >
       <button class="close-active-tab" onClick={(e) => handleCloseActiveTab(e)}>

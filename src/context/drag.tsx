@@ -27,12 +27,16 @@ export const makeDragContext = () => {
     setIsDraggingOverOtherSidebar(value);
   };
 
-  const handleDragStart = (e: DragEvent, name: Sections) => {
+  const handleDragStart = (
+    e: DragEvent,
+    name: Sections,
+    source: "tabs" | "sidebar",
+  ) => {
     e.dataTransfer?.setData(
       "text/plain",
       JSON.stringify({
         name,
-        source: "sidebar",
+        source,
       }),
     );
 

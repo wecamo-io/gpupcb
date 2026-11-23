@@ -88,7 +88,6 @@ export default function Sidebar(props: {
       if (props.isRight) {
         removeLeftActiveTab(name);
         addRightActiveTab(name);
-        addRightActiveTab(name);
       } else {
         removeRightActiveTab(name);
         addLeftActiveTab(name);
