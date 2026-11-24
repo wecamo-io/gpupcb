@@ -13,6 +13,7 @@ aside.left {
     position: relative;
     overflow: hidden;
     overflow-y: auto;
+    z-index: 10;
 }
 aside.left::before {
     content: "";
@@ -34,6 +35,7 @@ aside.right {
     position: relative;
     overflow: hidden;
     overflow-y: auto;
+    z-index: 10;
 }
 aside.right::before {
     content: "";
