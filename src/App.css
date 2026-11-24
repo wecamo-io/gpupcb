@@ -89,7 +89,7 @@ h1 {
     place-items: center;
     font-size: 2rem;
     color: var(--logo-color);
-    border-right: 1px solid gray;
+    border-right: 1px solid var(--primary-border-color);
 }
 
 h1 > img {
