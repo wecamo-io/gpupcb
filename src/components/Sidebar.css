@@ -2,50 +2,47 @@
 /* */
 /* SPDX-License-Identifier: GPL 3.0 */
 
-aside.left {
-    border-right: 1px solid var(--primary-border-color);
-    outline-offset: 4px;
+aside.left,
+aside.right {
     height: 100%;
     text-align: center;
     position: relative;
-    transition: left 0.1s ease;
     background-color: var(--primary-background);
     position: relative;
     overflow: hidden;
     overflow-y: auto;
     z-index: 10;
 }
-aside.left::before {
-    content: "";
-    height: 100%;
-    width: 1px;
-    position: absolute;
-    top: 0;
-    right: 1px;
-    background-color: var(--primary-border-color);
+
+aside.left {
+    border-right: 1px solid var(--primary-border-color);
+    transition: left 0.1s ease;
 }
 
 aside.right {
-    border-left: 1px double var(--primary-border-color);
-    height: 100%;
-    text-align: center;
-    position: relative;
+    border-left: 1px solid var(--primary-border-color);
     transition: right 0.1s ease;
-    background-color: var(--primary-background);
-    position: relative;
-    overflow: hidden;
-    overflow-y: auto;
-    z-index: 10;
 }
+
+aside.left::before,
 aside.right::before {
     content: "";
     height: 100%;
     width: 1px;
     position: absolute;
     top: 0;
-    left: 1px;
     background-color: var(--primary-border-color);
 }
+
+
+aside.left::before {
+    right: 1px;
+}
+
+aside.right::before {
+    left: 1px;
+}
+
 aside.drag-over {
     background-color: var(--secondary-background);
 }
@@ -55,40 +52,32 @@ aside.closed #load-file {
   pointer-events: none;
 }
 
+.sidebar-toggle.left,
+.sidebar-toggle.right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2rem;
+    height: 4rem;
+    border: none;
+    border: 1px solid var(--primary-border-color);
+    background: var(--primary-background);
+    color: var(--primary-text-color);
+    cursor: pointer;
+    z-index: 99;
+    transition: background 0.2s;
+}
+
 .sidebar-toggle.left {
-  position: absolute;
-  top: 50%;
   right: -2rem;
-  transform: translateY(-50%);
-  width: 2rem;
-  height: 4rem;
-  border: none;
   border-radius: 0 0.5rem 0.5rem 0;
-  border: 1px solid var(--primary-border-color);
   border-left: none;
-  background: var(--primary-background);
-  color: var(--primary-text-color);
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.2s;
 }
 
 .sidebar-toggle.right {
-  position: absolute;
-  top: 50%;
   left: -2rem;
-  transform: translateY(-50%);
-  width: 2rem;
-  height: 4rem;
-  border: none;
   border-radius: 0.5rem 0 0 0.5rem;
-  border: 1px solid var(--primary-border-color);
   border-right: none;
-  background: var(--primary-background);
-  color: var(--primary-text-color);
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.2s;
 }
 
 .active-tabs {
@@ -96,22 +85,21 @@ aside.closed #load-file {
     border-bottom: 1px solid var(--primary-border-color);
 }
 
+.resize-handle.left,
+.resize-handle.right {
+    position: absolute;
+    top: 0;
+    width: 1rem;
+    height: 100%;
+    cursor: col-resize;
+}
+
 .resize-handle.left {
-  position: absolute;
-  top: 0;
   right: -2px;
-  width: 1rem;
-  height: 100%;
-  cursor: col-resize;
 }
 
 .resize-handle.right {
-  position: absolute;
-  top: 0;
   left: -2px;
-  width: 1rem;
-  height: 100%;
-  cursor: col-resize;
 }
 
 .resize-handle:hover,
