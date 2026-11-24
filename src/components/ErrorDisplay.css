@@ -1,0 +1,52 @@
+/* SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/> */
+/* */
+/* SPDX-License-Identifier: GPL 3.0 */
+
+.parse-error {
+  padding: 1rem;
+  border: 1px solid var(--error-border-color);
+  border-radius: 0.6rem;
+  background: var(--error-background);
+  color: var(--text-color);
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(var(--footer-height) + 1rem);
+  top: calc(var(--header-height) + 1rem);
+}
+
+.parse-error-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 2.1rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--error-border-color);
+}
+
+.parse-error-details > div > strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.error-data {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 1.5rem;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.parse-error-details pre {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #00000026;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

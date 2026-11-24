@@ -5,5 +5,19 @@
 /* @refresh reload */
 import { render } from "solid-js/web";
 import App from "./App";
+import { BoardContextProvider } from "./context/board";
+import { DragContextProvider } from "./context/drag";
+import { TabContextProvider } from "./context/tab";
 
-render(() => <App />, document.getElementById("root") as HTMLElement);
+render(
+  () => (
+    <BoardContextProvider>
+      <TabContextProvider>
+        <DragContextProvider>
+          <App />
+        </DragContextProvider>
+      </TabContextProvider>
+    </BoardContextProvider>
+  ),
+  document.getElementById("root") as HTMLElement,
+);

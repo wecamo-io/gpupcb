@@ -290,7 +290,7 @@ export function BoardAccordion(props: { board: Accessor<Board | null> }) {
   return (
     <Show when={props.board()}>
       {(board) => (
-        <div style={{ "text-align": "left" }}>
+        <div id="board-info">
           <Section title="Info">
             <Row f={{ version: board().version, units: board().units }} />
           </Section>

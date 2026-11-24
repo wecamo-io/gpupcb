@@ -2,124 +2,99 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-import { invoke, isTauri } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
-import { createSignal } from "solid-js";
+import { createEffect, createSignal } from "solid-js";
 import "./App.css";
-import { BoardAccordion } from "./components/Accordion";
-import type { Board } from "./types";
-import { load_hyperlynx_with_wasm } from "./wasm/gpupcb";
-
-interface HyperlynxParseError {
-  line: number;
-  placement: string;
-  inner: string;
-  offset: number;
-}
+import logo from "./assets/logo.svg";
+import ErrorDisplay from "./components/ErrorDisplay";
+import Sidebar from "./components/Sidebar";
+import Tabs from "./components/Tabs";
+import { useDragContext } from "./context/drag";
+import { useTabContext } from "./context/tab";
 
 function App() {
-  const [board, setBoard] = createSignal<Board | null>(null);
-  const [error, setError] = createSignal<HyperlynxParseError | null>(null);
+  const { leftActiveTabs, rightActiveTabs } = useTabContext();
+  const {
+    isDragging,
+    previousSidebarStates,
+    setPreviousSidebarStates,
+    isDraggingOverOtherSidebar,
+    setIsDraggingOverOtherSidebar,
+  } = useDragContext();
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = createSignal<boolean>(true);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] =
+    createSignal<boolean>(false);
 
-  function isValidHyperlynxFile(file: File): boolean {
-    return file.name.toLowerCase().endsWith(".hyp");
-  }
+  const toggleLeftSidebar = () => {
+    setIsLeftSidebarOpen((prev) => !prev);
+  };
 
-  async function selectHyperlynxFile() {
-    setError(null);
+  const toggleRightSidebar = () => {
+    setIsRightSidebarOpen((prev) => !prev);
+  };
 
-    try {
-      // desktop file loading
-      if (isTauri()) {
-        const path = await open({
-          multiple: false,
-          directory: false,
-          filters: [
-            {
-              name: "HyperLynx files",
-              extensions: ["hyp", "HYP"],
-            },
-          ],
+  createEffect(() => {
+    if (isDragging()) {
+      if (previousSidebarStates() === null) {
+        setPreviousSidebarStates({
+          left: isLeftSidebarOpen(),
+          right: isRightSidebarOpen(),
         });
 
-        if (!path) return;
-
-        const result = await invoke<Board>("load_hyperlynx_file", {
-          path,
+        setIsDraggingOverOtherSidebar({
+          left: false,
+          right: false,
         });
-
-        setBoard(result);
-        // browser file loading via WASM
-      } else {
-        const input = document.createElement("input");
-
-        input.type = "file";
-        input.accept = ".hyp";
-
-        input.onchange = async () => {
-          const file = input.files?.[0];
-          if (!file) return;
-
-          try {
-            // Validate extension
-            if (!isValidHyperlynxFile(file)) {
-              setBoard(null);
-              setError({
-                line: 0,
-                placement: "Invalid file extension. Please select a .hyp file.",
-                inner: "FileExtensionError",
-                offset: 0,
-              });
-              return;
-            }
-
-            const content = await file.text();
-
-            const json = load_hyperlynx_with_wasm(content);
-            const result = JSON.parse(json) as Board;
-
-            setBoard(result);
-          } catch (error) {
-            let parseError = error as HyperlynxParseError;
-            setBoard(null);
-            setError(parseError);
-          }
-        };
-
-        input.click();
       }
-    } catch (error) {
-      const parseError = error as HyperlynxParseError;
-      setBoard(null);
-      setError(parseError);
+
+      setIsLeftSidebarOpen(true);
+      setIsRightSidebarOpen(true);
+    } else {
+      const previous = previousSidebarStates();
+
+      if (previous !== null) {
+        const over = isDraggingOverOtherSidebar();
+
+        setIsLeftSidebarOpen(previous.left || over.left);
+        setIsRightSidebarOpen(previous.right || over.right);
+
+        setPreviousSidebarStates(null);
+        setIsDraggingOverOtherSidebar({
+          left: false,
+          right: false,
+        });
+      }
     }
-  }
+  });
 
   return (
-    <main class="container">
-      <h1>GPUPCB</h1>
-      <button onClick={selectHyperlynxFile}>Open HyperLynx file</button>
-      <BoardAccordion board={board} />
-      {error() && (
-        <div class="parse-error">
-          <div class="parse-error-details">
-            <div class="error-data">
-              <span>
-                Line: <strong>{error()!.line}</strong>
-              </span>
-              <span>
-                Offset: <strong>{error()!.offset}</strong>
-              </span>
-              <strong>Location</strong>
-              <pre>{error()!.placement}</pre>
-
-              <strong>Parser context</strong>
-              <pre>{error()!.inner}</pre>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+    <div class="container">
+      <header>
+        <h1>
+          <img src={logo} alt="GPUPCB" />
+        </h1>
+        <Tabs />
+      </header>
+      <main>
+        <Sidebar
+          isOpen={isLeftSidebarOpen()}
+          tabs={leftActiveTabs()}
+          toggleSidebar={toggleLeftSidebar}
+        />
+        <ErrorDisplay />
+        <Sidebar
+          isOpen={isRightSidebarOpen()}
+          tabs={rightActiveTabs()}
+          toggleSidebar={toggleRightSidebar}
+          isRight={true}
+        />
+      </main>
+      <footer>
+        <span>{new Date().getFullYear()} GPUPCB by&nbsp;</span>
+        <a href="https://www.wecamo.io/" target="_blank">
+          Wecamo
+        </a>
+      </footer>
+    </div>
   );
 }
 
