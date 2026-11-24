@@ -30,34 +30,34 @@ GPUPCB provides DEB, RPM and AppImage packages for both AMD64 and ARM64 architec
 
 | Architecture | Package |
 |---|---|
-| AMD64 (x86_64) | `gpupcb-app_0.1.0_amd64.deb` |
-| ARM64 (AArch64) | `gpupcb-app_0.1.0_arm64.deb` |
+| AMD64 (x86_64) | `GPUPCB_0.1.0_amd64.deb` |
+| ARM64 (AArch64) | `GPUPCB_0.1.0_arm64.deb` |
 
 **AMD64 installation:**
 ```bash
-sudo apt install ./gpupcb-app_0.1.0_amd64.deb
+sudo apt install ./GPUPCB_0.1.0_amd64.deb
 ```
 
 **ARM64 installation:**
 ```bash
-sudo apt install ./gpupcb-app_0.1.0_arm64.deb
+sudo apt install ./GPUPCB_0.1.0_arm64.deb
 ```
 
 ### Red Hat-based distributions
 
 | Architecture | Package |
 |---|---|
-| AMD64 (x86_64) | `gpupcb-app-0.1.0-1.x86_64.rpm` |
-| ARM64 (AArch64) | `gpupcb-app-0.1.0-1.aarch64.rpm` |
+| AMD64 (x86_64) | `GPUPCB-0.1.0-1.x86_64.rpm` |
+| ARM64 (AArch64) | `GPUPCB-0.1.0-1.aarch64.rpm` |
 
 **AMD64 installation:**
 ```bash
-sudo dnf install ./gpupcb-app-0.1.0-1.x86_64.rpm
+sudo dnf install ./GPUPCB-0.1.0-1.x86_64.rpm
 ```
 
 **ARM64 installation:**
 ```bash
-sudo dnf install ./gpupcb-app-0.1.0-1.aarch64.rpm
+sudo dnf install ./GPUPCB-0.1.0-1.aarch64.rpm
 ```
 
 ### AppImage
@@ -65,21 +65,21 @@ AppImage packages are available for both architectures.
 
 | Architecture | Package |
 |---|---|
-| AMD64 (x86_64) | `gpupcb-app_0.1.0_amd64.AppImage` |
-| ARM64 (AArch64) | `gpupcb-app_0.1.0_aarch64.AppImage` |
+| AMD64 (x86_64) | `GPUPCB_0.1.0_amd64.AppImage` |
+| ARM64 (AArch64) | `GPUPCB_0.1.0_aarch64.AppImage` |
 
 First make the file executable:
 ```bash
-chmod +x gpupcb-app_*.AppImage
+chmod +x GPUPCB_*.AppImage
 ```
 
 Then you can run the app:
 ```bash
-./gpupcb-app_0.1.0_amd64.AppImage
+./GPUPCB_0.1.0_amd64.AppImage
 ```
 Or in the ARM64 systems:
 ```bash
-./gpupcb-app_0.1.0_aarch64.AppImage
+./GPUPCB_0.1.0_aarch64.AppImage
 ```
 
 ## macOS
@@ -89,15 +89,15 @@ There are packages for both Apple Silicon and Intel Macs.
 
 | Package format | Filename |
 |---|---|
-| dmg | `gpupcb-app_0.1.0_aarch64.dmg` |
-| tar.gz | `gpupcb-app_0.1.0_aarch64.app.tar.gz` |
+| dmg | `GPUPCB_0.1.0_aarch64.dmg` |
+| tar.gz | `GPUPCB_0.1.0_aarch64.app.tar.gz` |
 
 ### Intel (x86_64)
 
 | Package format | Filename |
 |---|---|
-| dmg | `gpupcb-app_0.1.0_x64.dmg` |
-| tar.gz | `gpupcb-app_0.1.0_x64.app.tar.gz` |
+| dmg | `GPUPCB_0.1.0_x64.dmg` |
+| tar.gz | `GPUPCB_0.1.0_x64.app.tar.gz` |
 
 In both architectures installation process is similar:
 
@@ -114,8 +114,8 @@ In both architectures installation process is similar:
 
 | Installer | Filename |
 |---|---|
-| exe | `gpupcb-app_0.1.0_x64-setup.exe` |
-| msi | `gpupcb-app_0.1.0_x64_en-US.msi` |
+| exe | `GPUPCB_0.1.0_x64-setup.exe` |
+| msi | `GPUPCB_0.1.0_x64_en-US.msi` |
 
 **Exe installer**
 1. Run the donwloaded installer
