@@ -227,6 +227,7 @@ export default function Sidebar(props: {
               ? `${calculatedWidth()}px`
               : "0"
             : "auto",
+          transition: props.isRight ? (isResizing() ? "right 0s" : "right 0.1s") : (isResizing() ? "left 0s" : "left 0.1s")
         }}
         onClick={props.toggleSidebar}
       >
