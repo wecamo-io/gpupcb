@@ -5,12 +5,14 @@
 aside.left {
     border-right: 1px solid var(--primary-border-color);
     outline-offset: 4px;
-    min-width: 16rem;
     height: 100%;
     text-align: center;
     position: relative;
     transition: left 0.1s ease;
     background-color: var(--primary-background);
+    position: relative;
+    overflow: hidden;
+    overflow-y: auto;
 }
 aside.left::before {
     content: "";
@@ -24,12 +26,14 @@ aside.left::before {
 
 aside.right {
     border-left: 1px double var(--primary-border-color);
-    min-width: 16rem;
     height: 100%;
     text-align: center;
     position: relative;
     transition: right 0.1s ease;
     background-color: var(--primary-background);
+    position: relative;
+    overflow: hidden;
+    overflow-y: auto;
 }
 aside.right::before {
     content: "";
@@ -58,7 +62,7 @@ aside.closed #load-file {
   height: 4rem;
   border: none;
   border-radius: 0 0.5rem 0.5rem 0;
-  border: 1px solid gray;
+  border: 1px solid var(--primary-border-color);
   border-left: none;
   background: var(--primary-background);
   color: var(--primary-text-color);
@@ -76,7 +80,7 @@ aside.closed #load-file {
   height: 4rem;
   border: none;
   border-radius: 0.5rem 0 0 0.5rem;
-  border: 1px solid gray;
+  border: 1px solid var(--primary-border-color);
   border-right: none;
   background: var(--primary-background);
   color: var(--primary-text-color);

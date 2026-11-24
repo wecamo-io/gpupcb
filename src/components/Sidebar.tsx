@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
-import { For, JSXElement, Show, createEffect, createSignal } from "solid-js";
+import { For, JSXElement, Show, createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { useDragContext } from "../context/drag";
 import { Sections, useTabContext } from "../context/tab";
 import ActiveTab from "./ActiveTab";
@@ -41,6 +41,24 @@ export default function Sidebar(props: {
   );
   const [sidebarWidth, setSidebarWidth] = createSignal<number>(256);
   const [isResizing, setIsResizing] = createSignal<boolean>(false);
+  const [windowWidth, setWindowWidth] = createSignal(window.innerWidth);
+
+  // calculate the maximum width on main window resize
+   onMount(() => {
+     const handleWindowResize = () => {
+       setWindowWidth(window.innerWidth);
+     };
+
+     window.addEventListener("resize", handleWindowResize);
+
+     onCleanup(() => {
+       window.removeEventListener("resize", handleWindowResize);
+     });
+   });
+
+   const calculatedWidth = () =>
+     Math.min(sidebarWidth(), windowWidth() / 2);
+
 
   const selectTab = (name: Sections) => {
     setSelectedTab(name);
@@ -149,19 +167,20 @@ export default function Sidebar(props: {
   });
 
   return (
+    <>
     <aside
       class={`${props.isOpen ? "open" : "closed"} ${props.isRight ? "right" : "left"} ${isResizing() && "resizing"}`}
       style={{
-        width: `${sidebarWidth()}px`,
+        width: `${calculatedWidth()}px`,
         left: props.isRight
           ? "auto"
           : props.isOpen
             ? "0"
-            : `-${sidebarWidth()}px`,
+            : `-${calculatedWidth()}px`,
         right: props.isRight
           ? props.isOpen
             ? "0"
-            : `-${sidebarWidth()}px`
+            : `-${calculatedWidth()}px`
           : "auto",
       }}
       onDragOver={handleDragOver}
@@ -186,14 +205,6 @@ export default function Sidebar(props: {
         {(tab) => <>{TABS.find((t) => t.name === tab())?.content}</>}
       </Show>
 
-      <button
-        class={`sidebar-toggle ${props.isRight ? "right" : "left"}`}
-        onClick={props.toggleSidebar}
-        aria-label={props.isOpen ? "Close sidebar" : "Open sidebar"}
-      >
-        {props.isRight ? (props.isOpen ? "❯" : "❮") : props.isOpen ? "❮" : "❯"}
-      </button>
-
       <div
         class={`resize-handle ${props.isOpen && (props.isRight ? "right" : "left")}`}
         onPointerDown={handleResizeStart}
@@ -201,6 +212,28 @@ export default function Sidebar(props: {
         onPointerUp={handleResizeEnd}
         onLostPointerCapture={handleResizeEnd}
       />
-    </aside>
+      </aside>
+
+      <button
+        class={`sidebar-toggle ${props.isRight ? "right" : "left"}`}
+        style={{
+          left: props.isRight
+            ? "auto"
+            : props.isOpen
+              ? `${calculatedWidth()}px`
+              : "0",
+          right: props.isRight
+            ? props.isOpen
+              ? `${calculatedWidth()}px`
+              : "0"
+            : "auto",
+        }}
+        onClick={props.toggleSidebar}
+      >
+        {props.isRight
+          ? props.isOpen ? "❯" : "❮"
+          : props.isOpen ? "❮" : "❯"}
+      </button>
+    </>
   );
 }
