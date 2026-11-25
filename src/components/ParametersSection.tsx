@@ -4,6 +4,15 @@
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { createSignal, Show } from "solid-js";
+import {
+  get_crosstalk_with_wasm,
+  get_differential_impedance_with_wasm,
+  get_effective_dielectric_constant_with_wasm,
+  get_s_parameters_with_wasm,
+  get_skew_with_wasm,
+  get_standing_wave_ratio_with_wasm,
+  get_wave_impedance_with_wasm,
+} from "../wasm/gpupcb";
 import "./ParametersSection.css";
 
 interface SParameters {
@@ -28,6 +37,7 @@ export function ParametersSection() {
     null,
   );
   const [error, setError] = createSignal<string | null>(null);
+  const [message, setMessage] = createSignal<string>("");
 
   const getSimulationParameters = async (): Promise<SimulationResults> => {
     if (isTauri()) {
@@ -49,6 +59,8 @@ export function ParametersSection() {
         invoke<SimulationResults["sParameters"]>("get_s_parameters"),
       ]);
 
+      setMessage("Communication via Tauri IPC works");
+
       return {
         waveImpedance,
         differentialImpedance,
@@ -59,7 +71,35 @@ export function ParametersSection() {
         sParameters,
       };
     } else {
-      return Promise.reject(new Error("WASM version yet to be implemented"));
+      const [
+        waveImpedance,
+        differentialImpedance,
+        effectiveDielectricConstant,
+        crosstalk,
+        skew,
+        standingWaveRatio,
+        sParameters,
+      ] = await Promise.all([
+        get_wave_impedance_with_wasm(),
+        get_differential_impedance_with_wasm(),
+        get_effective_dielectric_constant_with_wasm(),
+        get_crosstalk_with_wasm(),
+        get_skew_with_wasm(),
+        get_standing_wave_ratio_with_wasm(),
+        get_s_parameters_with_wasm(),
+      ]);
+
+      setMessage("Communication via WASM works");
+
+      return {
+        waveImpedance,
+        differentialImpedance,
+        effectiveDielectricConstant,
+        crosstalk,
+        skew,
+        standingWaveRatio,
+        sParameters,
+      };
     }
   };
 
@@ -94,6 +134,7 @@ export function ParametersSection() {
         <Show when={error()}>
           <div>{error()}</div>
         </Show>
+        <div>{message()}</div>
       </div>
     </section>
   );
