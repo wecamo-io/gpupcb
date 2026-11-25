@@ -38,6 +38,15 @@ export function load_hyperlynx_with_wasm(filename, content) {
         wasm.__wbindgen_export3(deferred4_0, deferred4_1, 1);
     }
 }
+
+/**
+ * @param {number} value
+ * @returns {number}
+ */
+export function set_time_step_with_wasm(value) {
+    const ret = wasm.set_time_step_with_wasm(value);
+    return ret;
+}
 export function __wbg_Error_208446807d0d1e30(arg0, arg1) {
     const ret = Error(getStringFromWasm0(arg0, arg1));
     return ret;

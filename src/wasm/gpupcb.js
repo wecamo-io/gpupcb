@@ -5,5 +5,5 @@ import { __wbg_set_wasm } from "./gpupcb_bg.js";
 __wbg_set_wasm(wasm);
 wasm.__wbindgen_start();
 export {
-    load_hyperlynx_with_wasm
+    load_hyperlynx_with_wasm, set_time_step_with_wasm
 } from "./gpupcb_bg.js";
