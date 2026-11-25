@@ -1,3 +1,11 @@
 /* SPDX-FileCopyrightText: 2026 Wecamo <https://www.wecamo.io/> */
 /* */
 /* SPDX-License-Identifier: GPL 3.0 */
+
+#frequency-button {
+    border: none;
+    background: none;
+    color: var(--primary-text-color);
+    border: 1px solid var(--primary-border-color);
+    padding: 0.5rem;
+}
