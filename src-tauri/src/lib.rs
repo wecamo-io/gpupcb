@@ -2,53 +2,21 @@
 //
 // SPDX-License-Identifier: GPL 3.0
 
+// BROWSER
+
 #[cfg(target_arch = "wasm32")]
-mod wasm {
-    use hyperlynx_parser::parser::{ReturnParseError, parse_hyperlynx};
-    use wasm_bindgen::prelude::*;
+mod wasm;
 
-    #[wasm_bindgen]
-    pub fn load_hyperlynx_with_wasm(filename: &str, content: &str) -> Result<String, JsValue> {
-        // validate extension
-        if !filename.to_lowercase().ends_with(".hyp") {
-            let error = ReturnParseError {
-                line: 0,
-                placement: String::from("Invalid file extension. Expected .hyp"),
-                inner: String::from("FileExtensionError"),
-                offset: 0,
-            };
+#[cfg(target_arch = "wasm32")]
+pub use wasm::{load_hyperlynx_with_wasm, set_frequency_with_wasm, set_timestep_with_wasm};
 
-            return Err(serde_wasm_bindgen::to_value(&error)?);
-        }
-
-        let board = parse_hyperlynx(content.as_bytes()).map_err(|e| {
-            let error = ReturnParseError::from(e);
-
-            serde_wasm_bindgen::to_value(&error).unwrap()
-        })?;
-
-        serde_json::to_string(&board).map_err(|e| JsValue::from_str(&e.to_string()))
-    }
-
-    #[wasm_bindgen]
-    pub fn set_time_step_with_wasm(value: f64) -> f64 {
-        value
-    }
-
-    #[wasm_bindgen]
-    pub fn set_frequency_with_wasm(value: f64) -> f64 {
-        value
-    }
-}
+// DESKTOP
 
 #[cfg(not(target_arch = "wasm32"))]
 mod desktop;
 
 #[cfg(not(target_arch = "wasm32"))]
 use desktop::commands::{load_hyperlynx_file, set_frequency, set_time_step};
-
-#[cfg(target_arch = "wasm32")]
-pub use wasm::{load_hyperlynx_with_wasm, set_frequency_with_wasm, set_time_step_with_wasm};
 
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

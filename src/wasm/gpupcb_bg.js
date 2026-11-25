@@ -52,8 +52,8 @@ export function set_frequency_with_wasm(value) {
  * @param {number} value
  * @returns {number}
  */
-export function set_time_step_with_wasm(value) {
-    const ret = wasm.set_time_step_with_wasm(value);
+export function set_timestep_with_wasm(value) {
+    const ret = wasm.set_timestep_with_wasm(value);
     return ret;
 }
 export function __wbg_Error_208446807d0d1e30(arg0, arg1) {

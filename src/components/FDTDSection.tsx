@@ -4,7 +4,7 @@
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { createSignal } from "solid-js";
-import { set_time_step_with_wasm } from "../wasm/gpupcb";
+import { set_timestep_with_wasm } from "../wasm/gpupcb";
 import "./FDTDSection.css";
 
 export function FDTDSection() {
@@ -20,7 +20,7 @@ export function FDTDSection() {
       setState(result);
       setMessage("Communication via Tauri IPC works");
     } else {
-      const result = set_time_step_with_wasm(2);
+      const result = set_timestep_with_wasm(2);
 
       setState(result);
       setMessage("Communication via WASM works");
