@@ -34,6 +34,11 @@ mod desktop {
     pub fn set_time_step(value: f64) -> f64 {
         value
     }
+
+    #[tauri::command]
+    pub fn set_frequency(value: f64) -> f64 {
+        value
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -68,13 +73,18 @@ mod wasm {
     pub fn set_time_step_with_wasm(value: f64) -> f64 {
         value
     }
+
+    #[wasm_bindgen]
+    pub fn set_frequency_with_wasm(value: f64) -> f64 {
+        value
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use desktop::{load_hyperlynx_file, set_time_step};
+pub use desktop::{load_hyperlynx_file, set_frequency, set_time_step};
 
 #[cfg(target_arch = "wasm32")]
-pub use wasm::{load_hyperlynx_with_wasm, set_time_step_with_wasm};
+pub use wasm::{load_hyperlynx_with_wasm, set_frequency_with_wasm, set_time_step_with_wasm};
 
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -82,7 +92,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![load_hyperlynx_file, set_time_step])
+        .invoke_handler(tauri::generate_handler![
+            load_hyperlynx_file,
+            set_time_step,
+            set_frequency
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

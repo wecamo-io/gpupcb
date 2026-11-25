@@ -43,6 +43,15 @@ export function load_hyperlynx_with_wasm(filename, content) {
  * @param {number} value
  * @returns {number}
  */
+export function set_frequency_with_wasm(value) {
+    const ret = wasm.set_frequency_with_wasm(value);
+    return ret;
+}
+
+/**
+ * @param {number} value
+ * @returns {number}
+ */
 export function set_time_step_with_wasm(value) {
     const ret = wasm.set_time_step_with_wasm(value);
     return ret;
