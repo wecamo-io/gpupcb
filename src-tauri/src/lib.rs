@@ -16,7 +16,11 @@ pub use wasm::{load_hyperlynx_with_wasm, set_frequency_with_wasm, set_timestep_w
 mod desktop;
 
 #[cfg(not(target_arch = "wasm32"))]
-use desktop::commands::{load_hyperlynx_file, set_frequency, set_time_step};
+use desktop::commands::{
+    get_crosstalk, get_differential_impedance, get_effective_dielectric_constant, get_s_parameters,
+    get_skew, get_standing_wave_ratio, get_wave_impedance, load_hyperlynx_file, set_frequency,
+    set_time_step,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -27,7 +31,14 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             load_hyperlynx_file,
             set_time_step,
-            set_frequency
+            set_frequency,
+            get_wave_impedance,
+            get_differential_impedance,
+            get_effective_dielectric_constant,
+            get_crosstalk,
+            get_skew,
+            get_standing_wave_ratio,
+            get_s_parameters
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -5,7 +5,9 @@
 mod fdfd;
 mod fdtd;
 mod hyperlynx;
+mod parameters;
 
 pub use fdfd::set_frequency;
 pub use fdtd::set_time_step;
 pub use hyperlynx::load_hyperlynx_file;
+pub use parameters::*;
