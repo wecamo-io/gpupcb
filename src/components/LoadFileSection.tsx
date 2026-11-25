@@ -7,7 +7,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { Show } from "solid-js";
 import { useBoardContext } from "../context/board";
 import { Board } from "../types";
-import { load_hyperlynx_with_wasm } from "../wasm/gpupcb";
+import { parseHyperlynxInWorker } from "../workers/loadHypFile";
 import { BoardAccordion } from "./Accordion";
 import { HyperlynxParseError } from "./ErrorDisplay";
 import "./LoadFileSection.css";
@@ -20,6 +20,7 @@ export function LoadFileSection() {
   }
 
   async function selectHyperlynxFile() {
+    setBoard(null);
     setError(null);
 
     try {
@@ -68,9 +69,7 @@ export function LoadFileSection() {
             }
 
             const content = await file.text();
-
-            const json = load_hyperlynx_with_wasm(content);
-            const result = JSON.parse(json) as Board;
+            const result = await parseHyperlynxInWorker(file.name, content);
 
             setBoard(result);
           } catch (error) {
