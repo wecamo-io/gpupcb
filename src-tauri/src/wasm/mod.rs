@@ -5,7 +5,9 @@
 mod fdfd;
 mod fdtd;
 mod hyperlynx;
+mod parameters;
 
 pub use fdfd::set_frequency_with_wasm;
 pub use fdtd::set_timestep_with_wasm;
 pub use hyperlynx::load_hyperlynx_with_wasm;
+pub use parameters::*;
