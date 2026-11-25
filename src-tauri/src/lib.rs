@@ -46,12 +46,14 @@ mod wasm {
                 inner: String::from("FileExtensionError"),
                 offset: 0,
             };
+
+            return Err(serde_wasm_bindgen::to_value(&error)?);
         }
 
-        let board = parse_hyperlynx(content).map_err(|e| {
+        let board = parse_hyperlynx(content.as_bytes()).map_err(|e| {
             let error = ReturnParseError::from(e);
 
-            serde_wasm_bindgen::to_value(&error).unwrap_or_else(|_| JsValue::NULL)
+            serde_wasm_bindgen::to_value(&error).unwrap()
         })?;
 
         serde_json::to_string(&board).map_err(|e| JsValue::from_str(&e.to_string()))
